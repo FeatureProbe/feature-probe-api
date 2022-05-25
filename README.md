@@ -1,3 +1,6 @@
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+
 # FeatureProbe API
 
 FeatureProbe supports an extensive API so that other services or clients can use it programmatically. 
