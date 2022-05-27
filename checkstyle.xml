@@ -10,12 +10,13 @@
 
     <property name="fileExtensions" value="java, properties, xml"/>
 
+    <module name="LineLength"> <!-- 3.1 -->
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+    </module>
+
     <module name="TreeWalker">
         <module name="OuterTypeFilename"/>  <!-- 1.1 -->
-        <module name="LineLength"> <!-- 3.1 -->
-            <property name="max" value="120"/>
-            <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
-        </module>
         <module name="OneTopLevelClass"/> <!-- 2.2 -->
         <module name="NoLineWrap"/> <!-- 3.1 -->
         <module name="MultipleVariableDeclarations"/> <!-- 2.7 -->
