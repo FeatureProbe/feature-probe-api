@@ -46,7 +46,7 @@ class TargetingServiceSpec extends Specification {
         def ret = targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
         then:
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
-                new Optional<>(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
+                Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
                         content: "", disabled: true))
         1 * targetingRepository.save(_) >> new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
                 content: content, disabled: false)
@@ -62,7 +62,7 @@ class TargetingServiceSpec extends Specification {
         def ret = targetingService.queryByKey(projectKey, environmentKey, toggleKey)
         then:
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
-                new Optional<>(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
+                Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
                         content: content, disabled: false))
         with(ret) {
             content == it.content

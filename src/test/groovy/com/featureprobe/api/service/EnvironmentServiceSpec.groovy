@@ -62,7 +62,7 @@ class EnvironmentServiceSpec extends Specification {
         def ret = environmentService.create(projectKey, createRequest)
         then:
         1 * projectRepository.findByKey(projectKey) >>
-                new Optional<>(new Project(name: projectName, key: projectKey))
+                Optional.of(new Project(name: projectName, key: projectKey))
         1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
