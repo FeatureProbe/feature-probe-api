@@ -6,7 +6,6 @@ import com.featureprobe.api.dto.ProjectQueryRequest
 import com.featureprobe.api.dto.ProjectUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
-import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.ProjectRepository
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.util.CollectionUtils

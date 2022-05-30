@@ -3,8 +3,8 @@ package com.featureprobe.api.base.exception;
 
 import com.featureprobe.api.base.constants.ResponseCode;
 import com.featureprobe.api.dto.ErrorResponse;
-import com.featureprobe.api.util.I18nUtil;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.util.I18nUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

@@ -1,9 +1,8 @@
 package com.featureprobe.api.service
 
 import com.featureprobe.api.dto.EventCreateRequest
-import com.featureprobe.api.model.VariationAccessCounter
 import com.featureprobe.api.model.AccessSummary
-
+import com.featureprobe.api.model.VariationAccessCounter
 import com.featureprobe.api.repository.EventRepository
 import spock.lang.Specification
 

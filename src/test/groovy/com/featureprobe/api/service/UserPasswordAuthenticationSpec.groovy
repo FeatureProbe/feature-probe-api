@@ -5,9 +5,7 @@ import com.featureprobe.api.auth.UserPasswordAuthenticationToken
 import com.featureprobe.api.base.enums.RoleEnum
 import com.featureprobe.api.entity.Member
 import com.featureprobe.api.repository.MemberRepository
-import org.springframework.security.core.Authentication
 import spock.lang.Specification
-
 
 class UserPasswordAuthenticationSpec extends Specification{
 

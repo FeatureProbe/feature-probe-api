@@ -1,10 +1,8 @@
 package com.featureprobe.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.featureprobe.api.model.Variation;
 import lombok.Data;
 
-import javax.persistence.Column;
 import java.util.Date;
 import java.util.List;
 

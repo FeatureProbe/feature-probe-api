@@ -4,14 +4,12 @@ import com.featureprobe.api.auth.UserPasswordAuthenticationToken
 import com.featureprobe.api.base.enums.RoleEnum
 import com.featureprobe.api.dto.MemberCreateRequest
 import com.featureprobe.api.dto.MemberModifyPasswordRequest
-import com.featureprobe.api.dto.MemberResponse
 import com.featureprobe.api.dto.MemberSearchRequest
 import com.featureprobe.api.dto.MemberUpdateRequest
 import com.featureprobe.api.entity.Member
 import com.featureprobe.api.repository.MemberRepository
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
-import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
 import spock.lang.Specification

@@ -1,6 +1,5 @@
 package com.featureprobe.api.mapper;
 
-import com.featureprobe.api.dto.MemberCreateRequest;
 import com.featureprobe.api.dto.MemberResponse;
 import com.featureprobe.api.dto.MemberUpdateRequest;
 import com.featureprobe.api.entity.Member;

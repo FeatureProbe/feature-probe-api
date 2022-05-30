@@ -3,8 +3,6 @@ package com.featureprobe.api.controller;
 
 import com.featureprobe.api.base.doc.CreateApiResponse;
 import com.featureprobe.api.base.doc.GetApiResponse;
-import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.dto.EventCreateRequest;
 import com.featureprobe.api.dto.SdkKeyResponse;
 import com.featureprobe.api.dto.ServerResponse;

@@ -2,9 +2,9 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.dto.TargetingRequest
 import com.featureprobe.api.entity.Targeting
+import com.featureprobe.api.mapper.JsonMapper
 import com.featureprobe.api.model.TargetingContent
 import com.featureprobe.api.repository.TargetingRepository
-import com.featureprobe.api.mapper.JsonMapper
 import spock.lang.Specification
 import spock.lang.Title
 
