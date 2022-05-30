@@ -8,7 +8,6 @@ import com.featureprobe.api.entity.*
 import com.featureprobe.api.repository.*
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Pageable
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -73,7 +72,7 @@ class ToggleServiceSpec extends Specification {
         1 * toggleTagRepository.findByNames(["test"]) >> [new ToggleTagRelation(toggleKey: toggleKey)]
         1 * eventRepository.findAll(_) >> [new Event(toggleKey: toggleKey)]
         1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey)],
-                Pageable.ofSize(1), 1)
+                PageRequest.of(1), 1, 12)
         1 * tagRepository.selectTagsByToggleKey(toggleKey) >> [new Tag(name: "tag")]
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
                 Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
