@@ -9,7 +9,7 @@ import com.featureprobe.api.dto.MemberUpdateRequest
 import com.featureprobe.api.entity.Member
 import com.featureprobe.api.repository.MemberRepository
 import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.PageRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
 import spock.lang.Specification
@@ -91,7 +91,7 @@ class MemberServiceSpec extends Specification{
                 pageIndex: 0, pageSize: 10))
         then:
         1 * memberRepository.findAll(_, _) >> new PageImpl<>([new Member(account: "root", password: "root",
-                role: RoleEnum.MEMBER)], Pageable.ofSize(10), 1)
+                role: RoleEnum.MEMBER)], PageRequest.of(1, 10), 1)
         with(list) {
             1 == list.size()
         }

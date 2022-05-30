@@ -7,6 +7,7 @@ import com.featureprobe.api.dto.ToggleUpdateRequest
 import com.featureprobe.api.entity.*
 import com.featureprobe.api.repository.*
 import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import spock.lang.Specification
 import spock.lang.Title
@@ -81,7 +82,7 @@ class ToggleServiceSpec extends Specification {
                 Optional.of(new Environment(key: environmentKey, serverSdkKey: "123", clientSdkKey: "123"))
         1 * eventRepository.findAll(_, _) >> new PageImpl<>([new Event(toggleKey: toggleKey, sdkKey: "123",
                 startDate: new Date())],
-                Pageable.ofSize(1), 1)
+                PageRequest.of(1, 12), 1)
         with(page) {
             1 == it.size
             it.getContent().get(0).visitedTime != null
