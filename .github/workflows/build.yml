@@ -21,9 +21,9 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: |
-        mvn -B package --file pom.xml
-        mvn test jacoco:report
+      run: mvn -B package --file pom.xml
+    - name: Build coverage
+      run: mvn test jacoco:report
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
