@@ -15,7 +15,8 @@ WHERE toggle_key = 'color_ab_test' and environment_key = 'online';
 UPDATE `toggle`
 SET name = 'Button Color AB Test',
     description = 'Test which color is more preferable',
-    variations = '[{"value":"red","name":"","description":""},{"value":"blue","name":"","description":""}]'
+    variations = '[{"value":"red","name":"","description":""},{"value":"blue","name":"","description":""}]',
+    client_availability = 0
 WHERE `key` = 'color_ab_test';
 
 DELETE FROM `targeting` WHERE toggle_key = 'commodity_spike_activity';
@@ -32,7 +33,7 @@ VALUES (37, 'promotion_activity', 'online', 'My_First_Project', 3, 0,
 INSERT INTO `toggle`
 VALUES (19, 'Promotional Campaign', 'promotion_activity', 'Promotional Campaign in different city', 'number', 0,
         '[{\"value\":\"10\",\"name\":\"$10\",\"description\":\"\"},{\"value\":\"20\",\"name\":\"$20\",\"description\":\"\"},{\"value\":\"30\",\"name\":\"$30\",\"description\":\"\"}]',
-        'My_First_Project', 0, 1, 0, 'Admin', 'Admin', now(), now());
+        'My_First_Project', 0, 0, 0, 'Admin', 'Admin', now(), now());
 
 
 DELETE FROM `targeting` WHERE toggle_key = 'product_inventory_fallback';
