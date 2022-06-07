@@ -22,5 +22,5 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Coveralls
-      run: mvn test jacoco:report coveralls:report --define repoToken=${{ secrets.COVERALL_REPO_TOKEN }}
+    - name: Upload coverage reports to Codecov with GitHub Action
+      uses: codecov/codecov-action@v2
