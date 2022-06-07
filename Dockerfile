@@ -1,10 +1,11 @@
+FROM maven:3.6.1-jdk-8-alpine AS builder 
+COPY ./ ./
+
+RUN unset MAVEN_CONFIG && env && ./mvnw package
+
 FROM openjdk:8-jre-alpine
 RUN apk --no-cache add curl
 
-COPY ./ ./
+COPY --from=builder target/feature-probe-api-1.0.1.jar feature-probe-api-1.0.1.jar 
 
-RUN ./mvnw package
-
-ADD target/feature-probe-api-1.0.1.jar feature-probe-api-1.0.1.jar
-EXPOSE 4008
 ENTRYPOINT ["java", "-jar", "feature-probe-api-1.0.1.jar"]
