@@ -1,5 +1,6 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.EnvironmentCreateRequest
 import com.featureprobe.api.dto.EnvironmentUpdateRequest
@@ -62,8 +63,9 @@ class EnvironmentServiceSpec extends Specification {
         def ret = environmentService.create(projectKey, createRequest)
         then:
         1 * projectRepository.findByKey(projectKey) >>
-                Optional.of(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> false
+                new Optional<>(new Project(name: projectName, key: projectKey))
+        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 0
+        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 0
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         1 * toggleRepository.findAllByProjectKey(projectKey) >> [new Toggle(name: toggleName,
@@ -84,7 +86,7 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> true
+        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 1
         then:
         thrown ResourceConflictException
     }
@@ -96,6 +98,7 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
                 Optional.of(new Environment(name: environmentName, key: environmentKey))
+        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 0
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         with(ret) {
@@ -117,6 +120,24 @@ class EnvironmentServiceSpec extends Specification {
         then:
         "key001" == sdkServerKey
 
+    }
+
+    def "check environment key" () {
+        when:
+        environmentService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
+        then:
+        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 1
+        then:
+        thrown ResourceConflictException
+    }
+
+    def "check environment name" () {
+        when:
+        environmentService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
+        then:
+        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 1
+        then:
+        thrown ResourceConflictException
     }
 }
 

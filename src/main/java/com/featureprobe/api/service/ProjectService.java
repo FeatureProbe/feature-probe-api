@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +37,9 @@ public class ProjectService {
 
     @Transactional(rollbackFor = Exception.class)
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
+        if (StringUtils.isNotBlank(updateRequest.getName())) {
+            validateName(updateRequest.getName());
+        }
         Project project = projectRepository.findByKey(projectKey).get();
         ProjectMapper.INSTANCE.mapEntity(updateRequest, project);
         return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
@@ -42,9 +47,8 @@ public class ProjectService {
 
 
     private Project createProject(ProjectCreateRequest createRequest) {
-        if (projectRepository.existsByKey(createRequest.getKey())) {
-            throw new ResourceConflictException(ResourceType.PROJECT);
-        }
+        validateKey(createRequest.getKey());
+        validateName(createRequest.getName());
         Project createProject = ProjectMapper.INSTANCE.requestToEntity(createRequest);
         createProject.setDeleted(false);
         createProject.setEnvironments(createDefaultEnv(createProject));
@@ -67,6 +71,33 @@ public class ProjectService {
     public ProjectResponse queryByKey(String key) {
         Project project = projectRepository.findByKey(key).get();
         return ProjectMapper.INSTANCE.entityToResponse(project);
+    }
+
+    public void validateExists(ValidateTypeEnum type, String value) {
+
+        switch (type) {
+            case KEY:
+                validateKey(value);
+                break;
+            case NAME:
+                validateName(value);
+                break;
+            default:
+                break;
+        }
+
+    }
+
+    private void validateKey(String key) {
+        if (projectRepository.countByKeyIncludeDeleted(key) > 0) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
+    }
+
+    private void validateName(String name) {
+        if (projectRepository.countByNameIncludeDeleted(name) > 0) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
     }
 
     private List<Environment> createDefaultEnv(Project project) {

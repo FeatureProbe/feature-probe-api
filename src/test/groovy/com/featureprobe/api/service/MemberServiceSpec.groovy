@@ -30,7 +30,7 @@ class MemberServiceSpec extends Specification{
         def create = memberService.create(
                 new MemberCreateRequest(accounts: ["root"], password: "root"))
         then:
-        1 * memberRepository.findByAccountContainerDeleted("root") >> Optional.empty()
+        1 * memberRepository.findByAccountIncludeDeleted("root") >> Optional.empty()
         1 * memberRepository.saveAll(_) >> [new Member(account: "root", password: "password", role: RoleEnum.MEMBER)]
         with(create) {
             1 == create.size()
@@ -101,7 +101,7 @@ class MemberServiceSpec extends Specification{
         when:
         def query = memberService.query("root")
         then:
-        1 * memberRepository.findByAccountContainerDeleted("root") >> Optional.of(
+        1 * memberRepository.findByAccountIncludeDeleted("root") >> Optional.of(
                 new Member(account: "root", role: RoleEnum.MEMBER))
         with (query) {
             "root" == query.account

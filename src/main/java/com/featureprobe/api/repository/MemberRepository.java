@@ -15,6 +15,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> , JpaSpeci
     Optional<Member> findByAccount(String account);
 
     @Query(value = "SELECT * FROM member WHERE account = ?1", nativeQuery = true)
-    Optional<Member> findByAccountContainerDeleted(String account);
+    Optional<Member> findByAccountIncludeDeleted(String account);
     
 }

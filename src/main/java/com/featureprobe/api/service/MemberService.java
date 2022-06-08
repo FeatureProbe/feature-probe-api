@@ -48,7 +48,7 @@ public class MemberService {
     public List<MemberResponse> create(MemberCreateRequest createRequest) {
         List<Member> members = new ArrayList<>();
         createRequest.getAccounts().stream().forEach(account -> {
-            if (memberRepository.findByAccountContainerDeleted(account).isPresent()) {
+            if (memberRepository.findByAccountIncludeDeleted(account).isPresent()) {
                 throw new ResourceConflictException(ResourceType.MEMBER);
             }
             members.add(newMember(account, createRequest.getPassword()));
@@ -132,7 +132,7 @@ public class MemberService {
     }
 
     public MemberResponse query(String account) {
-        Member member = memberRepository.findByAccountContainerDeleted(account)
+        Member member = memberRepository.findByAccountIncludeDeleted(account)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.MEMBER, account));
         return MemberMapper.INSTANCE.entityToResponse(member);
     }

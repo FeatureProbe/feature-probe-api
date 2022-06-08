@@ -6,13 +6,16 @@ import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
+import com.featureprobe.api.base.enums.ResponseCodeEnum;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
+import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
-import com.featureprobe.api.service.ToggleService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
+import com.featureprobe.api.service.ToggleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -73,6 +77,16 @@ public class ToggleController {
     public ToggleResponse query(@PathVariable(name = "projectKey") String projectKey,
                                 @PathVariable(name = "toggleKey") String toggleKey) {
         return toggleService.queryByKey(projectKey, toggleKey);
+    }
+
+    @GetMapping("/exists")
+    @GetApiResponse
+    @Operation(summary = "Check toggle exist", description = "Check toggle exist")
+    public BaseResponse checkKey(@PathVariable("projectKey") String projectKey,
+                                 @RequestParam ValidateTypeEnum type,
+                                 @RequestParam String value){
+        toggleService.validateExists(projectKey, type, value);
+        return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 
 }

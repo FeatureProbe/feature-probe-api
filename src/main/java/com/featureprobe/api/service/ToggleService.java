@@ -1,12 +1,13 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
-import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
+import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
@@ -17,8 +18,8 @@ import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.Toggle;
 import com.featureprobe.api.entity.ToggleTagRelation;
 import com.featureprobe.api.mapper.ToggleMapper;
-import com.featureprobe.api.model.ServerToggleBuilder;
 import com.featureprobe.api.model.TargetingContent;
+import com.featureprobe.api.model.ServerToggleBuilder;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
 import com.featureprobe.api.repository.TagRepository;
@@ -74,27 +75,19 @@ public class ToggleService {
     public ToggleResponse create(String projectKey, ToggleCreateRequest createRequest) {
         Toggle toggle = createToggle(projectKey, createRequest);
         createDefaultTargetingEntities(projectKey, toggle);
-
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        validateExists(projectKey, createRequest.getKey());
-
+        validateKey(projectKey, createRequest.getKey());
+        validateName(projectKey, createRequest.getName());
         Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
         toggle.setProjectKey(projectKey);
         toggle.setDeleted(false);
         toggle.setArchived(false);
         setToggleTagRefs(toggle, createRequest.getTags());
-
         toggleRepository.save(toggle);
         return toggle;
-    }
-
-    private void validateExists(String projectKey, String toggleKey) {
-        if (toggleRepository.existsByProjectKeyAndKey(projectKey, toggleKey)) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
-        }
     }
 
     private void createDefaultTargetingEntities(String projectKey, Toggle toggle) {
@@ -125,7 +118,9 @@ public class ToggleService {
     @Transactional(rollbackFor = Exception.class)
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
-
+        if(StringUtils.isNotBlank(updateRequest.getName())) {
+            validateName(projectKey, updateRequest.getName());
+        }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);
         setToggleTagRefs(toggle, updateRequest.getTags());
 
@@ -311,4 +306,31 @@ public class ToggleService {
 
         }).filter(Objects::nonNull).collect(Collectors.toList()), Collections.emptyList());
     }
+
+    public void validateExists(String projectKey, ValidateTypeEnum type, String  value) {
+        switch (type) {
+            case KEY:
+                validateKey(projectKey, value);
+                break;
+            case NAME:
+                validateName(projectKey, value);
+                break;
+            default:
+                break;
+        }
+    }
+
+
+    private void validateKey(String projectKey, String key) {
+        if (toggleRepository.countByKeyIncludeDeleted(projectKey, key) > 0) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
+    private void validateName(String projectKey, String name) {
+        if (toggleRepository.countByNameIncludeDeleted(projectKey, name) > 0) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
 }
