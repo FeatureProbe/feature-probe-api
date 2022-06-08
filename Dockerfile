@@ -1,7 +1,7 @@
 FROM maven:3.6.1-jdk-8-alpine AS builder 
 COPY ./ ./
 
-RUN unset MAVEN_CONFIG && env && ./mvnw package
+RUN mvn clean package 
 
 FROM openjdk:8-jre-alpine
 RUN apk --no-cache add curl
