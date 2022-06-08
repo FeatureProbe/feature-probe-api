@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
@@ -312,17 +313,23 @@ public class ToggleService {
         }).filter(Objects::nonNull).collect(Collectors.toList()), Collections.emptyList());
     }
 
-    public void checkKey(String projectKey, String  key) {
-        List<Toggle> toggles = toggleRepository.findByKeyIncludeDeleted(projectKey, key);
-        if (!CollectionUtils.isEmpty(toggles)) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
+    public void exists(String projectKey, ValidateTypeEnum type, String  value) {
+        switch (type) {
+            case KEY:
+                List<Toggle> togglesByKey = toggleRepository.findByKeyIncludeDeleted(projectKey, value);
+                if (!CollectionUtils.isEmpty(togglesByKey)) {
+                    throw new ResourceConflictException(ResourceType.TOGGLE);
+                }
+                break;
+            case NAME:
+                List<Toggle> togglesByName = toggleRepository.findByNameIncludeDeleted(projectKey, value);
+                if (!CollectionUtils.isEmpty(togglesByName)) {
+                    throw new ResourceConflictException(ResourceType.TOGGLE);
+                }
+                break;
+            default:
+                break;
         }
     }
 
-    public void checkName(String projectKey, String name) {
-        List<Toggle> toggles = toggleRepository.findByNameIncludeDeleted(projectKey, name);
-        if (!CollectionUtils.isEmpty(toggles)) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
-        }
-    }
 }

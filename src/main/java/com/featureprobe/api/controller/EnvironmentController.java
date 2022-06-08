@@ -5,6 +5,7 @@ import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.enums.ResponseCodeEnum;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
 import com.featureprobe.api.dto.EnvironmentResponse;
@@ -51,21 +52,13 @@ public class EnvironmentController {
         return environmentService.update(projectKey, environmentKey, updateRequest);
     }
 
-    @GetMapping("/checkKey")
+    @GetMapping("/exists")
     @GetApiResponse
-    @Operation(summary = "Check environment key", description = "Check environment exist by key")
-    public BaseResponse checkKey(@PathVariable("projectKey") String projectKey,
-                                 @RequestParam String key) {
-        environmentService.checkKey(projectKey, key);
-        return new BaseResponse(ResponseCodeEnum.SUCCESS);
-    }
-
-    @GetMapping("/checkName")
-    @GetApiResponse
-    @Operation(summary = "Check environment name", description = "Check environment exist by name")
-    public BaseResponse checkName(@PathVariable("projectKey") String projectKey,
-                                  @RequestParam String name) {
-        environmentService.checkName(projectKey, name);
+    @Operation(summary = "Check environment exist", description = "Check environment exist")
+    public BaseResponse exists(@PathVariable("projectKey") String projectKey,
+                               @RequestParam ValidateTypeEnum type,
+                               @RequestParam String value) {
+        environmentService.exists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

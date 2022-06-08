@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
@@ -70,18 +71,25 @@ public class ProjectService {
         return ProjectMapper.INSTANCE.entityToResponse(project);
     }
 
-    public void checkKey(String key) {
-        List<Project> projects = projectRepository.findByKeyIncludeDeleted(key);
-        if (!CollectionUtils.isEmpty(projects)) {
-            throw new ResourceConflictException(ResourceType.PROJECT);
-        }
-    }
+    public void exists(ValidateTypeEnum type, String value) {
 
-    public void checkName(String name) {
-        List<Project> projects = projectRepository.findByNameIncludeDeleted(name);
-        if (!CollectionUtils.isEmpty(projects)) {
-            throw new ResourceConflictException(ResourceType.PROJECT);
+        switch (type) {
+            case KEY:
+                List<Project> projectsByKey = projectRepository.findByKeyIncludeDeleted(value);
+                if (!CollectionUtils.isEmpty(projectsByKey)) {
+                    throw new ResourceConflictException(ResourceType.PROJECT);
+                }
+                break;
+            case NAME:
+                List<Project> projectsByName = projectRepository.findByNameIncludeDeleted(value);
+                if (!CollectionUtils.isEmpty(projectsByName)) {
+                    throw new ResourceConflictException(ResourceType.PROJECT);
+                }
+                break;
+            default:
+                break;
         }
+
     }
 
     private List<Environment> createDefaultEnv(Project project) {

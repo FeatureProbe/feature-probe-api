@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
@@ -80,18 +81,24 @@ public class EnvironmentService {
                 .getServerSdkKey();
     }
 
-    public void checkKey(String projectKey, String key) {
-        List<Environment> environments = environmentRepository.findByKeyIncludeDeleted(projectKey, key);
-        if (!CollectionUtils.isEmpty(environments)) {
-            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+    public void exists(String projectKey, ValidateTypeEnum type, String value) {
+        switch (type) {
+            case KEY:
+                List<Environment> environmentsByKey = environmentRepository.findByKeyIncludeDeleted(projectKey, value);
+                if (!CollectionUtils.isEmpty(environmentsByKey)) {
+                    throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+                }
+                break;
+            case NAME:
+                List<Environment> environmentsByName = environmentRepository.findByNameIncludeDeleted(projectKey, value);
+                if (!CollectionUtils.isEmpty(environmentsByName)) {
+                    throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+                }
+                break;
+            default:
+                break;
         }
-    }
 
-    public void checkName(String projectKey, String name) {
-        List<Environment> environments = environmentRepository.findByNameIncludeDeleted(projectKey, name);
-        if (!CollectionUtils.isEmpty(environments)) {
-            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
-        }
     }
 
     private void initEnvironmentTargeting(String projectKey, String environmentKey) {

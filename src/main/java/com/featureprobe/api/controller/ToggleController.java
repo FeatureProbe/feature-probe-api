@@ -7,6 +7,7 @@ import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
 import com.featureprobe.api.base.enums.ResponseCodeEnum;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
@@ -78,21 +79,13 @@ public class ToggleController {
         return toggleService.queryByKey(projectKey, toggleKey);
     }
 
-    @GetMapping("/checkKey")
+    @GetMapping("/exists")
     @GetApiResponse
-    @Operation(summary = "Check toggle key", description = "Check toggle exist by key")
+    @Operation(summary = "Check toggle exist", description = "Check toggle exist")
     public BaseResponse checkKey(@PathVariable("projectKey") String projectKey,
-                                 @RequestParam String key){
-        toggleService.checkKey(projectKey, key);
-        return new BaseResponse(ResponseCodeEnum.SUCCESS);
-    }
-
-    @GetMapping("/checkName")
-    @GetApiResponse
-    @Operation(summary = "Check toggle name", description = "Check toggle exist by name")
-    public BaseResponse checkName(@PathVariable("projectKey") String projectKey,
-                                 @RequestParam String name){
-        toggleService.checkName(projectKey, name);
+                                 @RequestParam ValidateTypeEnum type,
+                                 @RequestParam String value){
+        toggleService.exists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

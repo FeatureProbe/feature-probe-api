@@ -6,6 +6,7 @@ import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.enums.ResponseCodeEnum;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
@@ -71,20 +72,15 @@ public class ProjectController {
         return projectService.queryByKey(projectKey);
     }
 
-    @GetMapping("/checkKey")
+    @GetMapping("/exists")
     @GetApiResponse
-    @Operation(summary = "Check project key", description = "Check project exist by key")
-    public BaseResponse checkKey(@RequestParam String key) {
-        projectService.checkKey(key);
+    @Operation(summary = "Check project exist", description = "Check project exist")
+    public BaseResponse exists(
+            @RequestParam ValidateTypeEnum type,
+            @RequestParam String value) {
+        projectService.exists(type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 
-    @GetMapping("/checkName")
-    @GetApiResponse
-    @Operation(summary = "Check project name", description = "Check project exist by name")
-    public BaseResponse checkName(@RequestParam String name) {
-        projectService.checkName(name);
-        return new BaseResponse(ResponseCodeEnum.SUCCESS);
-    }
     
 }
