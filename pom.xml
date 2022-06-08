@@ -85,7 +85,7 @@
             <version>2.11.0</version>
         </dependency>
         <dependency>
-            <groupId>com.github.FeatureProbe</groupId>
+            <groupId>com.featureprobe</groupId>
             <artifactId>server-sdk-java</artifactId>
             <version>1.0.1</version>
         </dependency>
