@@ -58,7 +58,7 @@ public class EnvironmentController {
     public BaseResponse exists(@PathVariable("projectKey") String projectKey,
                                @RequestParam ValidateTypeEnum type,
                                @RequestParam String value) {
-        environmentService.exists(projectKey, type, value);
+        environmentService.validateExists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

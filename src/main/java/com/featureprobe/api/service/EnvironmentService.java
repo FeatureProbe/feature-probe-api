@@ -23,7 +23,6 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,8 +50,8 @@ public class EnvironmentService {
     @Transactional(rollbackFor = Exception.class)
     public EnvironmentResponse create(String projectKey, EnvironmentCreateRequest createRequest) {
         Project project = projectRepository.findByKey(projectKey).get();
-        exists(projectKey, ValidateTypeEnum.KEY, createRequest.getKey());
-        exists(projectKey, ValidateTypeEnum.NAME, createRequest.getName());
+        validateKey(projectKey, createRequest.getKey());
+        validateName(projectKey, createRequest.getName());
         Environment environment = EnvironmentMapper.INSTANCE.requestToEntity(createRequest);
         environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
         environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
@@ -66,7 +65,7 @@ public class EnvironmentService {
                                       EnvironmentUpdateRequest updateRequest) {
         Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
         if (StringUtils.isNotBlank(updateRequest.getName())) {
-            exists(projectKey, ValidateTypeEnum.NAME, updateRequest.getName());
+            validateName(projectKey, updateRequest.getName());
         }
         EnvironmentMapper.INSTANCE.mapEntity(updateRequest, environment);
         if (updateRequest.isResetServerSdk()) {
@@ -84,24 +83,30 @@ public class EnvironmentService {
                 .getServerSdkKey();
     }
 
-    public void exists(String projectKey, ValidateTypeEnum type, String value) {
+    public void validateExists(String projectKey, ValidateTypeEnum type, String value) {
         switch (type) {
             case KEY:
-                List<Environment> environmentsByKey = environmentRepository.findByKeyIncludeDeleted(projectKey, value);
-                if (!CollectionUtils.isEmpty(environmentsByKey)) {
-                    throw new ResourceConflictException(ResourceType.ENVIRONMENT);
-                }
+                validateKey(projectKey, value);
                 break;
             case NAME:
-                List<Environment> environmentsByName = environmentRepository.findByNameIncludeDeleted(projectKey, value);
-                if (!CollectionUtils.isEmpty(environmentsByName)) {
-                    throw new ResourceConflictException(ResourceType.ENVIRONMENT);
-                }
+                validateName(projectKey, value);
                 break;
             default:
                 break;
         }
 
+    }
+
+    private void validateKey(String projectKey, String key) {
+        if (environmentRepository.countByKeyIncludeDeleted(projectKey, key) > 0) {
+            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+        }
+    }
+
+    private void validateName(String projectKey, String name) {
+        if (environmentRepository.countByNameIncludeDeleted(projectKey, name) > 0) {
+            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+        }
     }
 
     private void initEnvironmentTargeting(String projectKey, String environmentKey) {

@@ -23,9 +23,9 @@ public interface EnvironmentRepository extends JpaRepository<Environment, Long> 
 
     Optional<Environment> findByProjectKeyAndKey(String projectKey, String key);
 
-    @Query(value = "SELECT * FROM environment WHERE project_key = ?1 AND `key` = ?2", nativeQuery = true)
-    List<Environment> findByKeyIncludeDeleted(String projectKey, String key);
+    @Query(value = "SELECT count(id) FROM environment WHERE project_key = ?1 AND `key` = ?2", nativeQuery = true)
+    int countByKeyIncludeDeleted(String projectKey, String key);
 
-    @Query(value = "SELECT * FROM environment WHERE project_key = ?1 AND name = ?2", nativeQuery = true)
-    List<Environment> findByNameIncludeDeleted(String projectKey, String name);
+    @Query(value = "SELECT count(id) FROM environment WHERE project_key = ?1 AND name = ?2", nativeQuery = true)
+    int countByNameIncludeDeleted(String projectKey, String name);
 }

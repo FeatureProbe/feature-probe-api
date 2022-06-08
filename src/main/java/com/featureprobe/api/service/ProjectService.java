@@ -38,7 +38,7 @@ public class ProjectService {
     @Transactional(rollbackFor = Exception.class)
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
         if (StringUtils.isNotBlank(updateRequest.getName())) {
-            exists(ValidateTypeEnum.NAME, updateRequest.getName());
+            validateName(updateRequest.getName());
         }
         Project project = projectRepository.findByKey(projectKey).get();
         ProjectMapper.INSTANCE.mapEntity(updateRequest, project);
@@ -47,8 +47,8 @@ public class ProjectService {
 
 
     private Project createProject(ProjectCreateRequest createRequest) {
-        exists(ValidateTypeEnum.KEY, createRequest.getKey());
-        exists(ValidateTypeEnum.NAME, createRequest.getName());
+        validateKey(createRequest.getKey());
+        validateName(createRequest.getName());
         Project createProject = ProjectMapper.INSTANCE.requestToEntity(createRequest);
         createProject.setDeleted(false);
         createProject.setEnvironments(createDefaultEnv(createProject));
@@ -73,25 +73,31 @@ public class ProjectService {
         return ProjectMapper.INSTANCE.entityToResponse(project);
     }
 
-    public void exists(ValidateTypeEnum type, String value) {
+    public void validateExists(ValidateTypeEnum type, String value) {
 
         switch (type) {
             case KEY:
-                List<Project> projectsByKey = projectRepository.findByKeyIncludeDeleted(value);
-                if (!CollectionUtils.isEmpty(projectsByKey)) {
-                    throw new ResourceConflictException(ResourceType.PROJECT);
-                }
+                validateKey(value);
                 break;
             case NAME:
-                List<Project> projectsByName = projectRepository.findByNameIncludeDeleted(value);
-                if (!CollectionUtils.isEmpty(projectsByName)) {
-                    throw new ResourceConflictException(ResourceType.PROJECT);
-                }
+                validateName(value);
                 break;
             default:
                 break;
         }
 
+    }
+
+    private void validateKey(String key) {
+        if (projectRepository.countByKeyIncludeDeleted(key) > 0) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
+    }
+
+    private void validateName(String name) {
+        if (projectRepository.countByNameIncludeDeleted(name) > 0) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
     }
 
     private List<Environment> createDefaultEnv(Project project) {

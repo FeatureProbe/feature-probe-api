@@ -1,5 +1,6 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.ToggleCreateRequest
 import com.featureprobe.api.dto.ToggleSearchRequest
@@ -110,6 +111,8 @@ class ToggleServiceSpec extends Specification {
 
         then:
         response
+        1 * toggleRepository.countByKeyIncludeDeleted(projectKey, toggleKey) >> 0
+        1 * toggleRepository.countByNameIncludeDeleted(projectKey, "toggle1") >> 0
         1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "test"), new Environment(key: "online")]
         1 * toggleRepository.save(_ as Toggle) >> { it -> savedToggle = it[0] }
         1 * targetingRepository.saveAll(_ as List<Targeting>) >> { it -> savedTargetingList = it[0] }
@@ -119,20 +122,6 @@ class ToggleServiceSpec extends Specification {
             "tg1" == tags[0].name
         }
         2 == savedTargetingList.size()
-    }
-
-
-    def "create toggle failed if key existed"() {
-        given:
-        toggleRepository.existsByProjectKeyAndKey(projectKey, toggleKey) >> true
-
-        when:
-        toggleService.create(projectKey,
-                new ToggleCreateRequest(name: "toggle1", key: toggleKey, tags: ["tg1", "tg2"]))
-
-        then:
-        thrown ResourceConflictException
-
     }
 
 
@@ -147,6 +136,7 @@ class ToggleServiceSpec extends Specification {
         response
         1 * toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey) >> Optional.of(new Toggle(projectKey: projectKey,
                 key: toggleKey, name: "toggle1", desc: "init"))
+        1 * toggleRepository.countByNameIncludeDeleted(projectKey, "toggle2") >> 0
         1 * toggleRepository.save(_ as Toggle) >> { it -> updatedToggle = it[0] }
         1 * tagRepository.findByProjectKeyAndNameIn(projectKey, ["tg1", "tg2"]) >> [new Tag(name: "tg1")]
         with(updatedToggle) {
@@ -159,20 +149,18 @@ class ToggleServiceSpec extends Specification {
 
     def "check toggle key" () {
         when:
-        toggleService.checkKey(projectKey, toggleKey)
+        toggleService.validateExists(projectKey, ValidateTypeEnum.KEY, toggleKey)
         then:
-        toggleRepository.findByKeyIncludeDeleted(projectKey, toggleKey) >> [new Toggle(projectKey: projectKey,
-                key: toggleKey, name: toggleName)]
+        toggleRepository.countByKeyIncludeDeleted(projectKey, toggleKey) >> 1
         then:
         thrown ResourceConflictException
     }
 
     def "check toggle name" () {
         when:
-        toggleService.checkName(projectKey, toggleName)
+        toggleService.validateExists(projectKey, ValidateTypeEnum.NAME, toggleName)
         then:
-        1 * toggleRepository.findByNameIncludeDeleted(projectKey, toggleName) >> [new Toggle(projectKey: projectKey,
-                key: toggleKey, name: toggleName)]
+        1 * toggleRepository.countByNameIncludeDeleted(projectKey, toggleName) >> 1
         then:
         thrown ResourceConflictException
     }

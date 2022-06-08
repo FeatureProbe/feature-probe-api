@@ -36,9 +36,9 @@ public interface ToggleRepository extends JpaRepository<Toggle, Long>, JpaSpecif
 
     List<Toggle> findAllByProjectKey(String projectKey);
 
-    @Query(value = "SELECT * FROM toggle WHERE project_key = ?1 AND `key` = ?2", nativeQuery = true)
-    List<Toggle> findByKeyIncludeDeleted(String projectKey, String key);
+    @Query(value = "SELECT count(id) FROM toggle WHERE project_key = ?1 AND `key` = ?2", nativeQuery = true)
+    int countByKeyIncludeDeleted(String projectKey, String key);
 
-    @Query(value = "SELECT * FROM toggle WHERE project_key = ?1 AND name = ?2", nativeQuery = true)
-    List<Toggle> findByNameIncludeDeleted(String projectKey, String name);
+    @Query(value = "SELECT count(id) FROM toggle WHERE project_key = ?1 AND name = ?2", nativeQuery = true)
+    int countByNameIncludeDeleted(String projectKey, String name);
 }

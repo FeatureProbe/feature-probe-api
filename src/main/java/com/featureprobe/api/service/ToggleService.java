@@ -79,22 +79,15 @@ public class ToggleService {
     }
 
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        exists(projectKey, ValidateTypeEnum.KEY, createRequest.getKey());
-        exists(projectKey, ValidateTypeEnum.NAME, createRequest.getName());
+        validateKey(projectKey, createRequest.getKey());
+        validateName(projectKey, createRequest.getName());
         Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
         toggle.setProjectKey(projectKey);
         toggle.setDeleted(false);
         toggle.setArchived(false);
         setToggleTagRefs(toggle, createRequest.getTags());
-
         toggleRepository.save(toggle);
         return toggle;
-    }
-
-    private void validateExists(String projectKey, String toggleKey) {
-        if (toggleRepository.existsByProjectKeyAndKey(projectKey, toggleKey)) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
-        }
     }
 
     private void createDefaultTargetingEntities(String projectKey, Toggle toggle) {
@@ -126,7 +119,7 @@ public class ToggleService {
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
         if(StringUtils.isNotBlank(updateRequest.getName())) {
-            exists(projectKey, ValidateTypeEnum.NAME, updateRequest.getName());
+            validateName(projectKey, updateRequest.getName());
         }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);
         setToggleTagRefs(toggle, updateRequest.getTags());
@@ -314,22 +307,29 @@ public class ToggleService {
         }).filter(Objects::nonNull).collect(Collectors.toList()), Collections.emptyList());
     }
 
-    public void exists(String projectKey, ValidateTypeEnum type, String  value) {
+    public void validateExists(String projectKey, ValidateTypeEnum type, String  value) {
         switch (type) {
             case KEY:
-                List<Toggle> togglesByKey = toggleRepository.findByKeyIncludeDeleted(projectKey, value);
-                if (!CollectionUtils.isEmpty(togglesByKey)) {
-                    throw new ResourceConflictException(ResourceType.TOGGLE);
-                }
+                validateKey(projectKey, value);
                 break;
             case NAME:
-                List<Toggle> togglesByName = toggleRepository.findByNameIncludeDeleted(projectKey, value);
-                if (!CollectionUtils.isEmpty(togglesByName)) {
-                    throw new ResourceConflictException(ResourceType.TOGGLE);
-                }
+                validateName(projectKey, value);
                 break;
             default:
                 break;
+        }
+    }
+
+
+    private void validateKey(String projectKey, String key) {
+        if (toggleRepository.countByKeyIncludeDeleted(projectKey, key) > 0) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
+    private void validateName(String projectKey, String name) {
+        if (toggleRepository.countByNameIncludeDeleted(projectKey, name) > 0) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
         }
     }
 

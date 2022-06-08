@@ -1,12 +1,12 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.ProjectCreateRequest
 import com.featureprobe.api.dto.ProjectQueryRequest
 import com.featureprobe.api.dto.ProjectUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
-import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.ProjectRepository
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.util.CollectionUtils
@@ -57,7 +57,8 @@ class ProjectServiceSpec extends Specification {
         when:
         def ret = projectService.create(createRequest)
         then:
-        1 * projectRepository.existsByKey(projectKey) >> false
+        1 * projectRepository.countByKeyIncludeDeleted(projectKey) >> 0
+        1 * projectRepository.countByNameIncludeDeleted(projectName) >> 0
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey,
                 environments: [new Environment()])
         with(ret) {
@@ -67,19 +68,11 @@ class ProjectServiceSpec extends Specification {
         }
     }
 
-    def "create project key exist" () {
-        when:
-        def ret = projectService.create(createRequest)
-        then:
-        1 * projectRepository.existsByKey(projectKey) >> true
-        then:
-        thrown ResourceConflictException
-    }
-
     def "update project" () {
         when:
         def ret = projectService.update(projectKey, projectUpdateRequest)
         then:
+        1 * projectRepository.countByNameIncludeDeleted(projectName) >> 0
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey))
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey)
@@ -91,18 +84,18 @@ class ProjectServiceSpec extends Specification {
 
     def "check project key" () {
         when:
-        projectService.checkKey(projectKey)
+        projectService.validateExists(ValidateTypeEnum.KEY, projectKey)
         then:
-        1 * projectRepository.findByKeyIncludeDeleted(projectKey) >> [new Project(name: projectName, key: projectKey)]
+        1 * projectRepository.countByKeyIncludeDeleted(projectKey) >> 1
         then:
         thrown ResourceConflictException
     }
 
     def "check project name" () {
         when:
-        projectService.checkName(projectName)
+        projectService.validateExists(ValidateTypeEnum.NAME, projectName)
         then:
-        1 * projectRepository.findByNameIncludeDeleted(projectName) >> [new Project(name: projectName, key: projectKey)]
+        1 * projectRepository.countByNameIncludeDeleted(projectName) >> 1
         then:
         thrown ResourceConflictException
     }

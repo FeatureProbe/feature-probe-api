@@ -85,7 +85,7 @@ public class ToggleController {
     public BaseResponse checkKey(@PathVariable("projectKey") String projectKey,
                                  @RequestParam ValidateTypeEnum type,
                                  @RequestParam String value){
-        toggleService.exists(projectKey, type, value);
+        toggleService.validateExists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

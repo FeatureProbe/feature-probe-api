@@ -78,7 +78,7 @@ public class ProjectController {
     public BaseResponse exists(
             @RequestParam ValidateTypeEnum type,
             @RequestParam String value) {
-        projectService.exists(type, value);
+        projectService.validateExists(type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 
