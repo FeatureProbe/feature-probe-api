@@ -1,0 +1,5 @@
+reviewers:
+owners: qihe,zhangshibo,jianggang,dengfeige,fengshang
+strategy: ownerOne
+force: master
+exceptSelfAccept: true
