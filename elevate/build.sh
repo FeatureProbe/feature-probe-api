@@ -3,7 +3,7 @@
 export JAVA_HOME=/usr/local/jdk1.8.0_65
 export PATH=$JAVA_HOME/bin:$PATH
 
-mvn clean package
+mvn clean package -f ../pom.xml
 
 ret=$?
 if [ $ret -ne 0 ];then
