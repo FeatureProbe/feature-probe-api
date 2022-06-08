@@ -75,13 +75,12 @@ public class ToggleService {
     public ToggleResponse create(String projectKey, ToggleCreateRequest createRequest) {
         Toggle toggle = createToggle(projectKey, createRequest);
         createDefaultTargetingEntities(projectKey, toggle);
-
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        validateExists(projectKey, createRequest.getKey());
-
+        exists(projectKey, ValidateTypeEnum.KEY, createRequest.getKey());
+        exists(projectKey, ValidateTypeEnum.NAME, createRequest.getName());
         Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
         toggle.setProjectKey(projectKey);
         toggle.setDeleted(false);
@@ -126,7 +125,9 @@ public class ToggleService {
     @Transactional(rollbackFor = Exception.class)
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
-
+        if(StringUtils.isNotBlank(updateRequest.getName())) {
+            exists(projectKey, ValidateTypeEnum.NAME, updateRequest.getName());
+        }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);
         setToggleTagRefs(toggle, updateRequest.getTags());
 

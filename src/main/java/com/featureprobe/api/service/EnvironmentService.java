@@ -20,6 +20,7 @@ import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.util.SdkKeyGenerateUtil;
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -50,9 +51,8 @@ public class EnvironmentService {
     @Transactional(rollbackFor = Exception.class)
     public EnvironmentResponse create(String projectKey, EnvironmentCreateRequest createRequest) {
         Project project = projectRepository.findByKey(projectKey).get();
-        if (environmentRepository.existsByProjectKeyAndKey(projectKey, createRequest.getKey())) {
-            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
-        }
+        exists(projectKey, ValidateTypeEnum.KEY, createRequest.getKey());
+        exists(projectKey, ValidateTypeEnum.NAME, createRequest.getName());
         Environment environment = EnvironmentMapper.INSTANCE.requestToEntity(createRequest);
         environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
         environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
@@ -65,6 +65,9 @@ public class EnvironmentService {
     public EnvironmentResponse update(String projectKey, String environmentKey,
                                       EnvironmentUpdateRequest updateRequest) {
         Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
+        if (StringUtils.isNotBlank(updateRequest.getName())) {
+            exists(projectKey, ValidateTypeEnum.NAME, updateRequest.getName());
+        }
         EnvironmentMapper.INSTANCE.mapEntity(updateRequest, environment);
         if (updateRequest.isResetServerSdk()) {
             environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());

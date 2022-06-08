@@ -37,6 +37,9 @@ public class ProjectService {
 
     @Transactional(rollbackFor = Exception.class)
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
+        if (StringUtils.isNotBlank(updateRequest.getName())) {
+            exists(ValidateTypeEnum.NAME, updateRequest.getName());
+        }
         Project project = projectRepository.findByKey(projectKey).get();
         ProjectMapper.INSTANCE.mapEntity(updateRequest, project);
         return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
@@ -44,9 +47,8 @@ public class ProjectService {
 
 
     private Project createProject(ProjectCreateRequest createRequest) {
-        if (projectRepository.existsByKey(createRequest.getKey())) {
-            throw new ResourceConflictException(ResourceType.PROJECT);
-        }
+        exists(ValidateTypeEnum.KEY, createRequest.getKey());
+        exists(ValidateTypeEnum.NAME, createRequest.getName());
         Project createProject = ProjectMapper.INSTANCE.requestToEntity(createRequest);
         createProject.setDeleted(false);
         createProject.setEnvironments(createDefaultEnv(createProject));
