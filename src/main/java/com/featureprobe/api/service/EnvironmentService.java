@@ -21,6 +21,7 @@ import com.featureprobe.api.util.SdkKeyGenerateUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -77,6 +78,20 @@ public class EnvironmentService {
         return environmentRepository.findByServerSdkKeyOrClientSdkKey(serverKeyOrClientKey, serverKeyOrClientKey)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, serverKeyOrClientKey))
                 .getServerSdkKey();
+    }
+
+    public void checkKey(String projectKey, String key) {
+        List<Environment> environments = environmentRepository.findByKeyIncludeDeleted(projectKey, key);
+        if (!CollectionUtils.isEmpty(environments)) {
+            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+        }
+    }
+
+    public void checkName(String projectKey, String name) {
+        List<Environment> environments = environmentRepository.findByNameIncludeDeleted(projectKey, name);
+        if (!CollectionUtils.isEmpty(environments)) {
+            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+        }
     }
 
     private void initEnvironmentTargeting(String projectKey, String environmentKey) {

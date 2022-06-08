@@ -2,9 +2,9 @@ package com.featureprobe.api.base.exception;
 
 
 import com.featureprobe.api.base.constants.ResponseCode;
-import com.featureprobe.api.dto.ErrorResponse;
-import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.util.I18nUtil;
+import com.featureprobe.api.mapper.JsonMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -55,7 +55,7 @@ public class WebExceptionAspect {
     }
 
     private String toErrorResponse(ResponseCode responseCode, String message) {
-        return JsonMapper.toJSONString(new ErrorResponse(responseCode.code(), message));
+        return JsonMapper.toJSONString(new BaseResponse(responseCode.code(), message));
     }
 
 }

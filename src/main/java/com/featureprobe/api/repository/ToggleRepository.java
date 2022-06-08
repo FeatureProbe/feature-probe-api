@@ -35,4 +35,10 @@ public interface ToggleRepository extends JpaRepository<Toggle, Long>, JpaSpecif
                                   Set<String> toggleKeys, Pageable pageable);
 
     List<Toggle> findAllByProjectKey(String projectKey);
+
+    @Query(value = "SELECT * FROM toggle WHERE project_key = ?1 AND `key` = ?2", nativeQuery = true)
+    List<Toggle> findByKeyIncludeDeleted(String projectKey, String key);
+
+    @Query(value = "SELECT * FROM toggle WHERE project_key = ?1 AND name = ?2", nativeQuery = true)
+    List<Toggle> findByNameIncludeDeleted(String projectKey, String name);
 }

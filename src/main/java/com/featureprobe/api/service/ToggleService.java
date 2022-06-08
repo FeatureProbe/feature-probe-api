@@ -4,9 +4,9 @@ import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
-import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
+import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
@@ -17,8 +17,8 @@ import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.Toggle;
 import com.featureprobe.api.entity.ToggleTagRelation;
 import com.featureprobe.api.mapper.ToggleMapper;
-import com.featureprobe.api.model.ServerToggleBuilder;
 import com.featureprobe.api.model.TargetingContent;
+import com.featureprobe.api.model.ServerToggleBuilder;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
 import com.featureprobe.api.repository.TagRepository;
@@ -310,5 +310,19 @@ public class ToggleService {
             }
 
         }).filter(Objects::nonNull).collect(Collectors.toList()), Collections.emptyList());
+    }
+
+    public void checkKey(String projectKey, String  key) {
+        List<Toggle> toggles = toggleRepository.findByKeyIncludeDeleted(projectKey, key);
+        if (!CollectionUtils.isEmpty(toggles)) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
+    public void checkName(String projectKey, String name) {
+        List<Toggle> toggles = toggleRepository.findByNameIncludeDeleted(projectKey, name);
+        if (!CollectionUtils.isEmpty(toggles)) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
     }
 }

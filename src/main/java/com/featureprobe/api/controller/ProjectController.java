@@ -5,6 +5,8 @@ import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
+import com.featureprobe.api.base.enums.ResponseCodeEnum;
+import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
 import com.featureprobe.api.dto.ProjectResponse;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -67,4 +70,21 @@ public class ProjectController {
             @PathVariable("projectKey") String projectKey) {
         return projectService.queryByKey(projectKey);
     }
+
+    @GetMapping("/checkKey")
+    @GetApiResponse
+    @Operation(summary = "Check project key", description = "Check project exist by key")
+    public BaseResponse checkKey(@RequestParam String key) {
+        projectService.checkKey(key);
+        return new BaseResponse(ResponseCodeEnum.SUCCESS);
+    }
+
+    @GetMapping("/checkName")
+    @GetApiResponse
+    @Operation(summary = "Check project name", description = "Check project exist by name")
+    public BaseResponse checkName(@RequestParam String name) {
+        projectService.checkName(name);
+        return new BaseResponse(ResponseCodeEnum.SUCCESS);
+    }
+    
 }

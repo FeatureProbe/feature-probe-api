@@ -6,6 +6,7 @@ import com.featureprobe.api.dto.ProjectQueryRequest
 import com.featureprobe.api.dto.ProjectUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
+import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.ProjectRepository
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.util.CollectionUtils
@@ -87,5 +88,24 @@ class ProjectServiceSpec extends Specification {
             projectKey == it.key
         }
     }
+
+    def "check project key" () {
+        when:
+        projectService.checkKey(projectKey)
+        then:
+        1 * projectRepository.findByKeyIncludeDeleted(projectKey) >> [new Project(name: projectName, key: projectKey)]
+        then:
+        thrown ResourceConflictException
+    }
+
+    def "check project name" () {
+        when:
+        projectService.checkName(projectName)
+        then:
+        1 * projectRepository.findByNameIncludeDeleted(projectName) >> [new Project(name: projectName, key: projectKey)]
+        then:
+        thrown ResourceConflictException
+    }
+
 }
 

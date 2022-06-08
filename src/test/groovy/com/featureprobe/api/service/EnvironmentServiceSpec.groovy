@@ -62,7 +62,7 @@ class EnvironmentServiceSpec extends Specification {
         def ret = environmentService.create(projectKey, createRequest)
         then:
         1 * projectRepository.findByKey(projectKey) >>
-                Optional.of(new Project(name: projectName, key: projectKey))
+                new Optional<>(new Project(name: projectName, key: projectKey))
         1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
@@ -117,6 +117,26 @@ class EnvironmentServiceSpec extends Specification {
         then:
         "key001" == sdkServerKey
 
+    }
+
+    def "check environment key" () {
+        when:
+        environmentService.checkKey(projectKey, environmentKey)
+        then:
+        1 * environmentRepository.findByKeyIncludeDeleted(projectKey, environmentKey) >>
+                [new Environment(name: environmentName, key: environmentKey)]
+        then:
+        thrown ResourceConflictException
+    }
+
+    def "check environment name" () {
+        when:
+        environmentService.checkName(projectKey, environmentName)
+        then:
+        1 * environmentRepository.findByNameIncludeDeleted(projectKey, environmentName) >>
+                [new Environment(name: environmentName, key: environmentKey)]
+        then:
+        thrown ResourceConflictException
     }
 }
 

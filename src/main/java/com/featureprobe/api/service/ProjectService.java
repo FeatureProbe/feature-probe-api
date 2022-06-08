@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +68,20 @@ public class ProjectService {
     public ProjectResponse queryByKey(String key) {
         Project project = projectRepository.findByKey(key).get();
         return ProjectMapper.INSTANCE.entityToResponse(project);
+    }
+
+    public void checkKey(String key) {
+        List<Project> projects = projectRepository.findByKeyIncludeDeleted(key);
+        if (!CollectionUtils.isEmpty(projects)) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
+    }
+
+    public void checkName(String name) {
+        List<Project> projects = projectRepository.findByNameIncludeDeleted(name);
+        if (!CollectionUtils.isEmpty(projects)) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
     }
 
     private List<Environment> createDefaultEnv(Project project) {

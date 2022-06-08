@@ -4,10 +4,20 @@ import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.ToggleCreateRequest
 import com.featureprobe.api.dto.ToggleSearchRequest
 import com.featureprobe.api.dto.ToggleUpdateRequest
-import com.featureprobe.api.entity.*
-import com.featureprobe.api.repository.*
+import com.featureprobe.api.entity.Environment
+import com.featureprobe.api.entity.Event
+import com.featureprobe.api.entity.Tag
+import com.featureprobe.api.entity.Targeting
+import com.featureprobe.api.entity.Toggle
+import com.featureprobe.api.entity.ToggleTagRelation
+import com.featureprobe.api.repository.EnvironmentRepository
+import com.featureprobe.api.repository.EventRepository
+import com.featureprobe.api.repository.TagRepository
+import com.featureprobe.api.repository.TargetingRepository
+import com.featureprobe.api.repository.ToggleRepository
+import com.featureprobe.api.repository.ToggleTagRepository
 import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -29,8 +39,9 @@ class ToggleServiceSpec extends Specification {
     EventRepository eventRepository
 
     def projectKey
-    def toggleKey
     def environmentKey
+    def toggleKey
+    def toggleName
 
     def setup() {
         toggleRepository = Mock(ToggleRepository)
@@ -44,6 +55,7 @@ class ToggleServiceSpec extends Specification {
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
+        toggleName = "test_toggle"
     }
 
     def "query toggle by key"() {
@@ -72,7 +84,7 @@ class ToggleServiceSpec extends Specification {
         1 * toggleTagRepository.findByNames(["test"]) >> [new ToggleTagRelation(toggleKey: toggleKey)]
         1 * eventRepository.findAll(_) >> [new Event(toggleKey: toggleKey)]
         1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey)],
-                PageRequest.of(1, 1), 12)
+                Pageable.ofSize(1), 1)
         1 * tagRepository.selectTagsByToggleKey(toggleKey) >> [new Tag(name: "tag")]
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
                 Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
@@ -81,7 +93,7 @@ class ToggleServiceSpec extends Specification {
                 Optional.of(new Environment(key: environmentKey, serverSdkKey: "123", clientSdkKey: "123"))
         1 * eventRepository.findAll(_, _) >> new PageImpl<>([new Event(toggleKey: toggleKey, sdkKey: "123",
                 startDate: new Date())],
-                PageRequest.of(1, 12), 1)
+                Pageable.ofSize(1), 1)
         with(page) {
             1 == it.size
             it.getContent().get(0).visitedTime != null
@@ -143,5 +155,25 @@ class ToggleServiceSpec extends Specification {
             "toggle2" == name
             1 == tags.size()
         }
+    }
+
+    def "check toggle key" () {
+        when:
+        toggleService.checkKey(projectKey, toggleKey)
+        then:
+        toggleRepository.findByKeyIncludeDeleted(projectKey, toggleKey) >> [new Toggle(projectKey: projectKey,
+                key: toggleKey, name: toggleName)]
+        then:
+        thrown ResourceConflictException
+    }
+
+    def "check toggle name" () {
+        when:
+        toggleService.checkName(projectKey, toggleName)
+        then:
+        1 * toggleRepository.findByNameIncludeDeleted(projectKey, toggleName) >> [new Toggle(projectKey: projectKey,
+                key: toggleKey, name: toggleName)]
+        then:
+        thrown ResourceConflictException
     }
 }

@@ -2,6 +2,7 @@ package com.featureprobe.api.repository;
 
 import com.featureprobe.api.entity.Environment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -21,4 +22,10 @@ public interface EnvironmentRepository extends JpaRepository<Environment, Long> 
     boolean existsByProjectKeyAndKey(String projectKey, String key);
 
     Optional<Environment> findByProjectKeyAndKey(String projectKey, String key);
+
+    @Query(value = "SELECT * FROM environment WHERE project_key = ?1 AND `key` = ?2", nativeQuery = true)
+    List<Environment> findByKeyIncludeDeleted(String projectKey, String key);
+
+    @Query(value = "SELECT * FROM environment WHERE project_key = ?1 AND name = ?2", nativeQuery = true)
+    List<Environment> findByNameIncludeDeleted(String projectKey, String name);
 }
