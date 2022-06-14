@@ -76,13 +76,14 @@ class SegmentServiceSpec extends Specification{
 
     def "update a segment" () {
         when:
-        def updated = segmentService.update(projectKey, segmentKey, new SegmentUpdateRequest(name: segmentName,
-                rules:  [new SegmentRule(name: "rule1",
+        def updated = segmentService.update(projectKey, segmentKey,
+                new SegmentUpdateRequest(name: "segment_test_update", rules:  [new SegmentRule(name: "rule1",
                         conditions: [new ConditionValue(type: "string", subject: "userId", predicate: "withs end",
                                 objects: ["test"])])]))
         then:
         1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >>
                 new Segment(name: segmentName, key: segmentKey, rules: rules)
+        1 * segmentRepository.countByNameIncludeDeleted(projectKey, "segment_test_update") >> 0
         1 * segmentRepository.save(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules)
         with(updated) {
             segmentName == updated.name
