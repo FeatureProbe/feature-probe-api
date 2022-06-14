@@ -3,7 +3,6 @@ package com.featureprobe.api.service;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
-import com.featureprobe.api.base.exception.ResourceUsingException;
 import com.featureprobe.api.dto.PaginationRequest;
 import com.featureprobe.api.dto.SegmentCreateRequest;
 import com.featureprobe.api.dto.SegmentResponse;
@@ -89,7 +88,7 @@ public class SegmentService {
 
     public SegmentResponse delete(String projectKey, String segmentKey) {
         if (targetingSegmentRepository.countByProjectKeyAndSegmentKey(projectKey, segmentKey) > 0) {
-            throw new ResourceUsingException(ResourceType.SEGMENT);
+            throw new IllegalArgumentException();
         }
         Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
         segment.setDeleted(true);

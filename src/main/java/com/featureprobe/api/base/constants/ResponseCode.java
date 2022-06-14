@@ -4,8 +4,7 @@ public enum ResponseCode {
 
     CONFLICT("conflict", "resource.error.conflict"),
     NOT_FOUND("not_found", "resource.error.not_found"),
-    INVALID_REQUEST("invalid_request", "validate.invalid_request"),
-    USING("using", "resource.error.using");
+    INVALID_REQUEST("invalid_request", "validate.invalid_request");
 
     private String code;
 
