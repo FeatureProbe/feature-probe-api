@@ -118,7 +118,7 @@ public class ToggleService {
     @Transactional(rollbackFor = Exception.class)
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
-        if(!toggle.getName().trim().equals(updateRequest.getName().trim())) {
+        if(!StringUtils.equals(toggle.getName(), updateRequest.getName())) {
             validateName(projectKey, updateRequest.getName());
         }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);

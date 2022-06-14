@@ -51,11 +51,12 @@ public class WebExceptionAspect {
     }
 
     @ExceptionHandler(value = IllegalArgumentException.class)
-    public void invalidRequestHandler(HttpServletResponse response, IllegalArgumentException e)
+    public void invalidHandler(HttpServletResponse response, IllegalArgumentException e)
             throws IOException {
         response.setStatus(HttpStatus.BAD_REQUEST.value());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(toErrorResponse(ResponseCode.INVALID_REQUEST));
+        response.getWriter().write(toErrorResponse(ResponseCode.INVALID_REQUEST,
+                i18nUtil.get(e.getMessage())));
     }
 
     private String toErrorResponse(ResponseCode resourceCode) {

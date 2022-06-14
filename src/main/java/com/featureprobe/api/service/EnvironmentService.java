@@ -64,7 +64,7 @@ public class EnvironmentService {
     public EnvironmentResponse update(String projectKey, String environmentKey,
                                       EnvironmentUpdateRequest updateRequest) {
         Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
-        if (!environment.getName().trim().equals(updateRequest.getName().trim())) {
+        if (!StringUtils.equals(environment.getName(), updateRequest.getName())) {
             validateName(projectKey, updateRequest.getName());
         }
         EnvironmentMapper.INSTANCE.mapEntity(updateRequest, environment);

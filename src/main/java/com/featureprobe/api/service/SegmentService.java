@@ -1,5 +1,6 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.base.constants.MessageKey;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
@@ -79,7 +80,7 @@ public class SegmentService {
 
     public SegmentResponse update(String projectKey, String segmentKey, SegmentUpdateRequest updateRequest) {
         Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
-        if(!segment.getName().trim().equals(updateRequest.getName().trim())) {
+        if(!StringUtils.equals(segment.getName(), updateRequest.getName())) {
             validateName(projectKey, updateRequest.getName());
         }
         SegmentMapper.INSTANCE.mapEntity(updateRequest, segment);
@@ -88,7 +89,7 @@ public class SegmentService {
 
     public SegmentResponse delete(String projectKey, String segmentKey) {
         if (targetingSegmentRepository.countByProjectKeyAndSegmentKey(projectKey, segmentKey) > 0) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(MessageKey.USING);
         }
         Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
         segment.setDeleted(true);
