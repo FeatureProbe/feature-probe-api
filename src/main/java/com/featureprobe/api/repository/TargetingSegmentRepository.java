@@ -13,4 +13,6 @@ public interface TargetingSegmentRepository extends JpaRepository<TargetingSegme
 
     List<TargetingSegment> findByProjectKeyAndSegmentKey(String projectKey, String segmentKey);
 
+    int countByProjectKeyAndSegmentKey(String projectKey, String segmentKey);
+
 }
