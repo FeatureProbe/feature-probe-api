@@ -25,4 +25,8 @@ public class ResourceKey {
     public boolean isToggle() {
         return type == ResourceType.TOGGLE;
     }
+
+    public boolean isSegment() {
+        return type == ResourceType.SEGMENT;
+    }
 }

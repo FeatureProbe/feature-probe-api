@@ -24,29 +24,37 @@ public interface SegmentMapper {
 
     SegmentMapper INSTANCE = Mappers.getMapper(SegmentMapper.class);
 
-    @Mapping(target = "rules", expression = "java(toRulesString(createRequest.getRules()))")
+    @Mapping(target = "rules", expression = "java(toSegmentRulesString(createRequest.getRules()))")
     Segment requestToEntity(SegmentCreateRequest createRequest);
 
-    @Mapping(target = "rules", expression = "java(toRulesResponses(segment.getRules()))")
+    @Mapping(target = "rules", expression = "java(toSegmentRules(segment.getRules()))")
     SegmentResponse entityToResponse(Segment segment);
 
     ToggleSegmentResponse toggleToToggleSegment(Toggle toggle);
 
-    @Mapping(target = "rules", expression = "java(toRulesString(updateRequest.getRules()))")
+    @Mapping(target = "rules", expression = "java(toSegmentRulesString(updateRequest.getRules()))")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void mapEntity(SegmentUpdateRequest updateRequest, @MappingTarget Segment segment);
 
-    default String toRulesString(List<SegmentRule> rules) {
+    default String toSegmentRulesString(List<SegmentRule> rules) {
         if (!CollectionUtils.isEmpty(rules)) {
             return JsonMapper.toJSONString(rules);
         }
-        return "";
+        return toDefaultSegmentRulesString();
     }
 
-    default List<SegmentRule> toRulesResponses(String rules) {
+    default List<SegmentRule> toSegmentRules(String rules) {
         if (StringUtils.isNotBlank(rules)) {
             return JsonMapper.toObject(rules, List.class);
         }
+        return toDefaultSegmentRules();
+    }
+
+    default String toDefaultSegmentRulesString() {
+        return JsonMapper.toJSONString(Collections.emptyList());
+    }
+
+    default List<SegmentRule> toDefaultSegmentRules() {
         return Collections.emptyList();
     }
 

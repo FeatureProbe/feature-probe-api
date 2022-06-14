@@ -94,7 +94,8 @@ public class SegmentService {
 
     public Page<ToggleSegmentResponse> usingToggles(String projectKey, String segmentKey,
                                                     PaginationRequest paginationRequest) {
-        List<TargetingSegment> targetingSegments = targetingSegmentRepository.findBySegmentKey(segmentKey);
+        List<TargetingSegment> targetingSegments = targetingSegmentRepository
+                .findByProjectKeyAndSegmentKey(projectKey, segmentKey);
         Set<Long> targetingIds = targetingSegments.stream().map(TargetingSegment::getTargetingId)
                 .collect(Collectors.toSet());
         Pageable pageable = PageRequest.of(paginationRequest.getPageIndex(), paginationRequest.getPageSize(),

@@ -11,6 +11,6 @@ import java.util.List;
 public interface TargetingSegmentRepository extends JpaRepository<TargetingSegment, Long>,
         JpaSpecificationExecutor<TargetingSegment> {
 
-    List<TargetingSegment> findBySegmentKey(String segmentKey);
+    List<TargetingSegment> findByProjectKeyAndSegmentKey(String projectKey, String segmentKey);
 
 }

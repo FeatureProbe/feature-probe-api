@@ -142,8 +142,8 @@ class SegmentServiceSpec extends Specification{
         def toggles = segmentService.usingToggles(projectKey, segmentKey,
                 new PaginationRequest(pageIndex: 0, pageSize: 5))
         then:
-        1 * targetingSegmentRepository.findBySegmentKey(segmentKey) >> [new TargetingSegment(projectKey: projectKey,
-                targetingId: 1, segmentKey: segmentKey)]
+        1 * targetingSegmentRepository.findByProjectKeyAndSegmentKey(projectKey, segmentKey) >>
+                [new TargetingSegment(projectKey: projectKey, targetingId: 1, segmentKey: segmentKey)]
         1 * targetingRepository.findAll(_, _) >> new PageImpl<>([new Targeting(toggleKey: "test_toggle",
                 projectKey: projectKey, environmentKey: "test", disabled: true)], Pageable.ofSize(1), 1)
         1 * toggleRepository.findByProjectKeyAndKey(projectKey, "test_toggle") >>

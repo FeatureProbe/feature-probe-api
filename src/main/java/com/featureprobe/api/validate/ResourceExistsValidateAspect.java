@@ -4,6 +4,7 @@ import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.ProjectRepository;
+import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
@@ -30,6 +31,7 @@ public class ResourceExistsValidateAspect {
     ProjectRepository projectRepository;
     ToggleRepository toggleRepository;
     EnvironmentRepository environmentRepository;
+    SegmentRepository segmentRepository;
 
     @Around(value = "@within(resourceExistsValidate)")
     public Object validate(ProceedingJoinPoint joinPoint, ResourceExistsValidate resourceExistsValidate)
@@ -56,6 +58,7 @@ public class ResourceExistsValidateAspect {
         validateProjectExists(projectKey);
         validateToggleExists(projectKey, resourceKeys);
         validateEnvironmentExists(projectKey, resourceKeys);
+        validateSegmentExists(projectKey, resourceKeys);
     }
 
     protected void validateProjectExists(ResourceKey projectKey) {
@@ -82,10 +85,20 @@ public class ResourceExistsValidateAspect {
         if (toggleKey == null) {
             return;
         }
-        ;
         if (!toggleRepository.existsByProjectKeyAndKey(projectKey.key, toggleKey.getKey())) {
             throwResourceNotFoundException(toggleKey);
         }
+    }
+
+    protected void validateSegmentExists(ResourceKey projectKey, List<ResourceKey> resourceKeys) {
+        ResourceKey segmentKey = filterFirstResourceKey(resourceKeys, ResourceKey::isSegment);
+        if (segmentKey == null) {
+            return;
+        }
+        if (!segmentRepository.existsByProjectKeyAndKey(projectKey.key, segmentKey.getKey())) {
+            throwResourceNotFoundException(segmentKey);
+        }
+
     }
 
     private ResourceKey filterFirstResourceKey(List<ResourceKey> resourceKeys, Predicate<ResourceKey> filter) {
