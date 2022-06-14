@@ -10,6 +10,7 @@ import com.featureprobe.api.entity.Segment
 import com.featureprobe.api.entity.Targeting
 import com.featureprobe.api.entity.TargetingSegment
 import com.featureprobe.api.entity.Toggle
+import com.featureprobe.api.model.ConditionValue
 import com.featureprobe.api.model.SegmentRule
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.SegmentRepository
@@ -59,8 +60,9 @@ class SegmentServiceSpec extends Specification{
     def "create a segment" () {
         when:
         def created = segmentService.create(projectKey, new SegmentCreateRequest(name: segmentName,
-                key: segmentKey, rules: [new SegmentRule(subject: "userId", predicate: "withs end",
-                objects: ["test"])]))
+                key: segmentKey, rules: [new SegmentRule(name: "rule1",
+                conditions: [new ConditionValue(type: "string", subject: "userId", predicate: "withs end",
+                        objects: ["test"])])]))
         then:
         1 * segmentRepository.save(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules)
         with(created) {
@@ -75,7 +77,9 @@ class SegmentServiceSpec extends Specification{
     def "update a segment" () {
         when:
         def updated = segmentService.update(projectKey, segmentKey, new SegmentUpdateRequest(name: segmentName,
-                rules: [new SegmentRule(subject: "userId", predicate: "withs end", objects: ["test"])]))
+                rules:  [new SegmentRule(name: "rule1",
+                        conditions: [new ConditionValue(type: "string", subject: "userId", predicate: "withs end",
+                                objects: ["test"])])]))
         then:
         1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >>
                 new Segment(name: segmentName, key: segmentKey, rules: rules)

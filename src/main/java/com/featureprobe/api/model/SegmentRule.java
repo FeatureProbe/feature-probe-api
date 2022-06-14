@@ -5,14 +5,8 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class SegmentRule {
+public class SegmentRule extends BaseRule {
 
-    private String type;
-
-    private String subject;
-
-    private String predicate;
-
-    private List<String> objects;
+    String name;
 
 }
