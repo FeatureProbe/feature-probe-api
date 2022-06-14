@@ -7,6 +7,8 @@ import java.util.List;
 @Data
 public class SegmentRule {
 
+    private String type;
+
     private String subject;
 
     private String predicate;
