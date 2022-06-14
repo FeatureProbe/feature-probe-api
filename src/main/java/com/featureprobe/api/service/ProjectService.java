@@ -36,10 +36,10 @@ public class ProjectService {
 
     @Transactional(rollbackFor = Exception.class)
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
-        if (StringUtils.isNotBlank(updateRequest.getName())) {
+        Project project = projectRepository.findByKey(projectKey).get();
+        if (!project.getName().trim().equals(updateRequest.getName().trim())) {
             validateName(updateRequest.getName());
         }
-        Project project = projectRepository.findByKey(projectKey).get();
         ProjectMapper.INSTANCE.mapEntity(updateRequest, project);
         return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
     }

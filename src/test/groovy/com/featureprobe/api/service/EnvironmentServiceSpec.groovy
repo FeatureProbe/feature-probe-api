@@ -55,7 +55,7 @@ class EnvironmentServiceSpec extends Specification {
         environmentService = new EnvironmentService(environmentRepository, projectRepository,
                 toggleRepository, targetingRepository)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
-        updateRequest = new EnvironmentUpdateRequest(name: environmentName)
+        updateRequest = new EnvironmentUpdateRequest(name: "env_test_update")
     }
 
     def "Create environment"() {
@@ -98,7 +98,7 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
                 Optional.of(new Environment(name: environmentName, key: environmentKey))
-        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 0
+        1 * environmentRepository.countByNameIncludeDeleted(projectKey, updateRequest.name) >> 0
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         with(ret) {

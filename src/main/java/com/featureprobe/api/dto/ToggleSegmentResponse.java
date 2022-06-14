@@ -9,7 +9,9 @@ public class ToggleSegmentResponse {
 
     private String key;
 
-    private String environment;
+    private String environmentName;
+
+    private String environmentKey;
 
     private Boolean disabled;
 

@@ -39,7 +39,7 @@ class ProjectServiceSpec extends Specification {
         projectService = new ProjectService(projectRepository)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
-        projectUpdateRequest = new ProjectUpdateRequest(name: projectName, description: projectKey)
+        projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)
     }
 
     def "project list"() {
@@ -72,9 +72,9 @@ class ProjectServiceSpec extends Specification {
         when:
         def ret = projectService.update(projectKey, projectUpdateRequest)
         then:
-        1 * projectRepository.countByNameIncludeDeleted(projectName) >> 0
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey))
+        1 * projectRepository.countByNameIncludeDeleted(projectUpdateRequest.name) >> 0
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey)
         with(ret) {
             projectName == it.name

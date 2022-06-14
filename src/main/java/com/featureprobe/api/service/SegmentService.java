@@ -78,10 +78,10 @@ public class SegmentService {
     }
 
     public SegmentResponse update(String projectKey, String segmentKey, SegmentUpdateRequest updateRequest) {
-        if(StringUtils.isNotBlank(updateRequest.getName())) {
+        Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
+        if(segment.getName().trim().equals(updateRequest.getName().trim())) {
             validateName(projectKey, updateRequest.getName());
         }
-        Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
         SegmentMapper.INSTANCE.mapEntity(updateRequest, segment);
         return SegmentMapper.INSTANCE.entityToResponse(segmentRepository.save(segment));
     }
@@ -114,7 +114,8 @@ public class SegmentService {
             toggleSegmentResponse.setDisabled(targeting.getDisabled());
             Optional<Environment> environment = environmentRepository
                     .findByProjectKeyAndKey(projectKey, targeting.getEnvironmentKey());
-            toggleSegmentResponse.setEnvironment(environment.get().getName());
+            toggleSegmentResponse.setEnvironmentName(environment.get().getName());
+            toggleSegmentResponse.setEnvironmentKey(environment.get().getKey());
             return toggleSegmentResponse;
         });
         return res;
