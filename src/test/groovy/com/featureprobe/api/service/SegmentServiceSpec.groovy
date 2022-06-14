@@ -2,6 +2,7 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
+import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.PaginationRequest
 import com.featureprobe.api.dto.SegmentCreateRequest
 import com.featureprobe.api.dto.SegmentUpdateRequest
@@ -130,6 +131,7 @@ class SegmentServiceSpec extends Specification{
         when:
         def deleted = segmentService.delete(projectKey, segmentKey)
         then:
+        1 * targetingSegmentRepository.countByProjectKeyAndSegmentKey(projectKey, segmentKey) >> 0
         1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >> new Segment(name: segmentName,
                 key: segmentKey, rules: rules)
         1 * segmentRepository.save(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules)
@@ -140,6 +142,15 @@ class SegmentServiceSpec extends Specification{
             0 < deleted.rules.size()
         }
 
+    }
+
+    def "delete a using segment" () {
+        when:
+        def deleted = segmentService.delete(projectKey, segmentKey)
+        then:
+        1 * targetingSegmentRepository.countByProjectKeyAndSegmentKey(projectKey, segmentKey) >> 1
+        then:
+        thrown(IllegalArgumentException)
     }
 
     def "list of toggles using segment" () {
