@@ -79,7 +79,7 @@ public class SegmentService {
 
     public SegmentResponse update(String projectKey, String segmentKey, SegmentUpdateRequest updateRequest) {
         Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
-        if(segment.getName().trim().equals(updateRequest.getName().trim())) {
+        if(!segment.getName().trim().equals(updateRequest.getName().trim())) {
             validateName(projectKey, updateRequest.getName());
         }
         SegmentMapper.INSTANCE.mapEntity(updateRequest, segment);
