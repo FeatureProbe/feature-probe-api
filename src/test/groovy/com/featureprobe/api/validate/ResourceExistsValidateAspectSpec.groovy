@@ -4,6 +4,7 @@ import com.featureprobe.api.base.enums.ResourceType
 import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.ProjectRepository
+import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.ToggleRepository
 import spock.lang.Specification
 
@@ -12,19 +13,21 @@ class ResourceExistsValidateAspectSpec extends Specification {
     ProjectRepository projectRepository
     EnvironmentRepository environmentRepository
     ToggleRepository toggleRepository
+    SegmentRepository segmentRepository
 
     ResourceExistsValidateAspect resourceExistsValidateAspect
     def projectKey = "prj_test_key"
     def toggleKey = "toggle_key_test"
     def envKey = "env_key_test"
+    def segmentKey = "segment_test_key"
 
     def setup() {
         projectRepository = Mock(ProjectRepository)
         environmentRepository = Mock(EnvironmentRepository)
         toggleRepository = Mock(ToggleRepository)
-
+        segmentRepository = Mock(SegmentRepository)
         resourceExistsValidateAspect = new ResourceExistsValidateAspect(projectRepository, toggleRepository,
-                environmentRepository)
+                environmentRepository, segmentRepository)
     }
 
 
@@ -70,6 +73,30 @@ class ResourceExistsValidateAspectSpec extends Specification {
         when:
         resourceExistsValidateAspect.validateToggleExists(new ResourceKey(ResourceType.PROJECT, projectKey),
                 [new ResourceKey(ResourceType.TOGGLE, toggleKey)])
+
+        then:
+        thrown(ResourceNotFoundException)
+    }
+
+    def "validate segment exists"() {
+        given:
+        segmentRepository.existsByProjectKeyAndKey(projectKey, segmentKey) >> true
+
+        when:
+        resourceExistsValidateAspect.validateSegmentExists(new ResourceKey(ResourceType.PROJECT, projectKey),
+                [new ResourceKey(ResourceType.SEGMENT, segmentKey)])
+
+        then:
+        noExceptionThrown()
+    }
+
+    def "validate segment not exists"() {
+        given:
+        segmentRepository.existsByProjectKeyAndKey(projectKey, segmentKey) >> false
+
+        when:
+        resourceExistsValidateAspect.validateSegmentExists(new ResourceKey(ResourceType.PROJECT, projectKey),
+                [new ResourceKey(ResourceType.SEGMENT, segmentKey)])
 
         then:
         thrown(ResourceNotFoundException)
