@@ -65,10 +65,9 @@ public class SegmentService {
             }
             return query.getRestriction();
         };
-        Page<Segment> segments ;
+        Page<Segment> segments;
         if (searchRequest.getPageSize() == -1) {
-            List<Segment> allSegments = segmentRepository.findAll(spec);
-            segments = new PageImpl<>( allSegments, Pageable.ofSize(allSegments.size()), allSegments.size());
+            segments = segmentAll(spec);
         } else {
             Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
                     Sort.Direction.DESC, "createdTime");
@@ -88,7 +87,7 @@ public class SegmentService {
 
     public SegmentResponse update(String projectKey, String segmentKey, SegmentUpdateRequest updateRequest) {
         Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
-        if(!StringUtils.equals(segment.getName(), updateRequest.getName())) {
+        if (!StringUtils.equals(segment.getName(), updateRequest.getName())) {
             validateName(projectKey, updateRequest.getName());
         }
         SegmentMapper.INSTANCE.mapEntity(updateRequest, segment);
@@ -149,6 +148,11 @@ public class SegmentService {
             default:
                 break;
         }
+    }
+
+    private Page<Segment> segmentAll(Specification<Segment> spec) {
+        List<Segment> allSegments = segmentRepository.findAll(spec);
+        return new PageImpl<>(allSegments, Pageable.ofSize(allSegments.size()), allSegments.size());
     }
 
     private void validateKey(String projectKey, String key) {
