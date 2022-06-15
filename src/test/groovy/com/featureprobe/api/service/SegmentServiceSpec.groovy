@@ -5,6 +5,7 @@ import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.PaginationRequest
 import com.featureprobe.api.dto.SegmentCreateRequest
+import com.featureprobe.api.dto.SegmentResponse
 import com.featureprobe.api.dto.SegmentUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Segment
@@ -168,6 +169,17 @@ class SegmentServiceSpec extends Specification{
                 .findByProjectKeyAndKey(projectKey, "test") >> Optional.of(new Environment(name: "test", key: "test"))
         with(toggles) {
             1 == toggles.size
+        }
+    }
+
+
+    def "query all segment" () {
+        when:
+        def segments = segmentService.all(projectKey, "test_name")
+        then:
+        1 * segmentRepository.findAll(_) >> [new Segment(name: "test_name")]
+        with(segments) {
+            1 == segments.size()
         }
     }
 }

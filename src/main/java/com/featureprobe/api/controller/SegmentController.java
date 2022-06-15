@@ -35,6 +35,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 
 @Slf4j
 @AllArgsConstructor
@@ -52,6 +54,14 @@ public class SegmentController {
     public Page<SegmentResponse> list(@PathVariable(name = "projectKey") String projectKey,
                                       SegmentSearchRequest searchRequest) {
         return segmentService.list(projectKey, searchRequest);
+    }
+
+    @GetMapping("/all")
+    @GetApiResponse
+    @Operation(summary = "All segments", description = "Get a list of all segments")
+    public List<SegmentResponse> all(@PathVariable(name = "projectKey") String projectKey,
+                                     String keyword) {
+        return segmentService.all(projectKey, keyword);
     }
 
     @CreateApiResponse

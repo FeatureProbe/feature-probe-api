@@ -25,7 +25,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -54,13 +53,17 @@ public class SegmentService {
     private EnvironmentRepository environmentRepository;
 
     public Page<SegmentResponse> list(String projectKey, SegmentSearchRequest searchRequest) {
-        Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest);
-        if (searchRequest.getPageSize() == -1) {
-            return findAllBySpec(spec);
-        }
+        Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest.getKeyword());
         Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
                 Sort.Direction.DESC, "createdTime");
         return findPagingBySpec(spec, pageable);
+    }
+
+    public List<SegmentResponse> all(String projectKey, String keyword) {
+        Specification<Segment> spec = buildQuerySpec(projectKey, keyword);
+        List<Segment> segments = segmentRepository.findAll(spec);
+        return  segments.stream().map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment))
+                .collect(Collectors.toList());
     }
 
     public SegmentResponse create(String projectKey, SegmentCreateRequest createRequest) {
@@ -136,12 +139,12 @@ public class SegmentService {
         }
     }
 
-    private Specification<Segment> buildQuerySpec(String projectKey, SegmentSearchRequest searchRequest) {
+    private Specification<Segment> buildQuerySpec(String projectKey, String keyword) {
         return (root, query, cb) -> {
             Predicate p2 = cb.equal(root.get("projectKey"), projectKey);
-            if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
-                Predicate p0 = cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%");
-                Predicate p1 = cb.like(root.get("key"), "%" + searchRequest.getKeyword() + "%");
+            if (StringUtils.isNotBlank(keyword)) {
+                Predicate p0 = cb.like(root.get("name"), "%" + keyword + "%");
+                Predicate p1 = cb.like(root.get("key"), "%" + keyword + "%");
                 query.where(cb.or(p0, p1), cb.and(p2));
             } else {
                 query.where(p2);
@@ -152,12 +155,6 @@ public class SegmentService {
 
     private Page<SegmentResponse> findPagingBySpec(Specification<Segment> spec, Pageable pageable) {
         Page<Segment> segments = segmentRepository.findAll(spec, pageable);
-        return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
-    }
-
-    private Page<SegmentResponse> findAllBySpec(Specification<Segment> spec) {
-        List<Segment> allSegments = segmentRepository.findAll(spec);
-        Page<Segment> segments = new PageImpl<>(allSegments, Pageable.ofSize(allSegments.size()), allSegments.size());
         return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
     }
 
