@@ -59,13 +59,6 @@ public class SegmentService {
         return findPagingBySpec(spec, pageable);
     }
 
-    public List<SegmentResponse> all(String projectKey, String keyword) {
-        Specification<Segment> spec = buildQuerySpec(projectKey, keyword);
-        List<Segment> segments = segmentRepository.findAll(spec);
-        return  segments.stream().map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment))
-                .collect(Collectors.toList());
-    }
-
     public SegmentResponse create(String projectKey, SegmentCreateRequest createRequest) {
         validateKey(projectKey, createRequest.getKey());
         validateName(projectKey, createRequest.getName());

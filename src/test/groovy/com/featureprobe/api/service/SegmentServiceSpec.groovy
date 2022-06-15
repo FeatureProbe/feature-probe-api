@@ -172,15 +172,5 @@ class SegmentServiceSpec extends Specification{
         }
     }
 
-
-    def "query all segment" () {
-        when:
-        def segments = segmentService.all(projectKey, "test_name")
-        then:
-        1 * segmentRepository.findAll(_) >> [new Segment(name: "test_name")]
-        with(segments) {
-            1 == segments.size()
-        }
-    }
 }
 

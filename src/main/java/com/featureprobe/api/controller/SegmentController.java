@@ -56,14 +56,6 @@ public class SegmentController {
         return segmentService.list(projectKey, searchRequest);
     }
 
-    @GetMapping("/all")
-    @GetApiResponse
-    @Operation(summary = "All segments", description = "Get a list of all segments")
-    public List<SegmentResponse> all(@PathVariable(name = "projectKey") String projectKey,
-                                     String keyword) {
-        return segmentService.all(projectKey, keyword);
-    }
-
     @CreateApiResponse
     @PostMapping
     @Operation(summary = "Create segment", description = "Create a new segment.")
