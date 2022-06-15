@@ -73,7 +73,6 @@ public class SegmentService {
                     Sort.Direction.DESC, "createdTime");
             segments = segmentRepository.findAll(spec, pageable);
         }
-
         return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
     }
 
