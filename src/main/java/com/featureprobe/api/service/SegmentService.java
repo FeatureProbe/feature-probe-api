@@ -25,6 +25,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -53,8 +54,6 @@ public class SegmentService {
     private EnvironmentRepository environmentRepository;
 
     public Page<SegmentResponse> list(String projectKey, SegmentSearchRequest searchRequest) {
-        Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
-                Sort.Direction.DESC, "createdTime");
         Specification<Segment> spec = (root, query, cb) -> {
             Predicate p2 = cb.equal(root.get("projectKey"), projectKey);
             if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
@@ -66,7 +65,16 @@ public class SegmentService {
             }
             return query.getRestriction();
         };
-        Page<Segment> segments = segmentRepository.findAll(spec, pageable);
+        Page<Segment> segments ;
+        if (searchRequest.getPageSize() == -1) {
+            List<Segment> allSegments = segmentRepository.findAll(spec);
+            segments = new PageImpl<>( allSegments, Pageable.ofSize(allSegments.size()), allSegments.size());
+        } else {
+            Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
+                    Sort.Direction.DESC, "createdTime");
+            segments = segmentRepository.findAll(spec, pageable);
+        }
+
         return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
     }
 
