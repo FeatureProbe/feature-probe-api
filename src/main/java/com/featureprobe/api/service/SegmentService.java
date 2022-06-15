@@ -141,13 +141,14 @@ public class SegmentService {
 
     private Specification<Segment> buildQuerySpec(String projectKey, String keyword) {
         return (root, query, cb) -> {
-            Predicate p2 = cb.equal(root.get("projectKey"), projectKey);
+            Predicate p3 = cb.equal(root.get("projectKey"), projectKey);
             if (StringUtils.isNotBlank(keyword)) {
                 Predicate p0 = cb.like(root.get("name"), "%" + keyword + "%");
                 Predicate p1 = cb.like(root.get("key"), "%" + keyword + "%");
-                query.where(cb.or(p0, p1), cb.and(p2));
+                Predicate p2 = cb.like(root.get("description"), "%" + keyword + "%");
+                query.where(cb.or(p0, p1, p2), cb.and(p3));
             } else {
-                query.where(p2);
+                query.where(p3);
             }
             return query.getRestriction();
         };
