@@ -54,26 +54,13 @@ public class SegmentService {
     private EnvironmentRepository environmentRepository;
 
     public Page<SegmentResponse> list(String projectKey, SegmentSearchRequest searchRequest) {
-        Specification<Segment> spec = (root, query, cb) -> {
-            Predicate p2 = cb.equal(root.get("projectKey"), projectKey);
-            if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
-                Predicate p0 = cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%");
-                Predicate p1 = cb.like(root.get("key"), "%" + searchRequest.getKeyword() + "%");
-                query.where(cb.or(p0, p1), cb.and(p2));
-            } else {
-                query.where(p2);
-            }
-            return query.getRestriction();
-        };
-        Page<Segment> segments;
+        Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest);
         if (searchRequest.getPageSize() == -1) {
-            segments = segmentAll(spec);
-        } else {
-            Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
-                    Sort.Direction.DESC, "createdTime");
-            segments = segmentRepository.findAll(spec, pageable);
+            return findAllBySpec(spec);
         }
-        return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
+        Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
+                Sort.Direction.DESC, "createdTime");
+        return findPagingBySpec(spec, pageable);
     }
 
     public SegmentResponse create(String projectKey, SegmentCreateRequest createRequest) {
@@ -149,9 +136,29 @@ public class SegmentService {
         }
     }
 
-    private Page<Segment> segmentAll(Specification<Segment> spec) {
+    private Specification<Segment> buildQuerySpec(String projectKey, SegmentSearchRequest searchRequest) {
+        return (root, query, cb) -> {
+            Predicate p2 = cb.equal(root.get("projectKey"), projectKey);
+            if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
+                Predicate p0 = cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%");
+                Predicate p1 = cb.like(root.get("key"), "%" + searchRequest.getKeyword() + "%");
+                query.where(cb.or(p0, p1), cb.and(p2));
+            } else {
+                query.where(p2);
+            }
+            return query.getRestriction();
+        };
+    }
+
+    private Page<SegmentResponse> findPagingBySpec(Specification<Segment> spec, Pageable pageable) {
+        Page<Segment> segments = segmentRepository.findAll(spec, pageable);
+        return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
+    }
+
+    private Page<SegmentResponse> findAllBySpec(Specification<Segment> spec) {
         List<Segment> allSegments = segmentRepository.findAll(spec);
-        return new PageImpl<>(allSegments, Pageable.ofSize(allSegments.size()), allSegments.size());
+        Page<Segment> segments = new PageImpl<>(allSegments, Pageable.ofSize(allSegments.size()), allSegments.size());
+        return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
     }
 
     private void validateKey(String projectKey, String key) {
