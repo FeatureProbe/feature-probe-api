@@ -13,6 +13,7 @@ import com.featureprobe.api.entity.Toggle
 import com.featureprobe.api.entity.ToggleTagRelation
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.EventRepository
+import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TagRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.ToggleRepository
@@ -28,6 +29,8 @@ class ToggleServiceSpec extends Specification {
     ToggleService toggleService
 
     ToggleRepository toggleRepository
+
+    SegmentRepository segmentRepository
 
     TagRepository tagRepository
 
@@ -46,12 +49,13 @@ class ToggleServiceSpec extends Specification {
 
     def setup() {
         toggleRepository = Mock(ToggleRepository)
+        segmentRepository = Mock(SegmentRepository)
         tagRepository = Mock(TagRepository)
         toggleTagRepository = Mock(ToggleTagRepository)
         targetingRepository = Mock(TargetingRepository)
         environmentRepository = Mock(EnvironmentRepository)
         eventRepository = Mock(EventRepository)
-        toggleService = new ToggleService(toggleRepository, tagRepository, toggleTagRepository,
+        toggleService = new ToggleService(toggleRepository, segmentRepository, tagRepository, toggleTagRepository,
                 targetingRepository, environmentRepository, eventRepository)
         projectKey = "feature_probe"
         environmentKey = "test"

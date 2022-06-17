@@ -29,7 +29,7 @@ spring:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: debug
+    org.hibernate.SQL: INFO
     org.hibernate.type.descriptor.sql.BasicBinder: trace
   config: classpath:logback/logback.xml
   path: /featureprobe/logs

@@ -6,7 +6,7 @@ import com.featureprobe.api.dto.SegmentUpdateRequest;
 import com.featureprobe.api.dto.ToggleSegmentResponse;
 import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.entity.Toggle;
-import com.featureprobe.api.model.SegmentRule;
+import com.featureprobe.api.model.SegmentRuleModel;
 import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
@@ -36,14 +36,14 @@ public interface SegmentMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void mapEntity(SegmentUpdateRequest updateRequest, @MappingTarget Segment segment);
 
-    default String toSegmentRulesString(List<SegmentRule> rules) {
+    default String toSegmentRulesString(List<SegmentRuleModel> rules) {
         if (!CollectionUtils.isEmpty(rules)) {
             return JsonMapper.toJSONString(rules);
         }
         return toDefaultSegmentRulesString();
     }
 
-    default List<SegmentRule> toSegmentRules(String rules) {
+    default List<SegmentRuleModel> toSegmentRules(String rules) {
         if (StringUtils.isNotBlank(rules)) {
             return JsonMapper.toObject(rules, List.class);
         }
@@ -54,7 +54,7 @@ public interface SegmentMapper {
         return JsonMapper.toJSONString(Collections.emptyList());
     }
 
-    default List<SegmentRule> toDefaultSegmentRules() {
+    default List<SegmentRuleModel> toDefaultSegmentRules() {
         return Collections.emptyList();
     }
 

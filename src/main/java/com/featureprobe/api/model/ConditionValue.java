@@ -3,8 +3,10 @@ package com.featureprobe.api.model;
 import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class ConditionValue {
@@ -21,7 +23,6 @@ public class ConditionValue {
         condition.setSubject(subject);
         condition.setPredicate(predicate);
         condition.setObjects(objects);
-
         return condition;
     }
 }

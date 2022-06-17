@@ -11,8 +11,11 @@ import java.util.List;
 public interface TargetingSegmentRepository extends JpaRepository<TargetingSegment, Long>,
         JpaSpecificationExecutor<TargetingSegment> {
 
+    void deleteByTargetingId(Long targetingId);
+
     List<TargetingSegment> findByProjectKeyAndSegmentKey(String projectKey, String segmentKey);
 
     int countByProjectKeyAndSegmentKey(String projectKey, String segmentKey);
+
 
 }

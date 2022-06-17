@@ -13,15 +13,18 @@ import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
+import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.entity.Tag;
 import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.Toggle;
 import com.featureprobe.api.entity.ToggleTagRelation;
 import com.featureprobe.api.mapper.ToggleMapper;
+import com.featureprobe.api.model.ServerSegmentBuilder;
 import com.featureprobe.api.model.TargetingContent;
 import com.featureprobe.api.model.ServerToggleBuilder;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
+import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TagRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.ToggleRepository;
@@ -60,6 +63,8 @@ import java.util.stream.Collectors;
 public class ToggleService {
 
     private ToggleRepository toggleRepository;
+
+    private SegmentRepository segmentRepository;
 
     private TagRepository tagRepository;
 
@@ -278,16 +283,40 @@ public class ToggleService {
     }
 
     public ServerResponse queryServerTogglesByServerSdkKey(String serverSdkKey) {
+        return new ServerResponse(queryTogglesBySdkKey(serverSdkKey), querySegmentsBySdkKey(serverSdkKey));
+    }
+
+    private List<com.featureprobe.sdk.server.model.Segment> querySegmentsBySdkKey(String serverSdkKey) {
         Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey);
-        if (environment == null) {
-            return new ServerResponse();
+        if (Objects.isNull(environment)) {
+            return Collections.emptyList();
+        }
+        List<Segment> segments = segmentRepository.findAllByProjectKey(environment.getProject().getKey());
+        return segments.stream().map(segment -> {
+            try {
+                return new ServerSegmentBuilder().builder()
+                        .uniqueId(segment.getProjectKey(), segment.getKey())
+                        .version(segment.getVersion())
+                        .rules(segment.getRules())
+                        .build();
+            } catch (Exception e) {
+                log.error("Build server segment failed, server sdk key: {}, segment key: {}",
+                        serverSdkKey, segment.getKey(), e);
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private List<com.featureprobe.sdk.server.model.Toggle> queryTogglesBySdkKey(String serverSdkKey) {
+        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey);
+        if (Objects.isNull(environment)) {
+            return Collections.emptyList();
         }
         List<Toggle> toggles = toggleRepository.findAllByProjectKey(environment.getProject().getKey());
         Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKey(
                 environment.getProject().getKey(),
                 environment.getKey()).stream().collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
-
-        return new ServerResponse(toggles.stream().map(toggle -> {
+        return toggles.stream().map(toggle -> {
             Targeting targeting = targetingByKey.get(toggle.getKey());
             try {
                 return new ServerToggleBuilder().builder()
@@ -297,14 +326,14 @@ public class ToggleService {
                         .returnType(toggle.getReturnType())
                         .forClient(toggle.getClientAvailability())
                         .rules(targeting.getContent())
-                        .build();
-            } catch (ServerToggleBuildException e) {
+                        .build(environment.getProject().getKey());
+            } catch (Exception e) {
                 log.error("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
                         serverSdkKey, targeting.getToggleKey(), targeting.getEnvironmentKey(), e);
                 return null;
             }
 
-        }).filter(Objects::nonNull).collect(Collectors.toList()), Collections.emptyList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public void validateExists(String projectKey, ValidateTypeEnum type, String  value) {

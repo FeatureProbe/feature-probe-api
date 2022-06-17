@@ -1,6 +1,6 @@
 package com.featureprobe.api.dto;
 
-import com.featureprobe.api.model.SegmentRule;
+import com.featureprobe.api.model.SegmentRuleModel;
 import lombok.Data;
 
 import java.util.Date;
@@ -12,7 +12,7 @@ public class SegmentResponse {
 
     private String key;
 
-    private List<SegmentRule> rules;
+    private List<SegmentRuleModel> rules;
 
     private String description;
 

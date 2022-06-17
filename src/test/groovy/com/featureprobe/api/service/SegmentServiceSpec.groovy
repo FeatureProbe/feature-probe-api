@@ -2,10 +2,8 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
-import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.PaginationRequest
 import com.featureprobe.api.dto.SegmentCreateRequest
-import com.featureprobe.api.dto.SegmentResponse
 import com.featureprobe.api.dto.SegmentUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Segment
@@ -13,7 +11,7 @@ import com.featureprobe.api.entity.Targeting
 import com.featureprobe.api.entity.TargetingSegment
 import com.featureprobe.api.entity.Toggle
 import com.featureprobe.api.model.ConditionValue
-import com.featureprobe.api.model.SegmentRule
+import com.featureprobe.api.model.SegmentRuleModel
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TargetingRepository
@@ -62,7 +60,7 @@ class SegmentServiceSpec extends Specification{
     def "create a segment" () {
         when:
         def created = segmentService.create(projectKey, new SegmentCreateRequest(name: segmentName,
-                key: segmentKey, rules: [new SegmentRule(name: "rule1",
+                key: segmentKey, rules: [new SegmentRuleModel(name: "rule1",
                 conditions: [new ConditionValue(type: "string", subject: "userId", predicate: "withs end",
                         objects: ["test"])])]))
         then:
@@ -79,7 +77,7 @@ class SegmentServiceSpec extends Specification{
     def "update a segment" () {
         when:
         def updated = segmentService.update(projectKey, segmentKey,
-                new SegmentUpdateRequest(name: "segment_test_update", rules:  [new SegmentRule(name: "rule1",
+                new SegmentUpdateRequest(name: "segment_test_update", rules:  [new SegmentRuleModel(name: "rule1",
                         conditions: [new ConditionValue(type: "string", subject: "userId", predicate: "withs end",
                                 objects: ["test"])])]))
         then:

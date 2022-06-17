@@ -1,10 +1,13 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.TargetingRequest
 import com.featureprobe.api.entity.Targeting
 import com.featureprobe.api.mapper.JsonMapper
 import com.featureprobe.api.model.TargetingContent
+import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TargetingRepository
+import com.featureprobe.api.repository.TargetingSegmentRepository
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -14,6 +17,8 @@ class TargetingServiceSpec extends Specification {
     TargetingService targetingService;
 
     TargetingRepository targetingRepository
+    SegmentRepository segmentRepository
+    TargetingSegmentRepository targetingSegmentRepository
 
     def projectKey
     def environmentKey
@@ -22,19 +27,20 @@ class TargetingServiceSpec extends Specification {
 
     def setup() {
         targetingRepository = Mock(TargetingRepository)
-        targetingService = new TargetingService(targetingRepository)
+        segmentRepository = Mock(SegmentRepository)
+        targetingSegmentRepository = Mock(TargetingSegmentRepository)
+        targetingService = new TargetingService(targetingRepository, segmentRepository, targetingSegmentRepository)
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
-        content = "{\"default_serve\":{\"select\":3}," +
-                "\"disabled_serve\":{\"select\":1},\"variations\":[{\"name\":\"open\",\"description\":\"打开开关\"," +
-                "\"value\":\"true\"},{\"name\":\"close\",\"description\":\"关闭开关\",\"value\":\"false\"}]," +
-                "\"rules\":[{\"name\":\"规则一1\",\"serve\":{\"select\":0}," +
-                "\"conditions\":[{\"predicate\":\"in one of\",\"subject\":\"userId\"," +
-                "\"objects\":[\"1\",\"2\",\"3\"],\"type\":\"string\"},{\"predicate\":\"is not any of\"," +
-                "\"subject\":\"userId\",\"objects\":[\"3\",\"rrrr\"],\"type\":\"\"}]},{\"name\":\"规则二\"," +
-                "\"serve\":{\"split\":[7000,3000]},\"conditions\":[{\"predicate\":\"starts with\"," +
-                "\"subject\":\"userId\",\"objects\":[\"123\",\"32\"],\"type\":\"string\"}]}]}"
+        content = "{\"rules\":[{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\",\"predicate\":\"is one of\"," +
+                "\"objects\":[\"Paris\"]},{\"type\":\"segment\",\"predicate\":\"in\",\"objects\":[\"jjj\"," +
+                "\"test_users\",\"snapshot_users\"]}],\"name\":\"Users in Paris\",\"serve\":{\"select\":2}}," +
+                "{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\",\"predicate\":\"is one of\"," +
+                "\"objects\":[\"Lille\"]}],\"name\":\"Users in Lille\",\"serve\":{\"select\":1}}]," +
+                "\"disabledServe\":{\"select\":0},\"defaultServe\":{\"select\":0},\"variations\":[{\"value\":\"7\"," +
+                "\"name\":\"discount 0.7\",\"description\":\"\"},{\"value\":\"8\",\"name\":\"discount 0.8\"," +
+                "\"description\":\"\"},{\"value\":\"9\",\"name\":\"discount 0.9\",\"description\":\"\"}]}"
     }
 
     def "update targeting"() {
@@ -45,15 +51,31 @@ class TargetingServiceSpec extends Specification {
         targetingRequest.setDisabled(false)
         def ret = targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
         then:
+        segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
-                Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
+                Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
                         content: "", disabled: true))
+        1 * targetingSegmentRepository.deleteByTargetingId(1)
+        1 * targetingSegmentRepository.saveAll(_)
         1 * targetingRepository.save(_) >> new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
                 content: content, disabled: false)
         with(ret) {
             content == it.content
             false == it.disabled
         }
+    }
+
+    def "update targeting segment not found" () {
+        when:
+        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingContent targetingContent = JsonMapper.toObject(content, TargetingContent.class);
+        targetingRequest.setContent(targetingContent)
+        targetingRequest.setDisabled(false)
+        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        then:
+        segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> false
+        then:
+        thrown(ResourceNotFoundException)
     }
 
 

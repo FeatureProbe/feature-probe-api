@@ -1,7 +1,6 @@
 package com.featureprobe.api.dto;
 
-import com.featureprobe.api.model.SegmentRule;
-import com.featureprobe.sdk.server.model.Rule;
+import com.featureprobe.api.model.SegmentRuleModel;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
@@ -15,6 +14,6 @@ public class SegmentUpdateRequest {
 
     private String description;
 
-    private List<SegmentRule> rules;
+    private List<SegmentRuleModel> rules;
 
 }
