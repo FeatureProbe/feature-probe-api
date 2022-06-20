@@ -51,4 +51,4 @@ jobs:
       -
         name: Inspect image
         run: |
-          docker buildx imagetools inspect featureprobe/ui:1.0.1
+          docker buildx imagetools inspect featureprobe/api:1.0.1
