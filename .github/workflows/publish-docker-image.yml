@@ -47,8 +47,9 @@ jobs:
             --platform linux/amd64,linux/arm64 \
             --output "type=image,push=true" \
             --tag featureprobe/api:1.0.1 \
+            --tag featureprobe/api:latest \
             --file ./Dockerfile ./
       -
         name: Inspect image
         run: |
-          docker buildx imagetools inspect featureprobe/api:1.0.1
+          docker buildx imagetools inspect featureprobe/api
