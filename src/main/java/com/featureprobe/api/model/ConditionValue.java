@@ -2,6 +2,7 @@ package com.featureprobe.api.model;
 
 import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
+import com.featureprobe.sdk.server.model.PredicateType;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,7 +22,7 @@ public class ConditionValue {
         Condition condition = new Condition();
         condition.setType(ConditionType.forValue(type));
         condition.setSubject(subject);
-        condition.setPredicate(predicate);
+        condition.setPredicate(PredicateType.forValue(predicate));
         condition.setObjects(objects);
         return condition;
     }
