@@ -1,6 +1,6 @@
 package com.featureprobe.api.auth;
 
-import com.featureprobe.api.dto.ErrorResponse;
+import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +44,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     AuthenticationEntryPoint authenticationEntryPoint() {
         AuthenticationEntryPoint authenticationEntryPoint = (httpServletRequest, httpServletResponse, e) ->
         {
-            ErrorResponse res = new ErrorResponse(HttpStatus.UNAUTHORIZED.name().toLowerCase(),
+            BaseResponse res = new BaseResponse(HttpStatus.UNAUTHORIZED.name().toLowerCase(),
                     HttpStatus.UNAUTHORIZED.getReasonPhrase());
             httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value());
             httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);

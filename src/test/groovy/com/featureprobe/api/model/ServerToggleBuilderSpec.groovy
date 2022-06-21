@@ -13,10 +13,11 @@ class ServerToggleBuilderSpec extends Specification {
                 .returnType("boolean")
                 .version(1000)
                 .rules(new TargetingContent(
-                        rules: [newSelectRule("rule1", 0, [newStringCondition("city", ["1"])])],
+                        rules: [newSelectRule("rule1", 0, [newStringCondition("city", ["1"]),
+                                                           newSegmentCondition(["test_segment"])])],
                         disabledServe: newSelectServe(1),
                         defaultServe: newSplitServe([2000, 3000, 5000]),
-                        variations: newVariations(["true", "false"])).toJson()).build()
+                        variations: newVariations(["true", "false"])).toJson()).build("test_project")
         then:
         with(toggle) {
             "toggle1" == key
@@ -29,8 +30,13 @@ class ServerToggleBuilderSpec extends Specification {
             [true, false] == variations
 
             with(rules[0]) {
-                1 == conditions.size()
+                2 == conditions.size()
             }
+
+            with(rules[0].conditions[1]) {
+                "test_project\$test_segment" == objects[0]
+            }
+
         }
     }
 
@@ -51,6 +57,30 @@ class ServerToggleBuilderSpec extends Specification {
             [[[0, 5000]], [[5000, 10000]]] == defaultServe.split.distribution
             0 == rules.size()
             [1.14, 1000] == variations
+        }
+    }
+
+    def "build server segments" () {
+        when:
+        def segment = new ServerSegmentBuilder().builder()
+                .uniqueId("test_project", "test_segment")
+                .version(1000)
+                .rules("[{\"conditions\":[{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"is one of\"," +
+                        "\"objects\":[\"zhangsan\",\"wangwu\",\"lishi\",\"miss\"]},{\"type\":\"string\"," +
+                        "\"subject\":\"userId\",\"predicate\":\"is one of\",\"objects\":[\"huahau\"," +
+                        "\"kaka\"]}],\"name\":\"\"}]")
+                .build()
+        then:
+        with(segment) {
+            "test_project\$test_segment" == uniqueId
+            1000 == version
+            1 == rules.size()
+            with(rules[0]) {
+                2 == conditions.size()
+                with(conditions[0]) {
+                    4 == objects.size()
+                }
+            }
         }
     }
 
@@ -95,5 +125,9 @@ class ServerToggleBuilderSpec extends Specification {
 
     def newStringCondition(subject, objects) {
         new ConditionValue(type: "string", subject: subject, predicate: "is one of", objects: objects)
+    }
+
+    def newSegmentCondition(objects) {
+        new ConditionValue(type: "segment", predicate: "is in", objects: objects)
     }
 }

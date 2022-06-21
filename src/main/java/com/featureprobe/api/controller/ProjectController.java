@@ -5,6 +5,9 @@ import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
+import com.featureprobe.api.base.enums.ResponseCodeEnum;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
+import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
 import com.featureprobe.api.dto.ProjectResponse;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -67,4 +71,16 @@ public class ProjectController {
             @PathVariable("projectKey") String projectKey) {
         return projectService.queryByKey(projectKey);
     }
+
+    @GetMapping("/exists")
+    @GetApiResponse
+    @Operation(summary = "Check project exist", description = "Check project exist")
+    public BaseResponse exists(
+            @RequestParam ValidateTypeEnum type,
+            @RequestParam String value) {
+        projectService.validateExists(type, value);
+        return new BaseResponse(ResponseCodeEnum.SUCCESS);
+    }
+
+    
 }

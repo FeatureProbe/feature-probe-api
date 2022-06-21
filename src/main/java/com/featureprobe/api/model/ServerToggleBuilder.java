@@ -2,11 +2,13 @@ package com.featureprobe.api.model;
 
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.sdk.server.model.ConditionType;
 import com.featureprobe.sdk.server.model.Rule;
 import com.featureprobe.sdk.server.model.Toggle;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -72,11 +74,11 @@ public class ServerToggleBuilder {
         throw new ServerToggleBuildException("return type is unknown:" + type);
     }
 
-    public Toggle build() {
+    public Toggle build(String projectKey) {
         this.setDisabledServe();
         this.setDefaultServe();
         this.setVariations();
-        this.setRules();
+        this.setRules(projectKey);
 
         return toggle;
     }
@@ -111,12 +113,18 @@ public class ServerToggleBuilder {
         toggle.setVariations(variations);
     }
 
-    private void setRules() {
+    private void setRules(String projectKey) {
         if (CollectionUtils.isEmpty(targetingContent.getRules())) {
             toggle.setRules(Collections.emptyList());
             return;
         }
-        List<Rule> rules = targetingContent.getRules().stream().map(ToggleRule::toRule).collect(Collectors.toList());
+        List<Rule> rules = targetingContent.getRules().stream().map(rule ->
+                rule.toRule()).collect(Collectors.toList());
+        rules.forEach(rule -> rule.getConditions().forEach(condition -> {
+            if (condition.getType() != ConditionType.SEGMENT) return;
+            condition.setObjects(condition.getObjects().stream().map(segmentKey ->
+                    StringUtils.join(projectKey, '$', segmentKey)).collect(Collectors.toList()));
+        }));
         toggle.setRules(rules);
     }
 

@@ -2,9 +2,9 @@ package com.featureprobe.api.base.constants;
 
 public enum ResponseCode {
 
-    CONFLICT("conflict", "resource.error.conflict"),
-    NOT_FOUND("not_found", "resource.error.not_found"),
-    INVALID_REQUEST("invalid_request", "validate.invalid_request");
+    CONFLICT("conflict", MessageKey.CONFLICT),
+    NOT_FOUND("not_found", MessageKey.NOT_FOUND),
+    INVALID_REQUEST("invalid_request", MessageKey.INVALID_REQUEST);
 
     private String code;
 

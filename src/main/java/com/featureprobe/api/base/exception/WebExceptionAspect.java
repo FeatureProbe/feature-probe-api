@@ -2,9 +2,9 @@ package com.featureprobe.api.base.exception;
 
 
 import com.featureprobe.api.base.constants.ResponseCode;
-import com.featureprobe.api.dto.ErrorResponse;
-import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.util.I18nUtil;
+import com.featureprobe.api.mapper.JsonMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -50,12 +50,21 @@ public class WebExceptionAspect {
         response.getWriter().write(toErrorResponse(ResponseCode.INVALID_REQUEST));
     }
 
+    @ExceptionHandler(value = IllegalArgumentException.class)
+    public void invalidHandler(HttpServletResponse response, IllegalArgumentException e)
+            throws IOException {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write(toErrorResponse(ResponseCode.INVALID_REQUEST,
+                i18nUtil.get(e.getMessage())));
+    }
+
     private String toErrorResponse(ResponseCode resourceCode) {
         return toErrorResponse(resourceCode, i18nUtil.get(resourceCode.messageKey()));
     }
 
     private String toErrorResponse(ResponseCode responseCode, String message) {
-        return JsonMapper.toJSONString(new ErrorResponse(responseCode.code(), message));
+        return JsonMapper.toJSONString(new BaseResponse(responseCode.code(), message));
     }
 
 }

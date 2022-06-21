@@ -1,6 +1,6 @@
 package com.featureprobe.api.auth;
 
-import com.featureprobe.api.dto.ErrorResponse;
+import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,7 +19,7 @@ public class LoginFailureHandler implements AuthenticationFailureHandler  {
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException {
-        ErrorResponse res = new ErrorResponse(HttpStatus.FORBIDDEN.name().toLowerCase(),
+        BaseResponse res = new BaseResponse(HttpStatus.FORBIDDEN.name().toLowerCase(),
                 HttpStatus.FORBIDDEN.getReasonPhrase());
         response.setStatus(HttpStatus.FORBIDDEN.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

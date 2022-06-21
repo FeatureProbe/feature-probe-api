@@ -1,26 +1,30 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
-import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
+import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
+import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.entity.Tag;
 import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.Toggle;
 import com.featureprobe.api.entity.ToggleTagRelation;
 import com.featureprobe.api.mapper.ToggleMapper;
-import com.featureprobe.api.model.ServerToggleBuilder;
+import com.featureprobe.api.model.ServerSegmentBuilder;
 import com.featureprobe.api.model.TargetingContent;
+import com.featureprobe.api.model.ServerToggleBuilder;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
+import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TagRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.ToggleRepository;
@@ -60,6 +64,8 @@ public class ToggleService {
 
     private ToggleRepository toggleRepository;
 
+    private SegmentRepository segmentRepository;
+
     private TagRepository tagRepository;
 
     private ToggleTagRepository toggleTagRepository;
@@ -74,27 +80,19 @@ public class ToggleService {
     public ToggleResponse create(String projectKey, ToggleCreateRequest createRequest) {
         Toggle toggle = createToggle(projectKey, createRequest);
         createDefaultTargetingEntities(projectKey, toggle);
-
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        validateExists(projectKey, createRequest.getKey());
-
+        validateKey(projectKey, createRequest.getKey());
+        validateName(projectKey, createRequest.getName());
         Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
         toggle.setProjectKey(projectKey);
         toggle.setDeleted(false);
         toggle.setArchived(false);
         setToggleTagRefs(toggle, createRequest.getTags());
-
         toggleRepository.save(toggle);
         return toggle;
-    }
-
-    private void validateExists(String projectKey, String toggleKey) {
-        if (toggleRepository.existsByProjectKeyAndKey(projectKey, toggleKey)) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
-        }
     }
 
     private void createDefaultTargetingEntities(String projectKey, Toggle toggle) {
@@ -125,7 +123,9 @@ public class ToggleService {
     @Transactional(rollbackFor = Exception.class)
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
-
+        if(!StringUtils.equals(toggle.getName(), updateRequest.getName())) {
+            validateName(projectKey, updateRequest.getName());
+        }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);
         setToggleTagRefs(toggle, updateRequest.getTags());
 
@@ -283,16 +283,40 @@ public class ToggleService {
     }
 
     public ServerResponse queryServerTogglesByServerSdkKey(String serverSdkKey) {
+        return new ServerResponse(queryTogglesBySdkKey(serverSdkKey), querySegmentsBySdkKey(serverSdkKey));
+    }
+
+    private List<com.featureprobe.sdk.server.model.Segment> querySegmentsBySdkKey(String serverSdkKey) {
         Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey);
-        if (environment == null) {
-            return new ServerResponse();
+        if (Objects.isNull(environment)) {
+            return Collections.emptyList();
+        }
+        List<Segment> segments = segmentRepository.findAllByProjectKey(environment.getProject().getKey());
+        return segments.stream().map(segment -> {
+            try {
+                return new ServerSegmentBuilder().builder()
+                        .uniqueId(segment.getProjectKey(), segment.getKey())
+                        .version(segment.getVersion())
+                        .rules(segment.getRules())
+                        .build();
+            } catch (Exception e) {
+                log.error("Build server segment failed, server sdk key: {}, segment key: {}",
+                        serverSdkKey, segment.getKey(), e);
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private List<com.featureprobe.sdk.server.model.Toggle> queryTogglesBySdkKey(String serverSdkKey) {
+        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey);
+        if (Objects.isNull(environment)) {
+            return Collections.emptyList();
         }
         List<Toggle> toggles = toggleRepository.findAllByProjectKey(environment.getProject().getKey());
         Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKey(
                 environment.getProject().getKey(),
                 environment.getKey()).stream().collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
-
-        return new ServerResponse(toggles.stream().map(toggle -> {
+        return toggles.stream().map(toggle -> {
             Targeting targeting = targetingByKey.get(toggle.getKey());
             try {
                 return new ServerToggleBuilder().builder()
@@ -302,13 +326,40 @@ public class ToggleService {
                         .returnType(toggle.getReturnType())
                         .forClient(toggle.getClientAvailability())
                         .rules(targeting.getContent())
-                        .build();
-            } catch (ServerToggleBuildException e) {
+                        .build(environment.getProject().getKey());
+            } catch (Exception e) {
                 log.error("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
                         serverSdkKey, targeting.getToggleKey(), targeting.getEnvironmentKey(), e);
                 return null;
             }
 
-        }).filter(Objects::nonNull).collect(Collectors.toList()), Collections.emptyList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
+
+    public void validateExists(String projectKey, ValidateTypeEnum type, String  value) {
+        switch (type) {
+            case KEY:
+                validateKey(projectKey, value);
+                break;
+            case NAME:
+                validateName(projectKey, value);
+                break;
+            default:
+                break;
+        }
+    }
+
+
+    private void validateKey(String projectKey, String key) {
+        if (toggleRepository.countByKeyIncludeDeleted(projectKey, key) > 0) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
+    private void validateName(String projectKey, String name) {
+        if (toggleRepository.countByNameIncludeDeleted(projectKey, name) > 0) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
 }

@@ -4,6 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+
     <groupId>com.featureprobe</groupId>
     <artifactId>feature-probe-api</artifactId>
     <version>1.0.1</version>
@@ -84,9 +85,19 @@
             <version>2.11.0</version>
         </dependency>
         <dependency>
-            <groupId>com.github.FeatureProbe</groupId>
+            <groupId>com.github.featureprobe</groupId>
             <artifactId>server-sdk-java</artifactId>
-            <version>1.0.1</version>
+            <version>1.1.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-sql</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mapstruct</groupId>
