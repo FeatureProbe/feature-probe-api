@@ -46,9 +46,10 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --platform linux/amd64,linux/arm64 \
             --output "type=image,push=true" \
+            --tag featureprobe/api: ${{ steps.meta.outputs.tags }} \
             --tag featureprobe/api:latest \
             --file ./Dockerfile ./
       -
         name: Inspect image
         run: |
-          docker buildx imagetools inspect featureprobe/ui:latest
+          docker buildx imagetools inspect featureprobe/api
