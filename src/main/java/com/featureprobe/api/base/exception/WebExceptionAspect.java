@@ -43,7 +43,7 @@ public class WebExceptionAspect {
     }
 
     @ExceptionHandler(value = ForbiddenException.class)
-    public void resourceConflictHandler(HttpServletResponse response, ForbiddenException e)
+    public void forbiddenHandler(HttpServletResponse response, ForbiddenException e)
             throws IOException {
         response.setStatus(HttpStatus.FORBIDDEN.value());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
