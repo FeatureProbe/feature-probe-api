@@ -42,12 +42,21 @@ public class WebExceptionAspect {
         response.getWriter().write(toErrorResponse(ResponseCode.CONFLICT));
     }
 
-    @ExceptionHandler(value = PasswordErrorException.class)
-    public void passwordErrorHandler(HttpServletResponse response, PasswordErrorException e)
+    @ExceptionHandler(value = ForbiddenException.class)
+    public void forbiddenHandler(HttpServletResponse response, ForbiddenException e)
+            throws IOException {
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write(toErrorResponse(ResponseCode.FORBIDDEN));
+    }
+
+    @ExceptionHandler(value = IllegalArgumentException.class)
+    public void invalidArgumentHandler(HttpServletResponse response, IllegalArgumentException e)
             throws IOException {
         response.setStatus(HttpStatus.BAD_REQUEST.value());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(toErrorResponse(ResponseCode.INVALID_REQUEST));
+        response.getWriter().write(toErrorResponse(ResponseCode.INVALID_REQUEST,
+                i18nUtil.get(e.getMessage())));
     }
 
     @ExceptionHandler(value = IllegalArgumentException.class)

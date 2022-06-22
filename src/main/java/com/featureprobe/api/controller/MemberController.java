@@ -54,7 +54,7 @@ public class MemberController {
     @GetMapping
     @Operation(summary = "List Member", description = "Get a list of all member")
     public Page<MemberResponse> list(MemberSearchRequest searchRequest) {
-        return memberService.list(searchRequest);
+        return memberService.query(searchRequest);
     }
 
     @PatchMapping
@@ -78,6 +78,6 @@ public class MemberController {
     @GetMapping("/query")
     @Operation(summary = "Get member", description = "Get a single member by account.")
     public MemberResponse query(String account) {
-        return memberService.query(account);
+        return memberService.queryByAccount(account);
     }
 }

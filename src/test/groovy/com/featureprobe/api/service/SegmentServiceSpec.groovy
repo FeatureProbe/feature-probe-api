@@ -4,6 +4,7 @@ import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.PaginationRequest
 import com.featureprobe.api.dto.SegmentCreateRequest
+import com.featureprobe.api.dto.SegmentSearchRequest
 import com.featureprobe.api.dto.SegmentUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Segment
@@ -169,6 +170,18 @@ class SegmentServiceSpec extends Specification{
             1 == toggles.size
         }
     }
+
+    def "list toggles"() {
+        when:
+        def segments = segmentService.list(projectKey,
+                new SegmentSearchRequest(pageIndex: 0, pageSize: 5))
+
+        then:
+        1 * segmentRepository.findAll(_, _) >> new PageImpl<>([new Segment(key: "test_segment")],
+                Pageable.ofSize(1), 1)
+        1 == segments.size()
+    }
+
 
 }
 
