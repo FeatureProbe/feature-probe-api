@@ -32,4 +32,5 @@ logging:
     org.hibernate.SQL: INFO
     org.hibernate.type.descriptor.sql.BasicBinder: trace
   config: classpath:logback/logback.xml
-  path: /featureprobe/logs
+  file:
+    path: ./logs

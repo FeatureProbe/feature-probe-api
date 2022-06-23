@@ -15,7 +15,7 @@ server:
       rotate: true
       suffix: .log
       pattern: "[access_log] %t %I \"%r\" %h %l %u :%{featureprobe-header-rid}i %s %b %D ref=%{Referer}i ua=%{User-Agent}i  origin=%{origin}i"
-      directory: /workspace/logs/accesslog/
+      directory: ./logs/accesslog/
       max-days: 15
 
 spring:
