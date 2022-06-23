@@ -2,13 +2,17 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.TargetingRequest
+import com.featureprobe.api.dto.TargetingVersionRequest
 import com.featureprobe.api.entity.Targeting
+import com.featureprobe.api.entity.TargetingVersion
 import com.featureprobe.api.mapper.JsonMapper
 import com.featureprobe.api.model.TargetingContent
 import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingSegmentRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -95,6 +99,18 @@ class TargetingServiceSpec extends Specification {
             content == it.content
             false == it.disabled
         }
+    }
+
+    def "query targeting version history"() {
+        when:
+        def versions = targetingService.versions(projectKey, environmentKey,
+                new TargetingVersionRequest())
+        then:
+        1 * targetingVersionRepository
+                .findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey, _) >>
+                new PageImpl<>([new TargetingVersion()], Pageable.ofSize(1), 1)
+        1 == versions.size
+
     }
 
 }

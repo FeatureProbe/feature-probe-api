@@ -2,11 +2,14 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
+import com.featureprobe.api.dto.ServerResponse
 import com.featureprobe.api.dto.ToggleCreateRequest
 import com.featureprobe.api.dto.ToggleSearchRequest
 import com.featureprobe.api.dto.ToggleUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Event
+import com.featureprobe.api.entity.Project
+import com.featureprobe.api.entity.Segment
 import com.featureprobe.api.entity.Tag
 import com.featureprobe.api.entity.Targeting
 import com.featureprobe.api.entity.Toggle
@@ -46,6 +49,9 @@ class ToggleServiceSpec extends Specification {
     def environmentKey
     def toggleKey
     def toggleName
+    def sdkKey
+    def rules
+    def segmentRules
 
     def setup() {
         toggleRepository = Mock(ToggleRepository)
@@ -61,6 +67,9 @@ class ToggleServiceSpec extends Specification {
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
         toggleName = "test_toggle"
+        sdkKey = "server-123456"
+        rules = "{\"rules\":[{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\",\"predicate\":\"is one of\",\"objects\":[\"Paris\"]},{\"type\":\"string\",\"subject\":\"gender\",\"predicate\":\"is one of\",\"objects\":[\"famale\"]}],\"name\":\"Paris women show 50% red buttons, 50% blue\",\"serve\":{\"split\":[5000,5000,0]}}],\"disabledServe\":{\"select\":1},\"defaultServe\":{\"select\":1},\"variations\":[{\"value\":\"red\",\"name\":\"Red Button\",\"description\":\"Set button color to Red\"},{\"value\":\"blue\",\"name\":\"Blue Button\",\"description\":\"Set button color to Blue\"}]}"
+        segmentRules = "[{\"conditions\":[{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"is one of\",\"objects\":[\"zhangsan\",\"wangwu\",\"lishi\",\"miss\"]},{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"is one of\",\"objects\":[\"huahau\",\"kaka\",\"dada\"]}],\"name\":\"\"}]"
     }
 
     def "query toggle by key"() {
@@ -167,5 +176,25 @@ class ToggleServiceSpec extends Specification {
         1 * toggleRepository.countByNameIncludeDeleted(projectKey, toggleName) >> 1
         then:
         thrown ResourceConflictException
+    }
+
+    def "query server toggles by server sdkKey"() {
+        when:
+        def serverResponse = toggleService.queryServerTogglesByServerSdkKey(sdkKey)
+        then:
+        2 * environmentRepository.findByServerSdkKey(sdkKey) >>
+                new Environment(project: new Project(key: projectKey), key: environmentKey)
+        2 * segmentRepository.findAllByProjectKey(projectKey) >>
+                [new Segment(projectKey: projectKey, key: "test_segment",
+                        uniqueKey: projectKey + "\$test_segment", rules: segmentRules)]
+        1 * toggleRepository.findAllByProjectKey(projectKey) >>
+                [new Toggle(projectKey: projectKey, key: toggleKey, returnType: "string", clientAvailability: false)]
+        1 * targetingRepository.findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey) >>
+                [new Targeting(projectKey: projectKey, environmentKey: environmentKey,
+                        toggleKey: toggleKey, content: rules, disabled: false)]
+        with(serverResponse) {
+            1 == toggles.size()
+            1 == segments.size()
+        }
     }
 }
