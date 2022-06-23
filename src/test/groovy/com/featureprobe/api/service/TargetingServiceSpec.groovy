@@ -8,6 +8,7 @@ import com.featureprobe.api.model.TargetingContent
 import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingSegmentRepository
+import com.featureprobe.api.repository.TargetingVersionRepository
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -19,6 +20,7 @@ class TargetingServiceSpec extends Specification {
     TargetingRepository targetingRepository
     SegmentRepository segmentRepository
     TargetingSegmentRepository targetingSegmentRepository
+    TargetingVersionRepository targetingVersionRepository
 
     def projectKey
     def environmentKey
@@ -29,7 +31,9 @@ class TargetingServiceSpec extends Specification {
         targetingRepository = Mock(TargetingRepository)
         segmentRepository = Mock(SegmentRepository)
         targetingSegmentRepository = Mock(TargetingSegmentRepository)
-        targetingService = new TargetingService(targetingRepository, segmentRepository, targetingSegmentRepository)
+        targetingVersionRepository = Mock(TargetingVersionRepository)
+        targetingService = new TargetingService(targetingRepository, segmentRepository,
+                targetingSegmentRepository, targetingVersionRepository)
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
@@ -54,11 +58,12 @@ class TargetingServiceSpec extends Specification {
         segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
                 Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
-                        content: "", disabled: true))
+                        content: "", disabled: true, version: 1))
         1 * targetingSegmentRepository.deleteByTargetingId(1)
         1 * targetingSegmentRepository.saveAll(_)
         1 * targetingRepository.save(_) >> new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
-                content: content, disabled: false)
+                content: content, disabled: false, version: 2)
+        1 * targetingVersionRepository.save(_)
         with(ret) {
             content == it.content
             false == it.disabled
