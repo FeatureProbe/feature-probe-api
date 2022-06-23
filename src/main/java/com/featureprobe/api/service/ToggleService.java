@@ -295,7 +295,7 @@ public class ToggleService {
         return segments.stream().map(segment -> {
             try {
                 return new ServerSegmentBuilder().builder()
-                        .uniqueId(segment.getProjectKey(), segment.getKey())
+                        .uniqueId(segment.getUniqueKey())
                         .version(segment.getVersion())
                         .rules(segment.getRules())
                         .build();
@@ -312,6 +312,7 @@ public class ToggleService {
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
+        List<Segment> segments = segmentRepository.findAllByProjectKey(environment.getProject().getKey());
         List<Toggle> toggles = toggleRepository.findAllByProjectKey(environment.getProject().getKey());
         Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKey(
                 environment.getProject().getKey(),
@@ -326,7 +327,8 @@ public class ToggleService {
                         .returnType(toggle.getReturnType())
                         .forClient(toggle.getClientAvailability())
                         .rules(targeting.getContent())
-                        .build(environment.getProject().getKey());
+                        .segments(segments.stream().collect(Collectors.toMap(Segment::getKey, Function.identity())))
+                        .build();
             } catch (Exception e) {
                 log.error("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
                         serverSdkKey, targeting.getToggleKey(), targeting.getEnvironmentKey(), e);

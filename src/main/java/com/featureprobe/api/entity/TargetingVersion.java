@@ -13,7 +13,6 @@ import org.hibernate.annotations.Where;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import javax.persistence.Version;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -21,30 +20,25 @@ import javax.persistence.Version;
 @Data
 @Builder
 @Entity
-@Table(name = "segment")
+@Table(name = "targeting_version")
+@Where(clause = "deleted = 0")
 @DynamicInsert
 @ToString(callSuper = true)
-@Where(clause = "deleted = 0")
-public class Segment extends AbstractAuditEntity {
+public class TargetingVersion extends AbstractAuditEntity {
 
-    private String name;
-
-    @Column(name = "[key]")
-    private String key;
-
-    @Column(name = "unique_Key")
-    private String uniqueKey;
-
-    private String description;
+    @Column(name = "targeting_id")
+    private Long targetingId;
 
     @Column(name = "project_key")
     private String projectKey;
 
-    @Version
+    @Column(name = "environment_key")
+    private String environmentKey;
+
+    private String comment;
+
+    private String content;
+
     private Long version;
-
-    private String rules;
-
-    private Boolean deleted;
 
 }

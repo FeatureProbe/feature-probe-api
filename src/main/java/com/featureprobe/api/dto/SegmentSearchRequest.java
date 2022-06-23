@@ -6,4 +6,6 @@ import lombok.Data;
 public class SegmentSearchRequest extends PaginationRequest {
 
     private String keyword;
+
+    private Boolean includeDeleted = false;
 }

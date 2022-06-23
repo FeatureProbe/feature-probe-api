@@ -53,9 +53,16 @@ public class SegmentService {
     private EnvironmentRepository environmentRepository;
 
     public Page<SegmentResponse> list(String projectKey, SegmentSearchRequest searchRequest) {
-        Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest.getKeyword());
+        if (searchRequest.getIncludeDeleted()) {
+            Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
+                    Sort.Direction.DESC, "created_time");
+            Page<Segment> segments = segmentRepository.findAllByKeywordIncludeDeleted(projectKey,
+                    searchRequest.getKeyword(), pageable);
+            return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
+        }
         Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
                 Sort.Direction.DESC, "createdTime");
+        Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest.getKeyword());
         return findPagingBySpec(spec, pageable);
     }
 
@@ -64,6 +71,7 @@ public class SegmentService {
         validateName(projectKey, createRequest.getName());
         Segment segment = SegmentMapper.INSTANCE.requestToEntity(createRequest);
         segment.setProjectKey(projectKey);
+        segment.setUniqueKey(StringUtils.join(projectKey, "$", createRequest.getKey()));
         return SegmentMapper.INSTANCE.entityToResponse(segmentRepository.save(segment));
     }
 
