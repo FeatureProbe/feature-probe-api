@@ -3,6 +3,7 @@ package com.featureprobe.api.model;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
 import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
 import com.featureprobe.sdk.server.model.Rule;
 import com.featureprobe.sdk.server.model.Toggle;
@@ -85,7 +86,7 @@ public class ServerToggleBuilder {
         this.setDisabledServe();
         this.setDefaultServe();
         this.setVariations();
-        this.setRules(segments);
+        this.setRules();
         return toggle;
     }
 
@@ -119,7 +120,7 @@ public class ServerToggleBuilder {
         toggle.setVariations(variations);
     }
 
-    private void setRules(Map<String, Segment> segments) {
+    private void setRules() {
         if (CollectionUtils.isEmpty(targetingContent.getRules())) {
             toggle.setRules(Collections.emptyList());
             return;
@@ -128,10 +129,14 @@ public class ServerToggleBuilder {
                 rule.toRule()).collect(Collectors.toList());
         rules.forEach(rule -> rule.getConditions().forEach(condition -> {
             if (condition.getType() != ConditionType.SEGMENT) return;
-            condition.setObjects(condition.getObjects().stream().map(segmentKey ->
-                    segments.get(segmentKey).getUniqueKey()).collect(Collectors.toList()));
+            replaceSegmentKeyToUniqueKey(condition);
         }));
         toggle.setRules(rules);
+    }
+
+    private void replaceSegmentKeyToUniqueKey(Condition condition) {
+        condition.setObjects(condition.getObjects().stream().map(segmentKey ->
+                segments.get(segmentKey).getUniqueKey()).collect(Collectors.toList()));
     }
 
 }

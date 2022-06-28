@@ -11,4 +11,9 @@ public class PageRequestUtil {
         return PageRequest.of(pageRequest.getPageIndex(), pageRequest.getPageSize(),
                 direction, sortBy);
     }
+
+    public static Pageable toCreatedTimeDescSortPageable(PaginationRequest pageRequest) {
+        return PageRequest.of(pageRequest.getPageIndex(), pageRequest.getPageSize(),
+                Sort.Direction.DESC, "createdTime");
+    }
 }

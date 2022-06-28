@@ -101,9 +101,9 @@ class TargetingServiceSpec extends Specification {
         }
     }
 
-    def "query targeting version history"() {
+    def "query targeting version"() {
         when:
-        def versions = targetingService.versions(projectKey, environmentKey,
+        def versions = targetingService.queryVersions(projectKey, environmentKey,
                 new TargetingVersionRequest())
         then:
         1 * targetingVersionRepository

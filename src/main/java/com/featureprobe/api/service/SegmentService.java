@@ -21,6 +21,7 @@ import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingSegmentRepository;
 import com.featureprobe.api.repository.ToggleRepository;
+import com.featureprobe.api.util.PageRequestUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -54,16 +55,13 @@ public class SegmentService {
 
     public Page<SegmentResponse> list(String projectKey, SegmentSearchRequest searchRequest) {
         if (searchRequest.getIncludeDeleted()) {
-            Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
-                    Sort.Direction.DESC, "created_time");
+            Pageable pageable = PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "created_time");
             Page<Segment> segments = segmentRepository.findAllByKeywordIncludeDeleted(projectKey,
                     searchRequest.getKeyword(), pageable);
             return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
         }
-        Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
-                Sort.Direction.DESC, "createdTime");
         Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest.getKeyword());
-        return findPagingBySpec(spec, pageable);
+        return findPagingBySpec(spec, PageRequestUtil.toCreatedTimeDescSortPageable(searchRequest));
     }
 
     public SegmentResponse create(String projectKey, SegmentCreateRequest createRequest) {
