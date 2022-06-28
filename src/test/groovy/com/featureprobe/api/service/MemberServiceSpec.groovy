@@ -2,6 +2,7 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.auth.UserPasswordAuthenticationToken
 import com.featureprobe.api.base.enums.RoleEnum
+import com.featureprobe.api.base.exception.ForbiddenException
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.MemberCreateRequest
@@ -115,6 +116,17 @@ class MemberServiceSpec extends Specification {
             "root" == account
             "MEMBER" == role
         }
+    }
+
+    def "delete member failed when logged user is not admin"() {
+        given:
+        setAuthContext("user", "MEMBER")
+
+        when:
+        memberService.delete("s1")
+
+        then:
+        thrown(ForbiddenException)
     }
 
     def "update member visited time by account"() {
