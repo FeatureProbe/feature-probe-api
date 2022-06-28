@@ -1,5 +1,6 @@
 package com.featureprobe.api.model
 
+import com.featureprobe.api.entity.Segment
 import spock.lang.Specification
 
 
@@ -17,7 +18,9 @@ class ServerToggleBuilderSpec extends Specification {
                                                            newSegmentCondition(["test_segment"])])],
                         disabledServe: newSelectServe(1),
                         defaultServe: newSplitServe([2000, 3000, 5000]),
-                        variations: newVariations(["true", "false"])).toJson()).build("test_project")
+                        variations: newVariations(["true", "false"])).toJson())
+                .segments(["test_segment": new Segment(uniqueKey: "test_project\$test_segment")])
+                .build()
         then:
         with(toggle) {
             "toggle1" == key
@@ -63,7 +66,7 @@ class ServerToggleBuilderSpec extends Specification {
     def "build server segments" () {
         when:
         def segment = new ServerSegmentBuilder().builder()
-                .uniqueId("test_project", "test_segment")
+                .uniqueId("test_project\$test_segment")
                 .version(1000)
                 .rules("[{\"conditions\":[{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"is one of\"," +
                         "\"objects\":[\"zhangsan\",\"wangwu\",\"lishi\",\"miss\"]},{\"type\":\"string\"," +
@@ -130,4 +133,5 @@ class ServerToggleBuilderSpec extends Specification {
     def newSegmentCondition(objects) {
         new ConditionValue(type: "segment", predicate: "is in", objects: objects)
     }
+
 }

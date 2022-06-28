@@ -8,12 +8,15 @@ import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
 import com.featureprobe.api.dto.TargetingRequest;
 import com.featureprobe.api.dto.TargetingResponse;
+import com.featureprobe.api.dto.TargetingVersionRequest;
+import com.featureprobe.api.dto.TargetingVersionResponse;
 import com.featureprobe.api.service.TargetingService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -58,5 +61,13 @@ public class TargetingController {
         return targetingService.queryByKey(projectKey, environmentKey, toggleKey);
     }
 
-
+    @GetApiResponse
+    @GetMapping("/versions")
+    @Operation(summary = "Get targeting versions", description = "Get targeting version history.")
+    public Page<TargetingVersionResponse> versions(
+            @PathVariable("projectKey") String projectKey,
+            @PathVariable("environmentKey") String environmentKey,
+            TargetingVersionRequest targetingVersionRequest) {
+        return targetingService.queryVersions(projectKey, environmentKey, targetingVersionRequest);
+    }
 }

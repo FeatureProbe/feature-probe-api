@@ -1,14 +1,15 @@
 package com.featureprobe.api.model;
 
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
+import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
 import com.featureprobe.sdk.server.model.Rule;
 import com.featureprobe.sdk.server.model.Toggle;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -21,8 +22,10 @@ public class ServerToggleBuilder {
     private Toggle toggle;
     private Variation.ValueConverter variationValueConverter;
     private TargetingContent targetingContent;
+    private Map<String, Segment> segments;
 
     private static Map<String, Variation.ValueConverter<?>> converters = Maps.newHashMap();
+
 
     static {
         converters.put("string", value -> value);
@@ -62,6 +65,11 @@ public class ServerToggleBuilder {
         return this;
     }
 
+    public ServerToggleBuilder segments(Map<String, Segment> segments) {
+        this.segments = segments;
+        return this;
+    }
+
     public ServerToggleBuilder returnType(String returnType) {
         this.variationValueConverter = getReturnTypeConverter(returnType);
         return this;
@@ -74,12 +82,11 @@ public class ServerToggleBuilder {
         throw new ServerToggleBuildException("return type is unknown:" + type);
     }
 
-    public Toggle build(String projectKey) {
+    public Toggle build() {
         this.setDisabledServe();
         this.setDefaultServe();
         this.setVariations();
-        this.setRules(projectKey);
-
+        this.setRules();
         return toggle;
     }
 
@@ -113,7 +120,7 @@ public class ServerToggleBuilder {
         toggle.setVariations(variations);
     }
 
-    private void setRules(String projectKey) {
+    private void setRules() {
         if (CollectionUtils.isEmpty(targetingContent.getRules())) {
             toggle.setRules(Collections.emptyList());
             return;
@@ -122,10 +129,14 @@ public class ServerToggleBuilder {
                 rule.toRule()).collect(Collectors.toList());
         rules.forEach(rule -> rule.getConditions().forEach(condition -> {
             if (condition.getType() != ConditionType.SEGMENT) return;
-            condition.setObjects(condition.getObjects().stream().map(segmentKey ->
-                    StringUtils.join(projectKey, '$', segmentKey)).collect(Collectors.toList()));
+            replaceSegmentKeyToUniqueKey(condition);
         }));
         toggle.setRules(rules);
+    }
+
+    private void replaceSegmentKeyToUniqueKey(Condition condition) {
+        condition.setObjects(condition.getObjects().stream().map(segmentKey ->
+                segments.get(segmentKey).getUniqueKey()).collect(Collectors.toList()));
     }
 
 }

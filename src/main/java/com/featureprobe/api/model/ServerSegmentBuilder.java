@@ -22,8 +22,8 @@ public class ServerSegmentBuilder {
         return this;
     }
 
-    public ServerSegmentBuilder uniqueId(String projectKey, String segmentKey) {
-        this.segment.setUniqueId(StringUtils.join(projectKey, '$', segmentKey));
+    public ServerSegmentBuilder uniqueId(String uniqueId) {
+        this.segment.setUniqueId(uniqueId);
         return this;
     }
 

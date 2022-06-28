@@ -171,7 +171,7 @@ class SegmentServiceSpec extends Specification{
         }
     }
 
-    def "list toggles"() {
+    def "list toggles exclude deleted"() {
         when:
         def segments = segmentService.list(projectKey,
                 new SegmentSearchRequest(pageIndex: 0, pageSize: 5))
@@ -182,6 +182,16 @@ class SegmentServiceSpec extends Specification{
         1 == segments.size()
     }
 
+    def "list toggles include deleted"() {
+        when:
+        def segments = segmentService.list(projectKey,
+                new SegmentSearchRequest(includeDeleted: true, pageIndex: 0, pageSize: 5))
+
+        then:
+        1 * segmentRepository.findAllByKeywordIncludeDeleted(_, _, _) >>
+                new PageImpl<>([new Segment(key: "test_segment")], Pageable.ofSize(1), 1)
+        1 == segments.size()
+    }
 
 }
 
