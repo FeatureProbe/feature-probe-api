@@ -30,6 +30,9 @@ class TargetingServiceSpec extends Specification {
     def environmentKey
     def toggleKey
     def content
+    def numberErrorContent
+    def datetimeErrorContent
+    def semVerErrorContent
 
     def setup() {
         targetingRepository = Mock(TargetingRepository)
@@ -42,13 +45,44 @@ class TargetingServiceSpec extends Specification {
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
         content = "{\"rules\":[{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\",\"predicate\":\"is one of\"," +
-                "\"objects\":[\"Paris\"]},{\"type\":\"segment\",\"predicate\":\"in\",\"objects\":[\"jjj\"," +
-                "\"test_users\",\"snapshot_users\"]}],\"name\":\"Users in Paris\",\"serve\":{\"select\":2}}," +
-                "{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\",\"predicate\":\"is one of\"," +
-                "\"objects\":[\"Lille\"]}],\"name\":\"Users in Lille\",\"serve\":{\"select\":1}}]," +
-                "\"disabledServe\":{\"select\":0},\"defaultServe\":{\"select\":0},\"variations\":[{\"value\":\"7\"," +
-                "\"name\":\"discount 0.7\",\"description\":\"\"},{\"value\":\"8\",\"name\":\"discount 0.8\"," +
-                "\"description\":\"\"},{\"value\":\"9\",\"name\":\"discount 0.9\",\"description\":\"\"}]}"
+                "\"objects\":[\"Paris\"]},{\"type\":\"segment\",\"subject\":\"\",\"predicate\":\"is in\"," +
+                "\"objects\":[\"test_segment\"]},{\"type\":\"number\",\"subject\":\"age\",\"predicate\":\"=\"," +
+                "\"objects\":[\"20\"]},{\"type\":\"datetime\",\"subject\":\"\",\"predicate\":\"before\"," +
+                "\"objects\":[\"2022/06/27 16:08:10+08:00\"]},{\"type\":\"semver\",\"subject\":\"\"," +
+                "\"predicate\":\"before\",\"objects\":[\"1.0.1\"]}],\"name\":\"Paris women show 50% red buttons, 50% blue\"," +
+                "\"serve\":{\"split\":[5000,5000,0]}}],\"disabledServe\":{\"select\":1},\"defaultServe\":{\"select\":1}," +
+                "\"variations\":[{\"value\":\"red\",\"name\":\"Red Button\",\"description\":\"Set button color to Red\"}," +
+                "{\"value\":\"blue\",\"name\":\"Blue Button\",\"description\":\"Set button color to Blue\"}]}"
+        numberErrorContent = "{\"rules\":[{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\"," +
+                "\"predicate\":\"is one of\",\"objects\":[\"Paris\"]},{\"type\":\"segment\",\"subject\":\"\"," +
+                "\"predicate\":\"is in\",\"objects\":[\"test_segment\"]},{\"type\":\"number\",\"subject\":\"age\"," +
+                "\"predicate\":\"=\",\"objects\":[\"20\",\"abc\"]},{\"type\":\"datetime\",\"subject\":\"\"," +
+                "\"predicate\":\"before\",\"objects\":[\"2022/06/27 16:08:10+08:00\"]},{\"type\":\"semver\"," +
+                "\"subject\":\"\",\"predicate\":\"before\",\"objects\":[\"1.0.1\"]}]," +
+                "\"name\":\"Paris women show 50% red buttons, 50% blue\",\"serve\":{\"split\":[5000,5000,0]}}]," +
+                "\"disabledServe\":{\"select\":1},\"defaultServe\":{\"select\":1},\"variations\":[{\"value\":\"red\"," +
+                "\"name\":\"Red Button\",\"description\":\"Set button color to Red\"},{\"value\":\"blue\"," +
+                "\"name\":\"Blue Button\",\"description\":\"Set button color to Blue\"}]}"
+        datetimeErrorContent = "{\"rules\":[{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\"," +
+                "\"predicate\":\"is one of\",\"objects\":[\"Paris\"]},{\"type\":\"segment\",\"subject\":\"\"," +
+                "\"predicate\":\"is in\",\"objects\":[\"test_segment\"]},{\"type\":\"number\",\"subject\":\"age\"," +
+                "\"predicate\":\"=\",\"objects\":[\"20\",\"abc\"]},{\"type\":\"datetime\",\"subject\":\"\"," +
+                "\"predicate\":\"before\",\"objects\":[\"2022/06/27 16:08:10+08:00\",\"2022/06/27 80:08:10+08:00\"]}," +
+                "{\"type\":\"semver\",\"subject\":\"\",\"predicate\":\"before\",\"objects\":[\"1.0.1\"]}]," +
+                "\"name\":\"Paris women show 50% red buttons, 50% blue\",\"serve\":{\"split\":[5000,5000,0]}}]," +
+                "\"disabledServe\":{\"select\":1},\"defaultServe\":{\"select\":1},\"variations\":[{\"value\":\"red\"," +
+                "\"name\":\"Red Button\",\"description\":\"Set button color to Red\"},{\"value\":\"blue\"," +
+                "\"name\":\"Blue Button\",\"description\":\"Set button color to Blue\"}]}"
+        semVerErrorContent = "{\"rules\":[{\"conditions\":[{\"type\":\"string\",\"subject\":\"city\"," +
+                "\"predicate\":\"is one of\",\"objects\":[\"Paris\"]},{\"type\":\"segment\",\"subject\":\"\"," +
+                "\"predicate\":\"is in\",\"objects\":[\"test_segment\"]},{\"type\":\"number\",\"subject\":\"age\"," +
+                "\"predicate\":\"=\",\"objects\":[\"20\",\"abc\"]},{\"type\":\"datetime\",\"subject\":\"\"," +
+                "\"predicate\":\"before\",\"objects\":[\"2022/06/27 16:08:10+08:00\",\"2022/06/27 80:08:10+08:00\"]}," +
+                "{\"type\":\"semver\",\"subject\":\"\",\"predicate\":\"before\",\"objects\":[\"1.0.1\",\"1.1\"]}]," +
+                "\"name\":\"Paris women show 50% red buttons, 50% blue\",\"serve\":{\"split\":[5000,5000,0]}}]," +
+                "\"disabledServe\":{\"select\":1},\"defaultServe\":{\"select\":1},\"variations\":[{\"value\":\"red\"," +
+                "\"name\":\"Red Button\",\"description\":\"Set button color to Red\"},{\"value\":\"blue\"," +
+                "\"name\":\"Blue Button\",\"description\":\"Set button color to Blue\"}]}"
     }
 
     def "update targeting"() {
@@ -87,6 +121,38 @@ class TargetingServiceSpec extends Specification {
         thrown(ResourceNotFoundException)
     }
 
+    def "update targeting number format error" () {
+        when:
+        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingContent targetingContent = JsonMapper.toObject(numberErrorContent, TargetingContent.class);
+        targetingRequest.setContent(targetingContent)
+        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        then:
+        1 * segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
+        thrown(IllegalArgumentException)
+    }
+
+    def "update targeting datetime format error" () {
+        when:
+        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingContent targetingContent = JsonMapper.toObject(datetimeErrorContent, TargetingContent.class);
+        targetingRequest.setContent(targetingContent)
+        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        then:
+        1 * segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
+        thrown(IllegalArgumentException)
+    }
+
+    def "update targeting semVer format error" () {
+        when:
+        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingContent targetingContent = JsonMapper.toObject(semVerErrorContent, TargetingContent.class);
+        targetingRequest.setContent(targetingContent)
+        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        then:
+        1 * segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
+        thrown(IllegalArgumentException)
+    }
 
     def "query targeting by key"() {
         when:

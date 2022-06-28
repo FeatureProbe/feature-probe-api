@@ -11,6 +11,7 @@ import com.featureprobe.api.entity.TargetingSegment;
 import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.mapper.TargetingMapper;
 import com.featureprobe.api.mapper.TargetingVersionMapper;
+import com.featureprobe.api.model.ConditionValue;
 import com.featureprobe.api.model.TargetingContent;
 import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TargetingRepository;
@@ -31,12 +32,20 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
 @Service
 public class TargetingService {
+
+    private static final Pattern dateTimeRegex = Pattern.compile("[0-9]{3}[0-9]+(/[0-1][0-9])+(/[0-3][0-9])" +
+            "+(\\s[0-2][0-9])+(:[0-6][0-9]){2}\\+[0-2][0-9]:[0-1][0-9]");
+
+    private static final Pattern versionRegex = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)" +
+            "(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))" +
+            "?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
 
     private TargetingRepository targetingRepository;
 
@@ -118,15 +127,55 @@ public class TargetingService {
         content.getRules().stream().forEach(toggleRule -> {
             if (CollectionUtils.isEmpty(toggleRule.getConditions())) return;
             toggleRule.getConditions().stream().forEach(conditionValue -> {
-                if (!StringUtils.equals(ConditionType.SEGMENT.toValue(), conditionValue.getType())) return;
-                conditionValue.getObjects().stream().forEach(segmentKey -> {
-                    if (!segmentRepository.existsByProjectKeyAndKey(projectKey, segmentKey)) {
-                        throw new ResourceNotFoundException(ResourceType.SEGMENT, segmentKey);
-                    }
-                });
+                validateCondition(projectKey, conditionValue);
             });
         });
+    }
 
+    private void validateCondition(String projectKey, ConditionValue conditionValue) {
+        if (StringUtils.equals(ConditionType.SEGMENT.toValue(), conditionValue.getType())) {
+            validateSegment(projectKey, conditionValue);
+        } else if(StringUtils.equals(ConditionType.DATETIME.toValue(), conditionValue.getType())) {
+            validateDateTime(conditionValue);
+        } else if(StringUtils.equals(ConditionType.SEM_VER.toValue(), conditionValue.getType())) {
+            validateVersion(conditionValue);
+        } else if (StringUtils.equals(ConditionType.NUMBER.toValue(), conditionValue.getType())) {
+            validateNumber(conditionValue);
+        }
+    }
+
+    private void validateSegment(String projectKey, ConditionValue conditionValue) {
+        conditionValue.getObjects().stream().forEach(segmentKey -> {
+            if (!segmentRepository.existsByProjectKeyAndKey(projectKey, segmentKey)) {
+                throw new ResourceNotFoundException(ResourceType.SEGMENT, segmentKey);
+            }
+        });
+    }
+
+    private void validateNumber(ConditionValue conditionValue) {
+        conditionValue.getObjects().stream().forEach(number -> {
+            try {
+                Double.parseDouble(number);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("validate.number_format_error");
+            }
+        });
+    }
+
+    private void validateDateTime(ConditionValue conditionValue) {
+        conditionValue.getObjects().stream().forEach(dateTime -> {
+            if (!dateTimeRegex.matcher(dateTime).matches()) {
+                throw new IllegalArgumentException("validate.datetime_format_error");
+            }
+        });
+    }
+
+    private void validateVersion(ConditionValue conditionValue) {
+        conditionValue.getObjects().stream().forEach(version -> {
+            if (!versionRegex.matcher(version).matches()) {
+                throw new IllegalArgumentException("validate.version_format_error");
+            }
+        });
     }
 
     class TargetingVersionBuilder {

@@ -11,12 +11,18 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ServerToggleBuilder {
+    
+    private static final String DATETIME_FORMAT_PATTERN = "yyyy/MM/dd HH:mm:ss";
 
     private Toggle toggle;
     private Variation.ValueConverter variationValueConverter;
@@ -127,11 +133,22 @@ public class ServerToggleBuilder {
         List<Rule> rules = targetingContent.getRules().stream().map(rule ->
                 rule.toRule()).collect(Collectors.toList());
         rules.forEach(rule -> rule.getConditions().forEach(condition -> {
-            if (condition.getType() != ConditionType.SEGMENT) return;
-            condition.setObjects(condition.getObjects().stream().map(segmentKey ->
-                    segments.get(segmentKey).getUniqueKey()).collect(Collectors.toList()));
+            if (condition.getType() == ConditionType.SEGMENT){
+                condition.setObjects(condition.getObjects().stream().map(segmentKey ->
+                        segments.get(segmentKey).getUniqueKey()).collect(Collectors.toList()));
+            } else if (condition.getType() == ConditionType.DATETIME) {
+                condition.setObjects(condition.getObjects().stream().map(datetime ->
+                        translateUnix(datetime)).collect(Collectors.toList()));
+            }
         }));
         toggle.setRules(rules);
     }
 
+    private static String translateUnix(String datetime) {
+        LocalDateTime time = LocalDateTime.parse(datetime.substring(0, 19), 
+                DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
+        Instant instant = time.toInstant(ZoneOffset.of(datetime.substring(19, datetime.length())));
+        return String.valueOf(instant.toEpochMilli()/1000);
+    }
+    
 }

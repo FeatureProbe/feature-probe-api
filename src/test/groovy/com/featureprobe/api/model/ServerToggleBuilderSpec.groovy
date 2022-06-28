@@ -14,8 +14,12 @@ class ServerToggleBuilderSpec extends Specification {
                 .returnType("boolean")
                 .version(1000)
                 .rules(new TargetingContent(
-                        rules: [newSelectRule("rule1", 0, [newStringCondition("city", ["1"]),
-                                                           newSegmentCondition(["test_segment"])])],
+                        rules: [newSelectRule("rule1", 0,
+                                [newStringCondition("city", ["1"]),
+                                 newSegmentCondition(["test_segment"]),
+                                 newDatetimeCondition("loginTime", ["2022/06/27 16:08:10+08:00"]),
+                                 newNumberCondition("age", ["20.1"]),
+                                 newSemVerCondition("version", ["1.1.1"])])],
                         disabledServe: newSelectServe(1),
                         defaultServe: newSplitServe([2000, 3000, 5000]),
                         variations: newVariations(["true", "false"])).toJson())
@@ -33,11 +37,14 @@ class ServerToggleBuilderSpec extends Specification {
             [true, false] == variations
 
             with(rules[0]) {
-                2 == conditions.size()
+                5 == conditions.size()
             }
 
             with(rules[0].conditions[1]) {
                 "test_project\$test_segment" == objects[0]
+            }
+            with(rules[0].conditions[2]) {
+                "1656317290" == objects[0]
             }
 
         }
@@ -132,6 +139,18 @@ class ServerToggleBuilderSpec extends Specification {
 
     def newSegmentCondition(objects) {
         new ConditionValue(type: "segment", predicate: "is in", objects: objects)
+    }
+
+    def newDatetimeCondition(subject, objects) {
+        new ConditionValue(type: "datetime",  subject: subject, predicate: "before", objects: objects)
+    }
+
+    def newNumberCondition(subject, objects) {
+        new ConditionValue(type: "number",  subject: subject, predicate: ">", objects: objects)
+    }
+
+    def newSemVerCondition(subject, objects) {
+        new ConditionValue(type: "semver",  subject: subject, predicate: ">", objects: objects)
     }
 
 }
