@@ -183,49 +183,4 @@ public class TargetingService {
         });
     }
 
-    class TargetingVersionBuilder {
-
-        private TargetingVersion targetingVersion;
-
-        public TargetingVersionBuilder builder() {
-            this.targetingVersion = new TargetingVersion();
-            return this;
-        }
-
-        public TargetingVersionBuilder targetingId(Long targetingId) {
-            this.targetingVersion.setTargetingId(targetingId);
-            return this;
-        }
-
-        public TargetingVersionBuilder projectKey(String projectKey) {
-            this.targetingVersion.setProjectKey(projectKey);
-            return this;
-        }
-
-        public TargetingVersionBuilder environmentKey(String environmentKey) {
-            this.targetingVersion.setEnvironmentKey(environmentKey);
-            return this;
-        }
-
-        public TargetingVersionBuilder comment(String comment) {
-            this.targetingVersion.setComment(comment);
-            return this;
-        }
-
-        public TargetingVersionBuilder content(String content) {
-            this.targetingVersion.setContent(content);
-            return this;
-        }
-
-        public TargetingVersionBuilder version(Long version) {
-            this.targetingVersion.setVersion(version);
-            return this;
-        }
-
-        public TargetingVersion build() {
-            return this.targetingVersion;
-        }
-
-    }
-
 }
