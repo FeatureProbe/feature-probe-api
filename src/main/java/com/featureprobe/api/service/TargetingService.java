@@ -17,6 +17,7 @@ import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingSegmentRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
+import com.featureprobe.api.util.PageRequestUtil;
 import com.featureprobe.sdk.server.model.ConditionType;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,29 +68,33 @@ public class TargetingService {
         saveTargetingSegmentRefs(projectKey, targeting, targetingRequest);
         Targeting updatedTargeting = targetingRepository.save(targeting);
         if(updatedTargeting.getVersion() > oldVersion) {
-            TargetingVersion targetingVersion = new TargetingVersionBuilder().builder()
-                    .targetingId(targeting.getId())
-                    .projectKey(projectKey)
-                    .environmentKey(environmentKey)
-                    .content(updatedTargeting.getContent())
-                    .version(updatedTargeting.getVersion())
-                    .comment(targetingRequest.getComment())
-                    .build();
-            savaTargetingHistory(targetingVersion);
+            saveTargetingVersion(buildTargetingVersion(projectKey, environmentKey, targeting.getId(), updatedTargeting,
+                    targetingRequest.getComment()));
         }
         return TargetingMapper.INSTANCE.entityToResponse(updatedTargeting);
     }
 
-    private void savaTargetingHistory(TargetingVersion targetingVersion) {
+    private TargetingVersion buildTargetingVersion(String projectKey, String environmentKey , Long targetingId,
+                                                   Targeting targeting, String comment) {
+        TargetingVersion targetingVersion = new TargetingVersion();
+        targetingVersion.setTargetingId(targetingId);
+        targetingVersion.setProjectKey(projectKey);
+        targetingVersion.setEnvironmentKey(environmentKey);
+        targetingVersion.setContent(targeting.getContent());
+        targetingVersion.setVersion(targeting.getVersion());
+        targetingVersion.setComment(comment);
+        return targetingVersion;
+    }
+
+    private void saveTargetingVersion(TargetingVersion targetingVersion) {
         targetingVersionRepository.save(targetingVersion);
     }
 
-    public Page<TargetingVersionResponse> versions(String projectKey, String environmentKey,
+    public Page<TargetingVersionResponse> queryVersions(String projectKey, String environmentKey,
                                                    TargetingVersionRequest targetingVersionRequest) {
-        Pageable pageable = PageRequest.of(targetingVersionRequest.getPageIndex(),
-                targetingVersionRequest.getPageSize(), Sort.Direction.DESC, "createdTime");
         Page<TargetingVersion> targetingVersions = targetingVersionRepository
-                .findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey, pageable);
+                .findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey,
+                        PageRequestUtil.toCreatedTimeDescSortPageable(targetingVersionRequest));
         return targetingVersions.map(targetingVersion ->
                 TargetingVersionMapper.INSTANCE.entityToResponse(targetingVersion));
     }

@@ -68,6 +68,6 @@ public class TargetingController {
             @PathVariable("projectKey") String projectKey,
             @PathVariable("environmentKey") String environmentKey,
             TargetingVersionRequest targetingVersionRequest) {
-        return targetingService.versions(projectKey, environmentKey, targetingVersionRequest);
+        return targetingService.queryVersions(projectKey, environmentKey, targetingVersionRequest);
     }
 }

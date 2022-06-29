@@ -52,9 +52,6 @@ class ToggleServiceSpec extends Specification {
     def sdkKey
     def rules
     def segmentRules
-    def numberErrorRules
-    def datetimeErrorRules
-    def semVerErrorRules
 
     def setup() {
         toggleRepository = Mock(ToggleRepository)
