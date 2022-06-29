@@ -142,7 +142,7 @@ public class TargetingService {
             validateSegment(projectKey, conditionValue);
         } else if(StringUtils.equals(ConditionType.DATETIME.toValue(), conditionValue.getType())) {
             validateDateTime(conditionValue);
-        } else if(StringUtils.equals(ConditionType.SEM_VER.toValue(), conditionValue.getType())) {
+        } else if(StringUtils.equals(ConditionType.SEMVER.toValue(), conditionValue.getType())) {
             validateVersion(conditionValue);
         } else if (StringUtils.equals(ConditionType.NUMBER.toValue(), conditionValue.getType())) {
             validateNumber(conditionValue);

@@ -138,8 +138,7 @@ public class ServerToggleBuilder {
             if (condition.getType() == ConditionType.SEGMENT){
                 replaceSegmentKeyToUniqueKey(condition);
             } else if (condition.getType() == ConditionType.DATETIME) {
-                condition.setObjects(condition.getObjects().stream().map(datetime ->
-                        translateUnix(datetime)).collect(Collectors.toList()));
+                convertDatetimeToUnix(condition);
             }
         }));
         toggle.setRules(rules);
@@ -150,6 +149,11 @@ public class ServerToggleBuilder {
                 DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
         Instant instant = time.toInstant(ZoneOffset.of(datetime.substring(19, datetime.length())));
         return String.valueOf(instant.toEpochMilli()/1000);
+    }
+
+    private void convertDatetimeToUnix(Condition condition) {
+        condition.setObjects(condition.getObjects().stream().map(datetime ->
+                translateUnix(datetime)).collect(Collectors.toList()));
     }
     
     private void replaceSegmentKeyToUniqueKey(Condition condition) {
