@@ -23,9 +23,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -138,13 +135,13 @@ public class TargetingService {
     }
 
     private void validateCondition(String projectKey, ConditionValue conditionValue) {
-        if (StringUtils.equals(ConditionType.SEGMENT.toValue(), conditionValue.getType())) {
+        if (conditionValue.isSegmentType()) {
             validateSegment(projectKey, conditionValue);
-        } else if(StringUtils.equals(ConditionType.DATETIME.toValue(), conditionValue.getType())) {
+        } else if(conditionValue.isDatetimeType()) {
             validateDateTime(conditionValue);
-        } else if(StringUtils.equals(ConditionType.SEMVER.toValue(), conditionValue.getType())) {
+        } else if(conditionValue.isSemVerType()) {
             validateVersion(conditionValue);
-        } else if (StringUtils.equals(ConditionType.NUMBER.toValue(), conditionValue.getType())) {
+        } else if (conditionValue.isNumberType()) {
             validateNumber(conditionValue);
         }
     }

@@ -10,20 +10,19 @@ import com.featureprobe.sdk.server.model.Toggle;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.time.DateUtils;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
+import java.text.ParseException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ServerToggleBuilder {
     
-    private static final String DATETIME_FORMAT_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    private static final String DATETIME_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mm:ssXXX";
 
     private Toggle toggle;
     private Variation.ValueConverter variationValueConverter;
@@ -145,10 +144,12 @@ public class ServerToggleBuilder {
     }
 
     private static String translateUnix(String datetime) {
-        LocalDateTime time = LocalDateTime.parse(datetime.substring(0, 19).replace("T", " "),
-                DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
-        Instant instant = time.toInstant(ZoneOffset.of(datetime.substring(19, datetime.length())));
-        return String.valueOf(instant.toEpochMilli()/1000);
+        try {
+            Date date = DateUtils.parseDate(datetime, DATETIME_FORMAT_PATTERN);
+            return String.valueOf(date.getTime()/1000);
+        } catch (ParseException e) {
+            throw new ServerToggleBuildException("datetime format error");
+        }
     }
 
     private void convertDatetimeToUnix(Condition condition) {

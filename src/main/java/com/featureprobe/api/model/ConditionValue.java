@@ -26,4 +26,21 @@ public class ConditionValue {
         condition.setObjects(objects);
         return condition;
     }
+
+    public boolean isSegmentType() {
+        return StringUtils.equals(ConditionType.SEGMENT.toValue(), type);
+    }
+
+    public boolean isNumberType() {
+        return StringUtils.equals(ConditionType.NUMBER.toValue(), type);
+    }
+
+    public boolean isDatetimeType() {
+        return StringUtils.equals(ConditionType.DATETIME.toValue(), type);
+    }
+
+    public boolean isSemVerType() {
+        return StringUtils.equals(ConditionType.SEMVER.toValue(), type);
+    }
+
 }
