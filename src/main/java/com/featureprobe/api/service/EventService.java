@@ -1,9 +1,13 @@
 package com.featureprobe.api.service;
 
 
+import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.dto.EventCreateRequest;
+import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
 import com.featureprobe.api.model.VariationAccessCounter;
+import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +26,12 @@ import java.util.stream.Collectors;
 public class EventService {
 
     private EventRepository eventRepository;
+    private EnvironmentRepository environmentRepository;
 
     public void create(String serverSdkKey, List<EventCreateRequest> requests) {
+        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, serverSdkKey));
+
         requests.forEach(request -> {
             if (request.getAccess() == null) {
                 return;
@@ -33,7 +41,7 @@ public class EventService {
                     .entrySet()
                     .stream()
                     .flatMap(entry -> createEventEntities(entry).stream())
-                    .map(event -> wrapEvent(event, serverSdkKey, request))
+                    .map(event -> wrapEvent(event, environment, request))
                     .collect(Collectors.toList());
 
             if (!events.isEmpty()) {
@@ -57,16 +65,19 @@ public class EventService {
         Event event = new Event();
         event.setToggleKey(toggleKey);
         event.setCount(accessCounter.getCount());
-        event.setVariation(accessCounter.getValue());
+        event.setValueIndex(accessCounter.getIndex());
+        event.setToggleVersion(accessCounter.getVersion());
 
         return event;
     }
 
-    private Event wrapEvent(Event event, String serverSdkKey, EventCreateRequest request) {
+    private Event wrapEvent(Event event, Environment environment, EventCreateRequest request) {
         if (request.getAccess() == null) {
             return event;
         }
-        event.setSdkKey(serverSdkKey);
+        event.setSdkKey(environment.getServerSdkKey());
+        event.setProjectKey(environment.getProject().getKey());
+        event.setEnvironmentKey(environment.getKey());
         event.setType("access");
         event.setStartDate(new Date(request.getAccess().getStartTime()));
         event.setEndDate(new Date(request.getAccess().getEndTime()));

@@ -26,4 +26,8 @@ public class ConditionValue {
         condition.setObjects(objects);
         return condition;
     }
+
+    public boolean isSegmentType() {
+        return StringUtils.equals(ConditionType.SEGMENT.toValue(), getType());
+    }
 }

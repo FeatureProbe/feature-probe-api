@@ -181,9 +181,10 @@ class ToggleServiceSpec extends Specification {
     def "query server toggles by server sdkKey"() {
         when:
         def serverResponse = toggleService.queryServerTogglesByServerSdkKey(sdkKey)
+
         then:
         2 * environmentRepository.findByServerSdkKey(sdkKey) >>
-                new Environment(project: new Project(key: projectKey), key: environmentKey)
+                Optional.of(new Environment(project: new Project(key: projectKey), key: environmentKey))
         2 * segmentRepository.findAllByProjectKey(projectKey) >>
                 [new Segment(projectKey: projectKey, key: "test_segment",
                         uniqueKey: projectKey + "\$test_segment", rules: segmentRules)]
