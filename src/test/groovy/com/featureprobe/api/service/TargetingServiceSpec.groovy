@@ -11,6 +11,7 @@ import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingSegmentRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
+import com.featureprobe.api.repository.VariationHistoryRepository
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import spock.lang.Specification
@@ -25,6 +26,7 @@ class TargetingServiceSpec extends Specification {
     SegmentRepository segmentRepository
     TargetingSegmentRepository targetingSegmentRepository
     TargetingVersionRepository targetingVersionRepository
+    VariationHistoryRepository variationHistoryRepository
 
     def projectKey
     def environmentKey
@@ -39,8 +41,10 @@ class TargetingServiceSpec extends Specification {
         segmentRepository = Mock(SegmentRepository)
         targetingSegmentRepository = Mock(TargetingSegmentRepository)
         targetingVersionRepository = Mock(TargetingVersionRepository)
+        variationHistoryRepository = Mock(VariationHistoryRepository)
         targetingService = new TargetingService(targetingRepository, segmentRepository,
-                targetingSegmentRepository, targetingVersionRepository)
+                targetingSegmentRepository, targetingVersionRepository, variationHistoryRepository)
+
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
@@ -86,22 +90,30 @@ class TargetingServiceSpec extends Specification {
     }
 
     def "update targeting"() {
-        when:
+        given:
         TargetingRequest targetingRequest = new TargetingRequest()
         TargetingContent targetingContent = JsonMapper.toObject(content, TargetingContent.class);
         targetingRequest.setContent(targetingContent)
         targetingRequest.setDisabled(false)
+
+
+        when:
         def ret = targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+
         then:
         segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
                 Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
                         content: "", disabled: true, version: 1))
+        1 * targetingRepository.saveAndFlush(_) >> new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: false, version: 2)
+
         1 * targetingSegmentRepository.deleteByTargetingId(1)
         1 * targetingSegmentRepository.saveAll(_)
-        1 * targetingRepository.save(_) >> new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
-                content: content, disabled: false, version: 2)
+
         1 * targetingVersionRepository.save(_)
+        1 * variationHistoryRepository.saveAll(_)
+
         with(ret) {
             content == it.content
             false == it.disabled

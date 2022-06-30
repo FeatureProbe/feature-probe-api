@@ -52,6 +52,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -287,7 +288,7 @@ public class ToggleService {
     }
 
     private List<com.featureprobe.sdk.server.model.Segment> querySegmentsBySdkKey(String serverSdkKey) {
-        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey);
+        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey).get();
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
@@ -308,7 +309,7 @@ public class ToggleService {
     }
 
     private List<com.featureprobe.sdk.server.model.Toggle> queryTogglesBySdkKey(String serverSdkKey) {
-        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey);
+        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey).get();
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }

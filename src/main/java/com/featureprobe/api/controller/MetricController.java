@@ -1,5 +1,6 @@
 package com.featureprobe.api.controller;
 
+import com.featureprobe.api.base.constants.MetricType;
 import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.base.doc.EnvironmentKeyParameter;
 import com.featureprobe.api.base.doc.GetApiResponse;
@@ -38,8 +39,9 @@ public class MetricController {
     public MetricResponse query(@PathVariable("projectKey") String projectKey,
                                 @PathVariable("environmentKey") String environmentKey,
                                 @PathVariable("toggleKey") String toggleKey,
+                                @RequestParam(value = "metricType", defaultValue = "VALUE") MetricType metricType,
                                 @RequestParam(value = "lastHours", defaultValue = "24") int lastHours) {
 
-        return metricService.query(projectKey, environmentKey, toggleKey, lastHours);
+        return metricService.query(projectKey, environmentKey, toggleKey, metricType, lastHours);
     }
 }

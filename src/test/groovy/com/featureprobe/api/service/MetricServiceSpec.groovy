@@ -5,6 +5,7 @@ import com.featureprobe.api.model.AccessEventPoint
 import com.featureprobe.api.model.VariationAccessCounter
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.EventRepository
+import com.featureprobe.api.repository.VariationHistoryRepository
 import spock.lang.Specification
 
 import java.time.LocalDateTime
@@ -15,12 +16,13 @@ class MetricServiceSpec extends Specification {
     MetricService metricService
     EnvironmentRepository environmentRepository
     EventRepository eventRepository
-
+    VariationHistoryRepository variationHistoryRepository
 
     def setup() {
         environmentRepository = Mock(EnvironmentRepository)
         eventRepository = Mock(EventRepository)
-        metricService = new MetricService(environmentRepository, eventRepository)
+        variationHistoryRepository = Mock(VariationHistoryRepository)
+        metricService = new MetricService(environmentRepository, eventRepository, variationHistoryRepository)
     }
 
     def "test `isGroupByDay`"() {
@@ -100,9 +102,8 @@ class MetricServiceSpec extends Specification {
 
         then:
         1 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(sdkKey,
-                toggleName, _, _) >> [new Event(variation: "true", count: 10),
-                                      new Event(variation: "true", count: 11),
-                                      new Event(variation: "false", count: 10)]
+                toggleName, _, _) >> [new Event(valueIndex: 0, toggleVersion: 1, count: 10),
+                                      new Event(valueIndex: 1, toggleVersion: 1, count: 11)]
 
         with(accessEventPoint) {
             "11" == it.name

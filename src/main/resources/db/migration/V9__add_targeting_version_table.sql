@@ -5,7 +5,7 @@ create table targeting_version
     project_key    varchar(128)   default ""        not null,
     environment_key varchar(128)  default ""        not null,
     comment        varchar(1024)  default ""        not null,
-    content        text           default ""        not null,
+    content        text                   not null,
     version        bigint         default 0         not null,
     deleted        tinyint        default 0         not null,
     modified_time  datetime       default  CURRENT_TIMESTAMP  not null,

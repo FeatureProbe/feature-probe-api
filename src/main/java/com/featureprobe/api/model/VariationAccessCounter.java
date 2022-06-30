@@ -17,4 +17,18 @@ public class VariationAccessCounter {
 
     @NotNull
     private Long count;
+
+    @NotNull
+    private Long version;
+
+    @NotNull
+    private Integer index;
+
+
+    public VariationAccessCounter(String value, Long count) {
+        this.value = value;
+        this.count = count;
+    }
+
+
 }
