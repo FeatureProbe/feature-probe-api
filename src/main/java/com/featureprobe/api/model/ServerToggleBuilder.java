@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 public class ServerToggleBuilder {
     
-    private static final String DATETIME_FORMAT_PATTERN = "yyyy/MM/dd HH:mm:ss";
+    private static final String DATETIME_FORMAT_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     private Toggle toggle;
     private Variation.ValueConverter variationValueConverter;
@@ -145,7 +145,7 @@ public class ServerToggleBuilder {
     }
 
     private static String translateUnix(String datetime) {
-        LocalDateTime time = LocalDateTime.parse(datetime.substring(0, 19), 
+        LocalDateTime time = LocalDateTime.parse(datetime.substring(0, 19).replace("T", " "),
                 DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
         Instant instant = time.toInstant(ZoneOffset.of(datetime.substring(19, datetime.length())));
         return String.valueOf(instant.toEpochMilli()/1000);
@@ -160,4 +160,5 @@ public class ServerToggleBuilder {
         condition.setObjects(condition.getObjects().stream().map(segmentKey ->
                 segments.get(segmentKey).getUniqueKey()).collect(Collectors.toList()));
     }
+
 }

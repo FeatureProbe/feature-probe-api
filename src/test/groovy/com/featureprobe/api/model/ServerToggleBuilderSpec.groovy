@@ -17,7 +17,7 @@ class ServerToggleBuilderSpec extends Specification {
                         rules: [newSelectRule("rule1", 0,
                                 [newStringCondition("city", ["1"]),
                                  newSegmentCondition(["test_segment"]),
-                                 newDatetimeCondition("loginTime", ["2022/06/27 16:08:10+08:00"]),
+                                 newDatetimeCondition("loginTime", ["2022-06-27T16:08:10+08:00"]),
                                  newNumberCondition("age", ["20.1"]),
                                  newSemVerCondition("version", ["1.1.1"])])],
                         disabledServe: newSelectServe(1),

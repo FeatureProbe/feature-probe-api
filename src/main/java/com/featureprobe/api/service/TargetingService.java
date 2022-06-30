@@ -41,8 +41,8 @@ import java.util.stream.Collectors;
 @Service
 public class TargetingService {
 
-    private static final Pattern dateTimeRegex = Pattern.compile("[0-9]{3}[0-9]+(/[0-1][0-9])+(/[0-3][0-9])" +
-            "+(\\s[0-2][0-9])+(:[0-6][0-9]){2}\\+[0-2][0-9]:[0-1][0-9]");
+    private static final Pattern dateTimeRegex = Pattern.compile("[0-9]{3}[0-9]+(-[0-1][0-9])+(-[0-3][0-9])T" +
+            "+([0-2][0-9])+(:[0-6][0-9]){2}\\+[0-2][0-9]:[0-1][0-9]");
 
     private static final Pattern versionRegex = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)" +
             "(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))" +
