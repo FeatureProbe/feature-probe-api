@@ -4,11 +4,16 @@ import com.featureprobe.api.base.constants.MetricType;
 import com.featureprobe.api.dto.MetricResponse;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
+import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.VariationHistory;
+import com.featureprobe.api.mapper.TargetingVersionMapper;
 import com.featureprobe.api.model.AccessEventPoint;
+import com.featureprobe.api.model.TargetingContent;
+import com.featureprobe.api.model.Variation;
 import com.featureprobe.api.model.VariationAccessCounter;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
+import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
@@ -35,6 +40,7 @@ public class MetricService {
     private EnvironmentRepository environmentRepository;
     private EventRepository eventRepository;
     private VariationHistoryRepository variationHistoryRepository;
+    private TargetingRepository targetingRepository;
 
     private static final int MAX_QUERY_HOURS = 12 * 24;
     private static final int MAX_QUERY_POINT_COUNT = 12;
@@ -51,7 +57,12 @@ public class MetricService {
         List<AccessEventPoint> aggregatedAccessEventPoints = aggregatePointByMetricType(variationVersionMap,
                 accessEventPoints, metricType);
 
-        return new MetricResponse(accessEventPoints, summaryAccessEvents(aggregatedAccessEventPoints));
+        List<VariationAccessCounter> accessCounters = summaryAccessEvents(aggregatedAccessEventPoints);
+        Targeting latestTargeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
+                environmentKey, toggleKey).get();
+        appendLatestVariations(accessCounters, latestTargeting, metricType);
+
+        return new MetricResponse(accessEventPoints, accessCounters);
     }
 
     private Map<String, VariationHistory> buildVariationVersionMap(String projectKey, String environmentKey,
@@ -63,7 +74,7 @@ public class MetricService {
         return variationHistories.stream().collect(Collectors.toMap(this::toIndexValue, Function.identity()));
     }
 
-    private List<AccessEventPoint> aggregatePointByMetricType(Map<String, VariationHistory> variationVersionMap,
+    protected List<AccessEventPoint> aggregatePointByMetricType(Map<String, VariationHistory> variationVersionMap,
                                                               List<AccessEventPoint> accessEventPoints,
                                                               MetricType metricType) {
 
@@ -74,7 +85,7 @@ public class MetricService {
                 VariationHistory variationHistory = variationVersionMap.get(variationAccessCounter.getValue());
                 if (variationHistory != null) {
                     variationAccessCounter.setValue(metricType.isNameType()
-                            ?  variationHistory.getName() : variationHistory.getValue());
+                            ? variationHistory.getName() : variationHistory.getValue());
                 }
             });
             Map<String, Long> variationCounts =
@@ -82,14 +93,14 @@ public class MetricService {
                             VariationAccessCounter::getCount, Long::sum));
 
             List<VariationAccessCounter> values = variationCounts.entrySet().stream().map(e ->
-                            new VariationAccessCounter(e.getKey(), e.getValue(), null, null))
+                            new VariationAccessCounter(e.getKey(), e.getValue()))
                     .collect(Collectors.toList());
             accessEventPoint.setValues(values);
         });
         return accessEventPoints;
     }
 
-    private List<AccessEventPoint> queryAccessEventPoints(String serverSdkKey, String toggleKey, int lastHours) {
+    protected List<AccessEventPoint> queryAccessEventPoints(String serverSdkKey, String toggleKey, int lastHours) {
         int pointIntervalCount = getPointIntervalCount(lastHours);
         int pointCount = lastHours / pointIntervalCount;
 
@@ -142,7 +153,7 @@ public class MetricService {
         return toAccessEvent(currentPointEvents);
     }
 
-    private List<VariationAccessCounter> toAccessEvent(List<Event> events) {
+    protected List<VariationAccessCounter> toAccessEvent(List<Event> events) {
         if (CollectionUtils.isEmpty(events)) {
             return Collections.emptyList();
         }
@@ -197,6 +208,41 @@ public class MetricService {
         });
 
         return summaryEvents;
+    }
+
+    protected void appendLatestVariations(List<VariationAccessCounter> accessCounters, Targeting latestTargeting,
+                                        MetricType metricType) {
+        TargetingContent targetingContent = TargetingVersionMapper.INSTANCE.toTargetingContent(
+                latestTargeting.getContent());
+
+        if (CollectionUtils.isEmpty(targetingContent.getVariations())) {
+            return;
+        }
+        List<String> latestVariations = targetingContent.getVariations()
+                .stream()
+                .map(metricType.isNameType() ? Variation::getName : Variation::getValue)
+                .collect(Collectors.toList());
+
+        setVariationDeletedIfNotInLatest(accessCounters, latestVariations);
+        appendVariationIfInLatest(accessCounters, latestVariations);
+    }
+
+    private void setVariationDeletedIfNotInLatest(List<VariationAccessCounter> accessCounters,
+                                                  List<String> namesOrValues) {
+        accessCounters.stream()
+                .filter(accessCounter -> !namesOrValues.contains(accessCounter.getValue()))
+                .forEach(accessCounter -> accessCounter.setDeleted(true));
+    }
+
+    private void appendVariationIfInLatest(List<VariationAccessCounter> accessCounters, List<String> namesOrValues) {
+        namesOrValues.forEach(value -> {
+            if (!accessCounters.stream()
+                    .filter(accessCounter -> StringUtils.equals(accessCounter.getValue(), value))
+                    .findFirst()
+                    .isPresent()) {
+                accessCounters.add(new VariationAccessCounter(value, 0L));
+            }
+        });
     }
 
     private String queryEnvironmentServerSdkKey(String projectKey, String environmentKey) {

@@ -24,11 +24,14 @@ public class VariationAccessCounter {
     @NotNull
     private Integer index;
 
+    private Boolean deleted;
 
     public VariationAccessCounter(String value, Long count) {
         this.value = value;
         this.count = count;
+        this.deleted = false;
     }
+
 
 
 }
