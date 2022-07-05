@@ -179,6 +179,7 @@ class TargetingServiceSpec extends Specification {
         }
     }
 
+
     def "query targeting version"() {
         when:
         def versions = targetingService.queryVersions(projectKey, environmentKey,

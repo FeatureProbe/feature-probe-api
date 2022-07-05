@@ -33,7 +33,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -41,6 +41,13 @@ import java.util.stream.IntStream;
 @AllArgsConstructor
 @Service
 public class TargetingService {
+
+    private static final Pattern dateTimeRegex = Pattern.compile("[0-9]{3}[0-9]-[0-1][0-9]-[0-3][0-9]T[0-2][0-9]" +
+            "(:[0-6][0-9]){2}\\+[0-2][0-9]:[0-1][0-9]");
+
+    private static final Pattern versionRegex = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)" +
+            "(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))" +
+            "?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
 
     private TargetingRepository targetingRepository;
 
@@ -55,13 +62,11 @@ public class TargetingService {
     @Transactional(rollbackFor = Exception.class)
     public TargetingResponse update(String projectKey, String environmentKey,
                                     String toggleKey, TargetingRequest targetingRequest) {
-        validateTargetingRefSegmentsExists(projectKey, targetingRequest.getContent());
-
+        validateTargetingContent(projectKey, targetingRequest.getContent());
         Targeting existedTargeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
                 environmentKey, toggleKey).get();
         long oldVersion = existedTargeting.getVersion();
         Targeting updatedTargeting = updateTargeting(existedTargeting, targetingRequest);
-
         if (updatedTargeting.getVersion() > oldVersion) {
             saveTargetingSegmentRefs(projectKey, updatedTargeting, targetingRequest.getContent());
             saveTargetingVersion(buildTargetingVersion(updatedTargeting, targetingRequest.getComment()));
@@ -72,7 +77,6 @@ public class TargetingService {
 
     private Targeting updateTargeting(Targeting currentTargeting, TargetingRequest updateTargetingRequest) {
         TargetingMapper.INSTANCE.mapEntity(updateTargetingRequest, currentTargeting);
-
         return targetingRepository.saveAndFlush(currentTargeting);
     }
 
@@ -92,7 +96,7 @@ public class TargetingService {
     }
 
     public Page<TargetingVersionResponse> queryVersions(String projectKey, String environmentKey,
-                                                   TargetingVersionRequest targetingVersionRequest) {
+                                                        TargetingVersionRequest targetingVersionRequest) {
         Page<TargetingVersion> targetingVersions = targetingVersionRepository
                 .findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey,
                         PageRequestUtil.toCreatedTimeDescSortPageable(targetingVersionRequest));
@@ -127,17 +131,15 @@ public class TargetingService {
         List<Variation> variations = targetingContent.getVariations();
 
         List<VariationHistory> variationHistories = IntStream.range(0, targetingContent
-                .getVariations().size())
+                        .getVariations().size())
                 .mapToObj(index -> convertVariationToEntity(targeting, index,
                         variations.get(index)))
                 .collect(Collectors.toList());
-
         variationHistoryRepository.saveAll(variationHistories);
     }
 
     private VariationHistory convertVariationToEntity(Targeting targeting, int index, Variation variation) {
         VariationHistory variationHistory = new VariationHistory();
-
         variationHistory.setEnvironmentKey(targeting.getEnvironmentKey());
         variationHistory.setProjectKey(targeting.getProjectKey());
         variationHistory.setToggleKey(targeting.getToggleKey());
@@ -145,7 +147,6 @@ public class TargetingService {
         variationHistory.setName(variation.getName());
         variationHistory.setToggleVersion(targeting.getVersion());
         variationHistory.setValueIndex(index);
-
         return variationHistory;
     }
 
@@ -155,21 +156,55 @@ public class TargetingService {
         return TargetingMapper.INSTANCE.entityToResponse(targeting);
     }
 
-    private void validateTargetingRefSegmentsExists(String projectKey, TargetingContent content) {
+    private void validateTargetingContent(String projectKey, TargetingContent content) {
         if (CollectionUtils.isEmpty(content.getRules())) {
             return;
         }
         content.getRules()
                 .stream()
                 .filter(BaseRule::isNotEmptyConditions)
-                .forEach(validateRuleRefSegmentExists(projectKey));
+                .forEach(toggleRule -> {
+                    validateRuleRefSegmentExists(projectKey, toggleRule);
+                    validateNumber(toggleRule);
+                    validateDatetime(toggleRule);
+                    validateSemVer(toggleRule);
+                });
     }
 
-    private Consumer<ToggleRule> validateRuleRefSegmentExists(String projectKey) {
-        return toggleRule -> toggleRule.getConditions().stream().filter(ConditionValue::isSegmentType)
+    private void validateRuleRefSegmentExists(String projectKey, ToggleRule toggleRule) {
+        toggleRule.getConditions().stream().filter(ConditionValue::isSegmentType)
                 .forEach(conditionValue -> conditionValue.getObjects().stream().forEach(segmentKey -> {
                     if (!segmentRepository.existsByProjectKeyAndKey(projectKey, segmentKey)) {
                         throw new ResourceNotFoundException(ResourceType.SEGMENT, segmentKey);
+                    }
+                }));
+    }
+
+    private void validateNumber(ToggleRule toggleRule) {
+        toggleRule.getConditions().stream().filter(ConditionValue::isNumberType)
+                .forEach(conditionValue -> conditionValue.getObjects().stream().forEach(number -> {
+                    try {
+                        Double.parseDouble(number);
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("validate.number_format_error");
+                    }
+                }));
+    }
+
+    private void validateDatetime(ToggleRule toggleRule) {
+        toggleRule.getConditions().stream().filter(ConditionValue::isDatetimeType)
+                .forEach(conditionValue -> conditionValue.getObjects().stream().forEach(datetime -> {
+                    if (!dateTimeRegex.matcher(datetime).matches()) {
+                        throw new IllegalArgumentException("validate.datetime_format_error");
+                    }
+                }));
+    }
+
+    private void validateSemVer(ToggleRule toggleRule) {
+        toggleRule.getConditions().stream().filter(ConditionValue::isSemVerType)
+                .forEach(conditionValue -> conditionValue.getObjects().stream().forEach(semVer -> {
+                    if (!versionRegex.matcher(semVer).matches()) {
+                        throw new IllegalArgumentException("validate.version_format_error");
                     }
                 }));
     }
