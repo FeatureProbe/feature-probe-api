@@ -14,7 +14,6 @@ import com.featureprobe.api.model.VariationAccessCounter
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.EventRepository
 import com.featureprobe.api.repository.TargetingRepository
-import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.VariationHistoryRepository
 import spock.lang.Specification
@@ -35,9 +34,10 @@ class MetricServiceSpec extends Specification {
         environmentRepository = Mock(EnvironmentRepository)
         eventRepository = Mock(EventRepository)
         variationHistoryRepository = Mock(VariationHistoryRepository)
+        targetingVersionRepository = Mock(TargetingVersionRepository)
         targetingRepository = Mock(TargetingRepository)
         metricService = new MetricService(environmentRepository, eventRepository, variationHistoryRepository,
-                targetingRepository)
+                targetingVersionRepository, targetingRepository)
     }
 
     def "test find the last 3 hours of data by metric type"() {
@@ -53,6 +53,7 @@ class MetricServiceSpec extends Specification {
 
         then:
         1 * environmentRepository.findByProjectKeyAndKey(projectKey, envKey) >> Optional.of(new Environment(serverSdkKey: serverSdkKey))
+        1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> Optional.of(new Targeting(id: 1))
         3 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(serverSdkKey, toggleKey,
                 _, _) >> []
         1 * variationHistoryRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> []
@@ -67,7 +68,7 @@ class MetricServiceSpec extends Specification {
 
         when:
         List<AccessEventPoint> accessEventPoints = metricService.queryAccessEventPoints("test-sdk-key",
-                "my_toggle1", lastHours)
+                "my_toggle1", 2, lastHours)
 
         then:
         10 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(_, _, _, _) >> []
@@ -111,17 +112,12 @@ class MetricServiceSpec extends Specification {
                 "1_10": new VariationHistory(id: 3, name: "blue"),
                 "1_11": new VariationHistory(id: 3, name: "blue")],
                 [new AccessEventPoint("10", [new VariationAccessCounter(value: "1_10", count: 15),
-                                             new VariationAccessCounter(value: "1_11", count: 5)])], MetricType.NAME)
+                                             new VariationAccessCounter(value: "1_11", count: 5)], 1)], MetricType.NAME)
 
         then:
         1 == accessEventPoints.size()
         "blue" == accessEventPoints[0].values[0].value
         20 == accessEventPoints[0].values[0].count
-
-        targetingVersionRepository = Mock(TargetingVersionRepository)
-        targetingRepository = Mock(TargetingRepository)
-        metricService = new MetricService(environmentRepository, eventRepository, variationHistoryRepository,
-                targetingVersionRepository, targetingRepository)
     }
 
     def "test `isGroupByDay`"() {

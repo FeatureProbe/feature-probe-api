@@ -15,7 +15,6 @@ import com.featureprobe.api.model.VariationAccessCounter;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
 import com.featureprobe.api.repository.TargetingRepository;
-import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
 import com.google.common.collect.Lists;
