@@ -11,8 +11,6 @@ import java.util.Optional;
 @Repository
 public interface EnvironmentRepository extends JpaRepository<Environment, Long> {
 
-    Optional<Environment> findByKey(String key);
-
     List<Environment> findAllByProjectKey(String projectKey);
 
     Optional<Environment> findByServerSdkKey(String serverSdkKey);
