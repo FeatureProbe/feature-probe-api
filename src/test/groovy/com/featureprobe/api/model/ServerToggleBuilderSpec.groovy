@@ -75,10 +75,11 @@ class ServerToggleBuilderSpec extends Specification {
         def segment = new ServerSegmentBuilder().builder()
                 .uniqueId("test_project\$test_segment")
                 .version(1000)
-                .rules("[{\"conditions\":[{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"is one of\"," +
-                        "\"objects\":[\"zhangsan\",\"wangwu\",\"lishi\",\"miss\"]},{\"type\":\"string\"," +
-                        "\"subject\":\"userId\",\"predicate\":\"is one of\",\"objects\":[\"huahau\"," +
-                        "\"kaka\"]}],\"name\":\"\"}]")
+                .rules("[{\"conditions\":[{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"starts with\"," +
+                        "\"objects\":[\"test\"],\"segmentType\":false,\"numberType\":false,\"datetimeType\":false," +
+                        "\"semVerType\":false},{\"type\":\"datetime\",\"subject\":\"TIME\",\"predicate\":\"before\"," +
+                        "\"objects\":[\"2022-06-29T15:19:14+00:00\"],\"segmentType\":false,\"numberType\":false," +
+                        "\"datetimeType\":true,\"semVerType\":false}],\"name\":\"rule01\",\"notEmptyConditions\":true}]")
                 .build()
         then:
         with(segment) {
@@ -88,7 +89,11 @@ class ServerToggleBuilderSpec extends Specification {
             with(rules[0]) {
                 2 == conditions.size()
                 with(conditions[0]) {
-                    4 == objects.size()
+                    1 == objects.size()
+                }
+                with(conditions[1]) {
+                    1 == objects.size()
+                    "1656515954" == objects[0]
                 }
             }
         }

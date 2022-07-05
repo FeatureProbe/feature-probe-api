@@ -3,6 +3,7 @@ package com.featureprobe.api.model;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
 import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.util.DateTimeTranslateUtil;
 import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
 import com.featureprobe.sdk.server.model.Rule;
@@ -21,7 +22,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ServerToggleBuilder {
-    
+
     private static final String DATETIME_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mm:ssXXX";
 
     private Toggle toggle;
@@ -143,18 +144,9 @@ public class ServerToggleBuilder {
         toggle.setRules(rules);
     }
 
-    private static String translateUnix(String datetime) {
-        try {
-            Date date = DateUtils.parseDate(datetime, DATETIME_FORMAT_PATTERN);
-            return String.valueOf(date.getTime()/1000);
-        } catch (ParseException e) {
-            throw new ServerToggleBuildException("datetime format error");
-        }
-    }
-
     private void convertDatetimeToUnix(Condition condition) {
         condition.setObjects(condition.getObjects().stream().map(datetime ->
-                translateUnix(datetime)).collect(Collectors.toList()));
+                DateTimeTranslateUtil.translateUnix(datetime, DATETIME_FORMAT_PATTERN)).collect(Collectors.toList()));
     }
     
     private void replaceSegmentKeyToUniqueKey(Condition condition) {

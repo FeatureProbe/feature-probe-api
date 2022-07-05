@@ -4,4 +4,7 @@ import lombok.Data;
 
 @Data
 public class TargetingVersionRequest extends PaginationRequest{
+
+    private Long version;
+
 }
