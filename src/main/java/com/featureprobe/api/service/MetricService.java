@@ -5,6 +5,7 @@ import com.featureprobe.api.dto.MetricResponse;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
 import com.featureprobe.api.entity.Targeting;
+import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.entity.VariationHistory;
 import com.featureprobe.api.mapper.TargetingVersionMapper;
 import com.featureprobe.api.model.AccessEventPoint;
@@ -14,6 +15,8 @@ import com.featureprobe.api.model.VariationAccessCounter;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
 import com.featureprobe.api.repository.TargetingRepository;
+import com.featureprobe.api.repository.TargetingRepository;
+import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
@@ -40,6 +43,7 @@ public class MetricService {
     private EnvironmentRepository environmentRepository;
     private EventRepository eventRepository;
     private VariationHistoryRepository variationHistoryRepository;
+    private TargetingVersionRepository targetingVersionRepository;
     private TargetingRepository targetingRepository;
 
     private static final int MAX_QUERY_HOURS = 12 * 24;
@@ -50,10 +54,11 @@ public class MetricService {
                                 int lastHours) {
         int queryLastHours = Math.min(lastHours, MAX_QUERY_HOURS);
         String serverSdkKey = queryEnvironmentServerSdkKey(projectKey, environmentKey);
-
+        Long targetingId = queryTargetingId(projectKey, environmentKey, toggleKey);
         Map<String, VariationHistory> variationVersionMap = buildVariationVersionMap(projectKey,
                 environmentKey, toggleKey);
-        List<AccessEventPoint> accessEventPoints = queryAccessEventPoints(serverSdkKey, toggleKey, queryLastHours);
+        List<AccessEventPoint> accessEventPoints = queryAccessEventPoints(serverSdkKey, toggleKey, targetingId,
+                queryLastHours);
         List<AccessEventPoint> aggregatedAccessEventPoints = aggregatePointByMetricType(variationVersionMap,
                 accessEventPoints, metricType);
 
@@ -100,7 +105,8 @@ public class MetricService {
         return accessEventPoints;
     }
 
-    protected List<AccessEventPoint> queryAccessEventPoints(String serverSdkKey, String toggleKey, int lastHours) {
+    private List<AccessEventPoint> queryAccessEventPoints(String serverSdkKey, String toggleKey,
+                                                          Long targetId, int lastHours) {
         int pointIntervalCount = getPointIntervalCount(lastHours);
         int pointCount = lastHours / pointIntervalCount;
 
@@ -110,8 +116,8 @@ public class MetricService {
         List<AccessEventPoint> accessEventPoints = Lists.newArrayList();
         for (int i = 0; i < pointCount; i++) {
             LocalDateTime pointEndTime = pointStartTime.plusHours(pointIntervalCount);
-            AccessEventPoint accessEventPoint = queryAccessEventPoint(serverSdkKey, toggleKey, pointNameFormat,
-                    pointStartTime, pointEndTime);
+            AccessEventPoint accessEventPoint = queryAccessEventPoint(serverSdkKey, toggleKey, targetId,
+                    pointNameFormat, pointStartTime, pointEndTime);
 
             accessEventPoints.add(accessEventPoint);
             pointStartTime = pointEndTime;
@@ -129,14 +135,25 @@ public class MetricService {
         return pointIntervalCount;
     }
 
-    protected AccessEventPoint queryAccessEventPoint(String serverSdkKey, String toggleKey, String pointNameFormat,
+    protected AccessEventPoint queryAccessEventPoint(String serverSdkKey, String toggleKey, Long targetingId,
+                                                     String pointNameFormat,
                                                      LocalDateTime pointStartTime,
                                                      LocalDateTime pointEndTime) {
         List<VariationAccessCounter> accessEvents = queryAccessEvents(serverSdkKey,
                 toggleKey, pointStartTime, pointEndTime);
         String pointName = String.format("%s", pointEndTime.format(DateTimeFormatter.ofPattern(pointNameFormat)));
+        Long lastTargetingVersion = queryLastTargetingVersion(targetingId, pointStartTime, pointEndTime);
+        return new AccessEventPoint(pointName, accessEvents, lastTargetingVersion);
+    }
 
-        return new AccessEventPoint(pointName, accessEvents);
+    private Long queryLastTargetingVersion(Long targetingId, LocalDateTime pointStartTime, LocalDateTime pointEndTime) {
+        List<TargetingVersion> targetingVersions = targetingVersionRepository
+                .findAllByTargetingIdAndCreatedTimeGreaterThanEqualAndCreatedTimeLessThanEqualOrderByCreatedTimeDesc(
+                        targetingId, toDate(pointStartTime), toDate(pointEndTime));
+        if (CollectionUtils.isNotEmpty(targetingVersions)) {
+            return targetingVersions.get(0).getVersion();
+        }
+        return null;
     }
 
     private List<VariationAccessCounter> queryAccessEvents(String serverSdkKey,
@@ -248,6 +265,12 @@ public class MetricService {
     private String queryEnvironmentServerSdkKey(String projectKey, String environmentKey) {
         Environment environment = this.environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
         return environment.getServerSdkKey();
+    }
+
+    private Long queryTargetingId(String projectKey, String environmentKey, String toggleKey) {
+        Targeting targeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
+                environmentKey, toggleKey).get();
+        return targeting.getId();
     }
 
     protected boolean isGroupByDay(int queryLastHours) {

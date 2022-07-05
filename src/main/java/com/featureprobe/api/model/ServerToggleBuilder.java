@@ -3,6 +3,7 @@ package com.featureprobe.api.model;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
 import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.util.DateTimeTranslateUtil;
 import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
 import com.featureprobe.sdk.server.model.Rule;
@@ -10,14 +11,19 @@ import com.featureprobe.sdk.server.model.Toggle;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.time.DateUtils;
 
 import java.math.BigDecimal;
+import java.text.ParseException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ServerToggleBuilder {
+
+    private static final String DATETIME_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mm:ssXXX";
 
     private Toggle toggle;
     private Variation.ValueConverter variationValueConverter;
@@ -120,6 +126,7 @@ public class ServerToggleBuilder {
         toggle.setVariations(variations);
     }
 
+
     private void setRules() {
         if (CollectionUtils.isEmpty(targetingContent.getRules())) {
             toggle.setRules(Collections.emptyList());
@@ -128,12 +135,20 @@ public class ServerToggleBuilder {
         List<Rule> rules = targetingContent.getRules().stream().map(rule ->
                 rule.toRule()).collect(Collectors.toList());
         rules.forEach(rule -> rule.getConditions().forEach(condition -> {
-            if (condition.getType() != ConditionType.SEGMENT) return;
-            replaceSegmentKeyToUniqueKey(condition);
+            if (condition.getType() == ConditionType.SEGMENT){
+                replaceSegmentKeyToUniqueKey(condition);
+            } else if (condition.getType() == ConditionType.DATETIME) {
+                convertDatetimeToUnix(condition);
+            }
         }));
         toggle.setRules(rules);
     }
 
+    private void convertDatetimeToUnix(Condition condition) {
+        condition.setObjects(condition.getObjects().stream().map(datetime ->
+                DateTimeTranslateUtil.translateUnix(datetime, DATETIME_FORMAT_PATTERN)).collect(Collectors.toList()));
+    }
+    
     private void replaceSegmentKeyToUniqueKey(Condition condition) {
         condition.setObjects(condition.getObjects().stream().map(segmentKey ->
                 segments.get(segmentKey).getUniqueKey()).collect(Collectors.toList()));
