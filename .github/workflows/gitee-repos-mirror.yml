@@ -1,7 +1,7 @@
 name: Gitee repos mirror periodic job
 on:
   schedule:
-    - cron:  '0 1 * * *'
+    - cron:  '0 * * * * ? *'
 jobs:
   build:
     runs-on: ubuntu-latest
