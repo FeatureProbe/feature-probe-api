@@ -7,7 +7,6 @@ import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 public class ConditionValue {
@@ -28,6 +27,19 @@ public class ConditionValue {
     }
 
     public boolean isSegmentType() {
-        return StringUtils.equals(ConditionType.SEGMENT.toValue(), getType());
+        return StringUtils.equals(ConditionType.SEGMENT.toValue(), type);
     }
+
+    public boolean isNumberType() {
+        return StringUtils.equals(ConditionType.NUMBER.toValue(), type);
+    }
+
+    public boolean isDatetimeType() {
+        return StringUtils.equals(ConditionType.DATETIME.toValue(), type);
+    }
+
+    public boolean isSemVerType() {
+        return StringUtils.equals(ConditionType.SEMVER.toValue(), type);
+    }
+
 }

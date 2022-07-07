@@ -11,4 +11,5 @@ public class AccessEventPoint {
 
     String name;
     List<VariationAccessCounter> values;
+    Long lastChangeVersion;
 }
