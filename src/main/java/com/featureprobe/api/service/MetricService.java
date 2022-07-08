@@ -19,13 +19,16 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +65,7 @@ public class MetricService {
                 environmentKey, toggleKey).get();
         appendLatestVariations(accessCounters, latestTargeting, metricType);
 
-        return new MetricResponse(accessEventPoints, accessCounters);
+        return new MetricResponse(accessEventPoints, sortAccessCounters(accessCounters));
     }
 
     private Map<String, VariationHistory> buildVariationVersionMap(String projectKey, String environmentKey,
@@ -227,11 +230,11 @@ public class MetricService {
         appendVariationIfInLatest(accessCounters, latestVariations);
     }
 
+
     private void setVariationDeletedIfNotInLatest(List<VariationAccessCounter> accessCounters,
                                                   List<String> namesOrValues) {
         accessCounters.stream()
-                .filter(accessCounter -> !namesOrValues.contains(accessCounter.getValue()))
-                .forEach(accessCounter -> accessCounter.setDeleted(true));
+                .forEach(accessCounter -> accessCounter.setDeleted(!namesOrValues.contains(accessCounter.getValue())));
     }
 
     private void appendVariationIfInLatest(List<VariationAccessCounter> accessCounters, List<String> namesOrValues) {
@@ -244,6 +247,21 @@ public class MetricService {
             }
         });
     }
+
+    protected List<VariationAccessCounter> sortAccessCounters(List<VariationAccessCounter> accessCounters) {
+        Collections.sort(accessCounters, Comparator.comparingLong(VariationAccessCounter::getCount).reversed());
+
+        List<VariationAccessCounter> deletedCounters = Lists.newArrayList();
+        new ArrayList<>(accessCounters).forEach(accessCounter -> {
+            if (BooleanUtils.isTrue(accessCounter.getDeleted())) {
+                deletedCounters.add(accessCounter);
+                accessCounters.remove(accessCounter);
+            }
+        });
+        accessCounters.addAll(deletedCounters);
+        return accessCounters;
+    }
+
 
     private String queryEnvironmentServerSdkKey(String projectKey, String environmentKey) {
         Environment environment = this.environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();

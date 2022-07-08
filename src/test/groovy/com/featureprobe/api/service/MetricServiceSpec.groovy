@@ -116,6 +116,20 @@ class MetricServiceSpec extends Specification {
 
     }
 
+    def "test sort access counters"() {
+        when:
+        def counters = metricService.sortAccessCounters([new VariationAccessCounter(count: 15),
+                                                         new VariationAccessCounter(count: 100),
+                                                         new VariationAccessCounter(count: 19, deleted: true),
+                                                         new VariationAccessCounter(count: 99, deleted: true),
+                                                         new VariationAccessCounter(count: 129)])
+
+        then:
+        129 == counters.get(0).count
+        19 == counters.get(counters.size() - 1).count
+        99 == counters.get(counters.size() - 2).count
+    }
+
     def "test `isGroupByDay`"() {
         expect:
         groupByDay == metricService.isGroupByDay(lastHours)
