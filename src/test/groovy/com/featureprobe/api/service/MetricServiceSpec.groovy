@@ -58,8 +58,9 @@ class MetricServiceSpec extends Specification {
                 _, _) >> []
         1 * variationHistoryRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> []
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> Optional.of(new Targeting(content: "{}"))
-
+        1 * eventRepository.existsBySdkKeyAndToggleKey(serverSdkKey, toggleKey) >> true
         0 == response.summary.size()
+        response.isAccess
     }
 
     def "test query access event points when event is empty"() {
@@ -68,7 +69,9 @@ class MetricServiceSpec extends Specification {
 
         when:
         List<AccessEventPoint> accessEventPoints = metricService.queryAccessEventPoints("test-sdk-key",
-                "my_toggle1", 2, lastHours)
+                "my_toggle1",
+                new Targeting(projectKey: "project_test", environmentKey: "online", toggleKey: "test_toggle"),
+                lastHours)
 
         then:
         10 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(_, _, _, _) >> []
@@ -118,6 +121,20 @@ class MetricServiceSpec extends Specification {
         1 == accessEventPoints.size()
         "blue" == accessEventPoints[0].values[0].value
         20 == accessEventPoints[0].values[0].count
+    }
+
+    def "test sort access counters"() {
+        when:
+        def counters = metricService.sortAccessCounters([new VariationAccessCounter(count: 15),
+                                                         new VariationAccessCounter(count: 100),
+                                                         new VariationAccessCounter(count: 19, deleted: true),
+                                                         new VariationAccessCounter(count: 99, deleted: true),
+                                                         new VariationAccessCounter(count: 129)])
+
+        then:
+        129 == counters.get(0).count
+        19 == counters.get(counters.size() - 1).count
+        99 == counters.get(counters.size() - 2).count
     }
 
     def "test `isGroupByDay`"() {
@@ -191,17 +208,16 @@ class MetricServiceSpec extends Specification {
         def endTime = LocalDateTime.of(2022, 3, 1, 11, 10, 10)
 
         when:
-        AccessEventPoint accessEventPoint = metricService.queryAccessEventPoint(sdkKey, toggleName, 1, "HH",
-                startTime, endTime)
+        AccessEventPoint accessEventPoint = metricService.queryAccessEventPoint(sdkKey, toggleName,
+                new Targeting(projectKey: "project_test", environmentKey: "online", toggleKey: "test_toggle"),
+                "HH", startTime, endTime)
 
 
         then:
         1 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(sdkKey,
                 toggleName, _, _) >> [new Event(valueIndex: 0, toggleVersion: 1, count: 10),
                                       new Event(valueIndex: 1, toggleVersion: 1, count: 11)]
-        1 * targetingVersionRepository
-                .findAllByTargetingIdAndCreatedTimeGreaterThanEqualAndCreatedTimeLessThanEqualOrderByCreatedTimeDesc(
-                        1, _, _) >> [new TargetingVersion(version: 10)]
+        1 * targetingVersionRepository.findAll(_) >> [new TargetingVersion(version: 10)]
         with(accessEventPoint) {
             "11" == it.name
             10 == it.lastChangeVersion

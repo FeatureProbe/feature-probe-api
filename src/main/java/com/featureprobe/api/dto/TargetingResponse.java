@@ -12,6 +12,8 @@ public class TargetingResponse {
 
     private TargetingContent content;
 
+    private Long version;
+
     private Date modifiedTime;
 
     private String modifiedBy;

@@ -1,9 +1,9 @@
 create table targeting_version
 (
     id             int auto_increment primary key,
-    targeting_id   bigint         default 0         not null,
     project_key    varchar(128)   default ""        not null,
     environment_key varchar(128)  default ""        not null,
+    toggle_key      varchar(128) default ""          not null,
     comment        varchar(1024)  default ""        not null,
     content        text                   not null,
     version        bigint         default 0         not null,

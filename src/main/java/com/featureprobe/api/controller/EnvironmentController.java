@@ -52,6 +52,14 @@ public class EnvironmentController {
         return environmentService.update(projectKey, environmentKey, updateRequest);
     }
 
+    @GetMapping("/{environmentKey}")
+    @GetApiResponse
+    @Operation(summary = "Query environment", description = "Query a environment.")
+    public EnvironmentResponse query(@PathVariable("projectKey") String projectKey,
+                                     @PathVariable("environmentKey") String environmentKey) {
+        return environmentService.query(projectKey, environmentKey);
+    }
+
     @GetMapping("/exists")
     @GetApiResponse
     @Operation(summary = "Check environment exist", description = "Check environment exist")
@@ -61,7 +69,5 @@ public class EnvironmentController {
         environmentService.validateExists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
-
-
 
 }

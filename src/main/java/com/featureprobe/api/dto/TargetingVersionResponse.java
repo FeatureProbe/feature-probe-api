@@ -12,9 +12,13 @@ public class TargetingVersionResponse {
 
     private String environmentKey;
 
+    private String toggleKey;
+
     private String comment;
 
     private TargetingContent content;
+
+    private Boolean disabled;
 
     private Long version;
 

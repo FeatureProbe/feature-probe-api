@@ -29,7 +29,6 @@ public class VariationAccessCounter {
     public VariationAccessCounter(String value, Long count) {
         this.value = value;
         this.count = count;
-        this.deleted = false;
     }
 
 

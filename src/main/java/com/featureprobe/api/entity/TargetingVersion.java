@@ -26,18 +26,20 @@ import javax.persistence.Table;
 @ToString(callSuper = true)
 public class TargetingVersion extends AbstractAuditEntity {
 
-    @Column(name = "targeting_id")
-    private Long targetingId;
-
     @Column(name = "project_key")
     private String projectKey;
 
     @Column(name = "environment_key")
     private String environmentKey;
 
+    @Column(name = "toggle_key")
+    private String toggleKey;
+
     private String comment;
 
     private String content;
+
+    private Boolean disabled;
 
     private Long version;
 

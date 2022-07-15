@@ -6,6 +6,7 @@ import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
+import com.featureprobe.api.dto.AfterTargetingVersionResponse;
 import com.featureprobe.api.dto.TargetingRequest;
 import com.featureprobe.api.dto.TargetingResponse;
 import com.featureprobe.api.dto.TargetingVersionRequest;
@@ -67,7 +68,19 @@ public class TargetingController {
     public Page<TargetingVersionResponse> versions(
             @PathVariable("projectKey") String projectKey,
             @PathVariable("environmentKey") String environmentKey,
+            @PathVariable("toggleKey") String toggleKey,
             TargetingVersionRequest targetingVersionRequest) {
-        return targetingService.queryVersions(projectKey, environmentKey, targetingVersionRequest);
+        return targetingService.queryVersions(projectKey, environmentKey, toggleKey, targetingVersionRequest);
+    }
+
+    @GetApiResponse
+    @GetMapping("/versions/{version}")
+    @Operation(summary = "Get all targeting versions larger than the version。",
+            description = "Get all targeting versions larger than the version.")
+    public AfterTargetingVersionResponse allAfterVersions(@PathVariable("projectKey") String projectKey,
+                                                          @PathVariable("environmentKey") String environmentKey,
+                                                          @PathVariable("toggleKey") String toggleKey,
+                                                          @PathVariable("version") Long version) {
+        return targetingService.queryAfterVersion(projectKey, environmentKey, toggleKey, version);
     }
 }

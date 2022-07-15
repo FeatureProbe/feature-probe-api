@@ -14,10 +14,26 @@ import java.util.List;
 public interface TargetingVersionRepository extends JpaRepository<TargetingVersion, Long>,
         JpaSpecificationExecutor<TargetingVersion> {
 
-    Page<TargetingVersion> findAllByProjectKeyAndEnvironmentKey(String projectKey, String environmentKey,
-                                                                Pageable pageable);
+    Page<TargetingVersion>
+        findAllByProjectKeyAndEnvironmentKeyAndToggleKey(String projectKey,
+                                                     String environmentKey,
+                                                     String toggleKey,
+                                                     Pageable pageable);
+
+    Page<TargetingVersion>
+        findAllByProjectKeyAndEnvironmentKeyAndToggleKeyAndVersionLessThanOrderByVersionDesc(String projectKey,
+                                                                                                 String environmentKey,
+                                                                                                 String toggleKey,
+                                                                                                 Long version,
+                                                                                                 Pageable pageable);
+
 
     List<TargetingVersion>
-        findAllByTargetingIdAndCreatedTimeGreaterThanEqualAndCreatedTimeLessThanEqualOrderByCreatedTimeDesc(
-            Long targetingId, Date startDate, Date endDate);
+        findAllByProjectKeyAndEnvironmentKeyAndToggleKeyAndVersionGreaterThanEqualOrderByVersionDesc(String projectKey,
+                                                                                                 String environmentKey,
+                                                                                                 String toggleKey,
+                                                                                                 Long version);
+
+    long countByProjectKeyAndEnvironmentKeyAndToggleKey(String projectKey, String environmentKey, String toggleKey);
+
 }
