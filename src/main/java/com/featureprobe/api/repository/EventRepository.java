@@ -16,4 +16,6 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
                                                                                             Date startDate,
                                                                                             Date endDate);
 
+    boolean existsBySdkKeyAndToggleKey(String sdkKey, String toggleKey);
+
 }

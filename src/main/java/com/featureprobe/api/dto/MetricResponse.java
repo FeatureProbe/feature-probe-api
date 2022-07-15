@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class MetricResponse {
 
+    private Boolean isAccess;
     private List<AccessEventPoint> metrics;
     private List<VariationAccessCounter> summary;
 

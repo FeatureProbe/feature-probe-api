@@ -182,13 +182,41 @@ class TargetingServiceSpec extends Specification {
 
     def "query targeting version"() {
         when:
-        def versions = targetingService.queryVersions(projectKey, environmentKey,
+        def versions = targetingService.queryVersions(projectKey, environmentKey, toggleKey,
                 new TargetingVersionRequest())
         then:
         1 * targetingVersionRepository
-                .findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey, _) >>
+                .findAllByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey, _) >>
                 new PageImpl<>([new TargetingVersion()], Pageable.ofSize(1), 1)
         1 == versions.size
+
+    }
+
+    def "query before targeting version by page"() {
+        when:
+        def versions = targetingService.queryVersions(projectKey, environmentKey, toggleKey,
+                new TargetingVersionRequest(version: 10))
+        then:
+        1 * targetingVersionRepository
+                .findAllByProjectKeyAndEnvironmentKeyAndToggleKeyAndVersionLessThanOrderByVersionDesc(
+                        projectKey, environmentKey, toggleKey, 10, _) >>
+                new PageImpl<>([new TargetingVersion()], Pageable.ofSize(1), 1)
+        1 == versions.size
+
+    }
+
+    def "query after targeting version"() {
+        when:
+        def afterVersion = targetingService.queryAfterVersion(projectKey, environmentKey,
+                toggleKey, 10)
+        then:
+        1 * targetingVersionRepository
+                .findAllByProjectKeyAndEnvironmentKeyAndToggleKeyAndVersionGreaterThanEqualOrderByVersionDesc(
+                        projectKey, environmentKey, toggleKey, 10) >> [new TargetingVersion()]
+        1 * targetingVersionRepository.countByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
+                environmentKey, toggleKey) >> 2
+        2 == afterVersion.total
+        1 == afterVersion.versions.size()
 
     }
 

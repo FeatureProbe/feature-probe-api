@@ -77,6 +77,12 @@ public class EnvironmentService {
         return EnvironmentMapper.INSTANCE.entityToResponse(environmentRepository.save(environment));
     }
 
+    public EnvironmentResponse query(String projectKey, String environmentKey) {
+        Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, environmentKey));
+        return EnvironmentMapper.INSTANCE.entityToResponse(environment);
+    }
+
     public String getSdkServerKey(String serverKeyOrClientKey) {
         return environmentRepository.findByServerSdkKeyOrClientSdkKey(serverKeyOrClientKey, serverKeyOrClientKey)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, serverKeyOrClientKey))

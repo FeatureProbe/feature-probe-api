@@ -2,6 +2,7 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
+import com.featureprobe.api.dto.AfterTargetingVersionResponse;
 import com.featureprobe.api.dto.TargetingRequest;
 import com.featureprobe.api.dto.TargetingResponse;
 import com.featureprobe.api.dto.TargetingVersionRequest;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -82,10 +84,11 @@ public class TargetingService {
 
     private TargetingVersion buildTargetingVersion(Targeting targeting, String comment) {
         TargetingVersion targetingVersion = new TargetingVersion();
-        targetingVersion.setTargetingId(targeting.getId());
         targetingVersion.setProjectKey(targeting.getProjectKey());
         targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
+        targetingVersion.setToggleKey(targeting.getToggleKey());
         targetingVersion.setContent(targeting.getContent());
+        targetingVersion.setDisabled(targeting.getDisabled());
         targetingVersion.setVersion(targeting.getVersion());
         targetingVersion.setComment(comment);
         return targetingVersion;
@@ -95,13 +98,33 @@ public class TargetingService {
         targetingVersionRepository.save(targetingVersion);
     }
 
-    public Page<TargetingVersionResponse> queryVersions(String projectKey, String environmentKey,
+    public Page<TargetingVersionResponse> queryVersions(String projectKey, String environmentKey, String toggleKey,
                                                         TargetingVersionRequest targetingVersionRequest) {
-        Page<TargetingVersion> targetingVersions = targetingVersionRepository
-                .findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey,
-                        PageRequestUtil.toCreatedTimeDescSortPageable(targetingVersionRequest));
+        Page<TargetingVersion> targetingVersions ;
+        if(Objects.isNull(targetingVersionRequest.getVersion())) {
+            targetingVersions = targetingVersionRepository
+                    .findAllByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey,
+                            PageRequestUtil.toCreatedTimeDescSortPageable(targetingVersionRequest));
+        } else {
+            targetingVersions = targetingVersionRepository
+                    .findAllByProjectKeyAndEnvironmentKeyAndToggleKeyAndVersionLessThanOrderByVersionDesc(
+                            projectKey, environmentKey, toggleKey, targetingVersionRequest.getVersion(),
+                            PageRequestUtil.toCreatedTimeDescSortPageable(targetingVersionRequest));
+        }
         return targetingVersions.map(targetingVersion ->
                 TargetingVersionMapper.INSTANCE.entityToResponse(targetingVersion));
+    }
+
+    public AfterTargetingVersionResponse queryAfterVersion(String projectKey, String environmentKey, String toggleKey,
+                                                           Long version) {
+        List<TargetingVersion> targetingVersions = targetingVersionRepository
+                .findAllByProjectKeyAndEnvironmentKeyAndToggleKeyAndVersionGreaterThanEqualOrderByVersionDesc(
+                        projectKey, environmentKey, toggleKey, version);
+        List<TargetingVersionResponse> versions = targetingVersions.stream().map(targetingVersion ->
+                TargetingVersionMapper.INSTANCE.entityToResponse(targetingVersion)).collect(Collectors.toList());
+        long total = targetingVersionRepository.countByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
+                environmentKey, toggleKey);
+        return new AfterTargetingVersionResponse(total, versions);
     }
 
 

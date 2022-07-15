@@ -6,6 +6,7 @@ import com.featureprobe.api.base.doc.EnvironmentKeyParameter;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
+import com.featureprobe.api.dto.AccessStatusResponse;
 import com.featureprobe.api.dto.MetricResponse;
 import com.featureprobe.api.service.MetricService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @AllArgsConstructor
 @RestController
-@RequestMapping("/projects/{projectKey}/environments/{environmentKey}/toggles/{toggleKey}/metrics")
+@RequestMapping("/projects/{projectKey}/environments/{environmentKey}/toggles/{toggleKey}")
 @DefaultApiResponses
 @ProjectKeyParameter
 @ToggleKeyParameter
@@ -34,7 +35,7 @@ public class MetricController {
     private MetricService metricService;
 
     @GetApiResponse
-    @GetMapping
+    @GetMapping("/metrics")
     @Operation(summary = "Query Metrics", description = "")
     public MetricResponse query(@PathVariable("projectKey") String projectKey,
                                 @PathVariable("environmentKey") String environmentKey,
@@ -44,4 +45,14 @@ public class MetricController {
 
         return metricService.query(projectKey, environmentKey, toggleKey, metricType, lastHours);
     }
+
+    @GetApiResponse
+    @GetMapping("/access")
+    @Operation(summary = "Query access status", description = "")
+    public AccessStatusResponse query(@PathVariable("projectKey") String projectKey,
+                                      @PathVariable("environmentKey") String environmentKey,
+                                      @PathVariable("toggleKey") String toggleKey) {
+        return metricService.isAccess(projectKey, environmentKey, toggleKey);
+    }
+
 }

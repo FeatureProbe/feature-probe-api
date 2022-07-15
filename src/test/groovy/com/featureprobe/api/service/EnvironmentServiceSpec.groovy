@@ -109,6 +109,17 @@ class EnvironmentServiceSpec extends Specification {
         }
     }
 
+    def "query a environment" () {
+        when:
+        def environment = environmentService.query(projectKey, environmentKey)
+        then:
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
+                Optional.of(new Environment(key: environmentKey, serverSdkKey: "server-123", clientSdkKey: "client-123"))
+        environmentKey == environment.key
+        "server-123" == environment.serverSdkKey
+        "client-123" == environment.clientSdkKey
+    }
+
     def "test get sdk server key"() {
         given:
         environmentRepository.findByServerSdkKeyOrClientSdkKey("key1", "key1") >>
