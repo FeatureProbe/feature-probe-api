@@ -2,6 +2,7 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.ValidateTypeEnum;
+import com.featureprobe.api.base.enums.VisitFilter;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ServerToggleBuildException;
@@ -158,9 +159,9 @@ public class ToggleService {
             Set<String> keys = queryToggleKeysByTags(searchRequest.getTags());
             retainAllKeys(toggleKeys, keys);
         }
-        if (Objects.nonNull(searchRequest.getIsVisited())) {
+        if (Objects.nonNull(searchRequest.getVisitFilter())) {
             isPrecondition = true;
-            Set<String> keys = queryToggleKeysByVisited(searchRequest.getIsVisited(), projectKey, environment);
+            Set<String> keys = queryToggleKeysByVisited(searchRequest.getVisitFilter(), projectKey, environment);
             retainAllKeys(toggleKeys, keys);
         }
         Page<Toggle> togglePage = compoundQuery(projectKey, searchRequest, toggleKeys, isPrecondition);
@@ -216,21 +217,27 @@ public class ToggleService {
         return toggleTagRelations.stream().map(ToggleTagRelation::getToggleKey).collect(Collectors.toSet());
     }
 
-    private Set<String> queryToggleKeysByVisited(Boolean isVisited, String projectKey, Environment environment) {
+    private Set<String> queryToggleKeysByVisited(VisitFilter visitFilter, String projectKey, Environment environment) {
         Date lastWeek = Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant());
         Specification<Event> spec = new Specification<Event>() {
             @Override
             public Predicate toPredicate(Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
                 Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
                 Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
-                Predicate p3 = cb.greaterThanOrEqualTo(root.get("endDate"), lastWeek);
-                return query.where(cb.and(p3), cb.or(p1, p2)).groupBy(root.get("toggleKey"))
+                if (VisitFilter.IN_WEEK_VISITED == visitFilter) {
+                    Predicate p3 = cb.greaterThanOrEqualTo(root.get("endDate"), lastWeek);
+                    query.where(cb.and(p3));
+                } else if (VisitFilter.OUT_WEEK_VISITED == visitFilter) {
+                    Predicate p3 = cb.lessThanOrEqualTo(root.get("endDate"), lastWeek);
+                    query.where(cb.and(p3));
+                }
+                return query.where(cb.or(p1, p2)).groupBy(root.get("toggleKey"))
                         .getRestriction();
             }
         };
         List<Event> events = eventRepository.findAll(spec);
         Set<String> keys = events.stream().map(Event::getToggleKey).collect(Collectors.toSet());
-        if (isVisited) {
+        if (VisitFilter.IN_WEEK_VISITED == visitFilter || VisitFilter.OUT_WEEK_VISITED == visitFilter) {
             return keys;
         } else {
             Specification<Toggle> notSpec = new Specification<Toggle>() {
@@ -242,8 +249,8 @@ public class ToggleService {
                 }
             };
             List<Toggle> toggles = toggleRepository.findAll(notSpec);
-            Set<String> notKeys = toggles.stream().map(Toggle::getKey).collect(Collectors.toSet());
-            return notKeys;
+            Set<String> notVisitedKeys = toggles.stream().map(Toggle::getKey).collect(Collectors.toSet());
+            return notVisitedKeys;
         }
     }
 

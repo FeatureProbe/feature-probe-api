@@ -1,5 +1,6 @@
 package com.featureprobe.api.dto;
 
+import com.featureprobe.api.base.enums.VisitFilter;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
@@ -11,7 +12,7 @@ public class ToggleSearchRequest extends PaginationRequest {
     @NotBlank
     private String environmentKey;
 
-    private Boolean isVisited;
+    private VisitFilter visitFilter;
 
     private Boolean disabled;
 

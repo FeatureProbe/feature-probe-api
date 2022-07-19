@@ -1,6 +1,7 @@
 package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.ValidateTypeEnum
+import com.featureprobe.api.base.enums.VisitFilter
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.ServerResponse
 import com.featureprobe.api.dto.ToggleCreateRequest
@@ -98,7 +99,7 @@ class ToggleServiceSpec extends Specification {
 
     def "search toggles by filter params"() {
         def toggleSearchRequest =
-                new ToggleSearchRequest(isVisited: true, disabled: false,
+                new ToggleSearchRequest(visitFilter: VisitFilter.IN_WEEK_VISITED, disabled: false,
                         tags: ["test"], keyword: "test", environmentKey: environmentKey)
         when:
         def page = toggleService.query(projectKey, toggleSearchRequest)
