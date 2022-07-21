@@ -5,9 +5,11 @@ import com.featureprobe.api.dto.AccessStatusResponse;
 import com.featureprobe.api.dto.MetricResponse;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
+import com.featureprobe.api.entity.MetricsCache;
 import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.entity.VariationHistory;
+import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.mapper.TargetingVersionMapper;
 import com.featureprobe.api.model.AccessEventPoint;
 import com.featureprobe.api.model.TargetingContent;
@@ -15,6 +17,7 @@ import com.featureprobe.api.model.Variation;
 import com.featureprobe.api.model.VariationAccessCounter;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
+import com.featureprobe.api.repository.MetricsCacheRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
@@ -38,6 +41,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,11 +54,14 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class MetricService {
 
+    private static final ExecutorService taskExecutor = Executors.newFixedThreadPool(12);
+
     private EnvironmentRepository environmentRepository;
     private EventRepository eventRepository;
     private VariationHistoryRepository variationHistoryRepository;
     private TargetingVersionRepository targetingVersionRepository;
     private TargetingRepository targetingRepository;
+    private MetricsCacheRepository metricsCacheRepository;
 
     private static final int MAX_QUERY_HOURS = 12 * 24;
     private static final int MAX_QUERY_POINT_COUNT = 12;
@@ -59,6 +70,7 @@ public class MetricService {
     public AccessStatusResponse isAccess(String projectKey, String environmentKey, String toggleKey) {
         String serverSdkKey = queryEnvironmentServerSdkKey(projectKey, environmentKey);
         boolean isAccess = eventRepository.existsBySdkKeyAndToggleKey(serverSdkKey, toggleKey);
+
         return new AccessStatusResponse(isAccess);
     }
 
@@ -121,8 +133,8 @@ public class MetricService {
         return accessEventPoints;
     }
 
-    private List<AccessEventPoint> queryAccessEventPoints(String serverSdkKey, String toggleKey,
-                                                          Targeting targeting, int lastHours) {
+    private List<AccessEventPoint> queryAccessEventPoints(String serverSdkKey, String toggleKey, Targeting targeting,
+                                                          int lastHours) {
         int pointIntervalCount = getPointIntervalCount(lastHours);
         int pointCount = lastHours / pointIntervalCount;
 
@@ -130,15 +142,22 @@ public class MetricService {
         String pointNameFormat = getPointNameFormat(lastHours);
 
         List<AccessEventPoint> accessEventPoints = Lists.newArrayList();
-        for (int i = 0; i < pointCount; i++) {
+        CountDownLatch counter = new CountDownLatch(pointCount);
+        for (int i = 1; i <= pointCount; i++) {
+            boolean cacheFlag = i != pointCount;
             LocalDateTime pointEndTime = pointStartTime.plusHours(pointIntervalCount);
-            AccessEventPoint accessEventPoint = queryAccessEventPoint(serverSdkKey, toggleKey, targeting,
-                    pointNameFormat, pointStartTime, pointEndTime);
-
-            accessEventPoints.add(accessEventPoint);
+            QueryAccessEventPointTask task = new QueryAccessEventPointTask(serverSdkKey, toggleKey, cacheFlag,
+                    targeting, pointNameFormat,  pointStartTime, pointEndTime, accessEventPoints, counter, i);
+            taskExecutor.submit(task);
             pointStartTime = pointEndTime;
         }
-        return accessEventPoints;
+        try {
+            counter.await(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.error("System error", e);
+        }
+        return accessEventPoints.stream().
+                sorted(Comparator.comparing(AccessEventPoint::getSorted)).collect(Collectors.toList());
     }
 
     protected int getPointIntervalCount(int lastHours) {
@@ -149,17 +168,6 @@ public class MetricService {
             pointIntervalCount = lastHours <= MAX_QUERY_POINT_COUNT ? 1 : 2;
         }
         return pointIntervalCount;
-    }
-
-    protected AccessEventPoint queryAccessEventPoint(String serverSdkKey, String toggleKey, Targeting targeting,
-                                                     String pointNameFormat,
-                                                     LocalDateTime pointStartTime,
-                                                     LocalDateTime pointEndTime) {
-        List<VariationAccessCounter> accessEvents = queryAccessEvents(serverSdkKey,
-                toggleKey, pointStartTime, pointEndTime);
-        String pointName = String.format("%s", pointEndTime.format(DateTimeFormatter.ofPattern(pointNameFormat)));
-        Long lastTargetingVersion = queryLastTargetingVersion(targeting, pointStartTime, pointEndTime);
-        return new AccessEventPoint(pointName, accessEvents, lastTargetingVersion);
     }
 
     private Long queryLastTargetingVersion(Targeting targeting, LocalDateTime pointStartTime,
@@ -185,18 +193,27 @@ public class MetricService {
         };
     }
 
-    private List<VariationAccessCounter> queryAccessEvents(String serverSdkKey,
-                                                           String toggleKey,
-                                                           LocalDateTime pointStartTime,
-                                                           LocalDateTime pointEndTime) {
-        List<Event> currentPointEvents
-                = eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(
-                serverSdkKey,
-                toggleKey,
-                toDate(pointStartTime),
-                toDate(pointEndTime));
+    private void saveMetricsCache(String serverSdkKey, String toggleKey, Date startDate,
+                                  Date endDate ,List<VariationAccessCounter> variationAccessCounters) {
+        MetricsCache cache = new MetricsCache();
+        cache.setSdkKey(serverSdkKey);
+        cache.setToggleKey(toggleKey);
+        cache.setStartDate(startDate);
+        cache.setEndDate(endDate);
+        cache.setData(JsonMapper.toJSONString(variationAccessCounters));
+        metricsCacheRepository.save(cache);
+    }
 
-        return toAccessEvent(currentPointEvents);
+    private List<VariationAccessCounter> queryMetricsCache(String serverSdkKey, String toggleKey, Date startDate,
+                                                           Date endDate) {
+        Optional<MetricsCache> metricsCache =
+                metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDate(serverSdkKey, toggleKey,
+                        startDate, endDate);
+        if (metricsCache.isPresent()) {
+            return JsonMapper.toListObject(metricsCache.get().getData(), VariationAccessCounter.class);
+        } else {
+            return null;
+        }
     }
 
     protected List<VariationAccessCounter> toAccessEvent(List<Event> events) {
@@ -317,5 +334,74 @@ public class MetricService {
 
     private Date toDate(LocalDateTime pointStartTime) {
         return Date.from(pointStartTime.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    class QueryAccessEventPointTask implements Runnable {
+
+        String serverSdkKey;
+        String toggleKey;
+        MetricType metricType;
+        boolean cacheFlag;
+        Targeting targeting;
+        String pointNameFormat;
+        LocalDateTime pointStartTime;
+        LocalDateTime pointEndTime;
+        List<AccessEventPoint> accessEventPoints;
+        CountDownLatch counter;
+        Integer sorted;
+
+        public QueryAccessEventPointTask(String serverSdkKey,
+                                         String toggleKey,
+                                         boolean cacheFlag,
+                                         Targeting targeting,
+                                         String pointNameFormat,
+                                         LocalDateTime pointStartTime,
+                                         LocalDateTime pointEndTime,
+                                         List<AccessEventPoint> accessEventPoints,
+                                         CountDownLatch counter,
+                                         Integer sorted) {
+            this.serverSdkKey = serverSdkKey;
+            this.toggleKey = toggleKey;
+            this.cacheFlag = cacheFlag;
+            this.targeting = targeting;
+            this.pointNameFormat = pointNameFormat;
+            this.pointStartTime = pointStartTime;
+            this.pointEndTime = pointEndTime;
+            this.accessEventPoints = accessEventPoints;
+            this.counter = counter;
+            this.sorted = sorted;
+        }
+
+        @Override
+        public void run() {
+            try {
+                List<VariationAccessCounter> accessEvents;
+                List<VariationAccessCounter> accessEventsCache = null;
+                if (cacheFlag) {
+                    accessEventsCache = queryMetricsCache(serverSdkKey, toggleKey,
+                            toDate(pointStartTime), toDate(pointEndTime));
+                }
+                if (Objects.isNull(accessEventsCache)) {
+                    List<Event> currentPointEvents =
+                            eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(
+                                    serverSdkKey, toggleKey, toDate(pointStartTime), toDate(pointEndTime));
+                    accessEvents = toAccessEvent(currentPointEvents);
+                    if (cacheFlag) {
+                        saveMetricsCache(serverSdkKey, toggleKey, toDate(pointStartTime),
+                                toDate(pointEndTime), accessEvents);
+                    }
+                }else {
+                    accessEvents = accessEventsCache;
+                }
+                String pointName = String.format("%s",
+                        pointEndTime.format(DateTimeFormatter.ofPattern(pointNameFormat)));
+                Long lastTargetingVersion = queryLastTargetingVersion(targeting, pointStartTime, pointEndTime);
+                accessEventPoints.add(new AccessEventPoint(pointName, accessEvents, lastTargetingVersion, sorted));
+            }catch (Exception e) {
+                log.error("Query AccessEventPoint Task Exception.", e);
+            }finally {
+                counter.countDown();
+            }
+        }
     }
 }
