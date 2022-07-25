@@ -21,15 +21,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Mapper
-public interface ToggleMapper {
+public interface ToggleMapper extends BaseMapper {
 
     ToggleMapper INSTANCE = Mappers.getMapper(ToggleMapper.class);
+
+    @Mapping(target = "modifiedBy", expression = "java(getAccount(toggle.getModifiedBy()))")
     ToggleItemResponse entityToItemResponse(Toggle toggle);
 
-    @Mapping(target = "variations",
-            expression = "java(toVariation(toggle.getVariations()))")
-    @Mapping(target = "tags",
-            expression = "java(toTagNames(toggle.getTags()))")
+    @Mapping(target = "variations", expression = "java(toVariation(toggle.getVariations()))")
+    @Mapping(target = "tags", expression = "java(toTagNames(toggle.getTags()))")
+    @Mapping(target = "modifiedBy", expression = "java(getAccount(toggle.getModifiedBy()))")
     ToggleResponse entityToResponse(Toggle toggle);
 
     default List<String> toTagNames(List<Tag> tags) {

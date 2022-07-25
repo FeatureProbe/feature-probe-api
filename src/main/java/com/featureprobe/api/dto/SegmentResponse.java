@@ -20,8 +20,6 @@ public class SegmentResponse {
 
     private Date createdTime;
 
-    private String createdBy;
-
     private Date modifiedTime;
 
     private String modifiedBy;
