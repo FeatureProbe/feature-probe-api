@@ -15,12 +15,14 @@ import org.mapstruct.factory.Mappers;
 import java.util.Objects;
 
 @Mapper
-public interface TargetingMapper {
+public interface TargetingMapper extends BaseMapper{
 
     TargetingMapper INSTANCE = Mappers.getMapper(TargetingMapper.class);
 
     @Mapping(target = "content",
             expression = "java(toTargetingContent(targeting.getContent()))")
+    @Mapping(target = "modifiedBy",
+            expression = "java(getAccount(targeting.getModifiedBy()))")
     TargetingResponse entityToResponse(Targeting targeting);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

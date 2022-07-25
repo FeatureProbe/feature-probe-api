@@ -23,6 +23,4 @@ public class TargetingVersionResponse {
     private Long version;
 
     private Date createdTime;
-
-    private String createdBy;
 }

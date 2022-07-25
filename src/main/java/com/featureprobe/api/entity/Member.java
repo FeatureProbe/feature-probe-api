@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Where;
+import org.springframework.security.core.AuthenticatedPrincipal;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,7 +18,6 @@ import javax.persistence.Enumerated;
 import javax.persistence.Table;
 import java.util.Date;
 
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -25,8 +25,7 @@ import java.util.Date;
 @Table(name = "member")
 @Where(clause = "deleted = 0")
 @DynamicInsert
-@ToString(callSuper = true)
-public class Member extends AbstractAuditEntity {
+public class Member extends AbstractAuditEntity implements AuthenticatedPrincipal {
 
     private String account;
 
@@ -40,4 +39,8 @@ public class Member extends AbstractAuditEntity {
 
     private Boolean deleted;
 
+    @Override
+    public String getName() {
+        return account;
+    }
 }

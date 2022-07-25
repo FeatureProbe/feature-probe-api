@@ -1,5 +1,6 @@
 package com.featureprobe.api.base.entity;
 
+import com.featureprobe.api.entity.Member;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -12,6 +13,8 @@ import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -32,16 +35,18 @@ public abstract class AbstractAuditEntity implements Serializable {
     @CreatedDate
     private Date createdTime;
 
-    @Column(name = "created_by", nullable = false, updatable = false)
     @CreatedBy
-    private String createdBy;
+    @ManyToOne
+    @JoinColumn(name = "created_by", referencedColumnName = "id", nullable = false, updatable = false)
+    private Member createdBy;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "modified_time", nullable = false)
     @LastModifiedDate
     private Date modifiedTime;
 
-    @Column(name = "modified_by", nullable = false)
     @LastModifiedBy
-    private String modifiedBy;
+    @ManyToOne
+    @JoinColumn(name = "modified_by", referencedColumnName = "id", nullable = false)
+    private Member modifiedBy;
 }
