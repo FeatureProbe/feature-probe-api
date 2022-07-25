@@ -1,9 +1,9 @@
 package com.featureprobe.api.auth;
 
+import com.featureprobe.api.base.config.ConfigProperties;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.repository.MemberRepository;
-import com.featureprobe.api.service.MemberService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 @EnableWebSecurity
 @AllArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    private ConfigProperties configProperties;
 
     private LoginFailureHandler loginFailureHandler;
 
@@ -46,7 +48,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     JWTAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager,
                                                     MemberRepository memberRepository) {
         JWTAuthenticationFilter jwtAuthenticationFilter =
-                new JWTAuthenticationFilter(authenticationManager, memberRepository);
+                new JWTAuthenticationFilter(authenticationManager, memberRepository, configProperties.getSecret());
         return jwtAuthenticationFilter;
     }
 

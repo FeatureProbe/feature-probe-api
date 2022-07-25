@@ -10,6 +10,7 @@ import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.repository.MemberRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,11 +30,15 @@ import java.util.Map;
 @Slf4j
 public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
 
+    private String secret;
+
     MemberRepository memberRepository;
 
-    public JWTAuthenticationFilter(AuthenticationManager authenticationManager, MemberRepository memberRepository) {
+    public JWTAuthenticationFilter(AuthenticationManager authenticationManager, MemberRepository memberRepository,
+                                   String secret) {
         super(authenticationManager);
         this.memberRepository = memberRepository;
+        this.secret = secret;
     }
 
     @Override
@@ -51,11 +56,10 @@ public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
             String user = new String(decode);
             Long userId = Long.parseLong((String)JsonMapper.toObject(user, Map.class).get("userId"));
             Member member = memberRepository.findById(userId).orElseThrow(() -> new ForbiddenException());
-            JWTVerifier verifier = JWT.require(Algorithm.HMAC256("2111212")).build();
+            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secret)).build();
             DecodedJWT decodedJWT = verifier.verify(token);
             Date expiresAt = decodedJWT.getExpiresAt();
             if (new Date().after(expiresAt)) {
-                // Token 失效
                 log.error("Token has expired");
                 throw new ForbiddenException();
             }
