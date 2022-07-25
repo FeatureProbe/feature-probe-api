@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Mapper
-public interface SegmentMapper {
+public interface SegmentMapper extends BaseMapper {
 
     SegmentMapper INSTANCE = Mappers.getMapper(SegmentMapper.class);
 
@@ -28,6 +28,7 @@ public interface SegmentMapper {
     Segment requestToEntity(SegmentCreateRequest createRequest);
 
     @Mapping(target = "rules", expression = "java(toSegmentRules(segment.getRules()))")
+    @Mapping(target = "modifiedBy", expression = "java(getAccount(segment.getModifiedBy()))")
     SegmentResponse entityToResponse(Segment segment);
 
     ToggleSegmentResponse toggleToToggleSegment(Toggle toggle);

@@ -12,13 +12,13 @@ import org.mapstruct.factory.Mappers;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Mapper
-public interface MemberMapper {
+public interface MemberMapper extends BaseMapper{
 
     MemberMapper INSTANCE = Mappers.getMapper(MemberMapper.class);
 
     @Mapping(target = "role", expression = "java(member.getRole().name())")
     @Mapping(target = "account", expression = "java(member.getAccount())")
-    @Mapping(target = "createdBy", expression = "java(member.getCreatedBy())")
+    @Mapping(target = "createdBy", expression = "java(getAccount(member.getCreatedBy()))")
     @Mapping(target = "visitedTime", expression = "java(member.getVisitedTime())")
     MemberResponse entityToResponse(Member member);
 
