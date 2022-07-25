@@ -2,6 +2,8 @@ package com.featureprobe.api.auth;
 
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.repository.MemberRepository;
+import com.featureprobe.api.service.MemberService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +31,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private CustomLogoutSuccessHandler customLogoutSuccessHandler;
 
+    private MemberRepository memberRepository;
+
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
         UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter =
@@ -39,6 +43,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return userPasswordAuthenticationProcessingFilter;
     }
 
+    JWTAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager,
+                                                    MemberRepository memberRepository) {
+        JWTAuthenticationFilter jwtAuthenticationFilter =
+                new JWTAuthenticationFilter(authenticationManager, memberRepository);
+        return jwtAuthenticationFilter;
+    }
 
     @Bean
     AuthenticationEntryPoint authenticationEntryPoint() {
@@ -75,8 +85,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .accessDeniedHandler(((httpServletRequest, httpServletResponse, e) ->
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
-        http.addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
-                UsernamePasswordAuthenticationFilter.class);
+        http.addFilter(jwtAuthenticationFilter(authenticationManager(), memberRepository))
+                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class);
     }
 
 }
