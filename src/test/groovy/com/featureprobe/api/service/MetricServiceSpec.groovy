@@ -206,5 +206,4 @@ class MetricServiceSpec extends Specification {
             4 == it.count
         }
     }
-
 }

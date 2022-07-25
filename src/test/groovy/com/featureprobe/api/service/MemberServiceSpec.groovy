@@ -175,7 +175,7 @@ class MemberServiceSpec extends Specification {
 
     private setAuthContext(String account, String role) {
         SecurityContextHolder.setContext(new SecurityContextImpl(
-                new UserPasswordAuthenticationToken(account, role, null)))
+                new UserPasswordAuthenticationToken(new Member(account: account, role: role), null)))
     }
 
 }

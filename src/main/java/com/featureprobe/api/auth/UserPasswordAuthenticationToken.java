@@ -1,6 +1,7 @@
 package com.featureprobe.api.auth;
 
 import com.featureprobe.api.base.enums.RoleEnum;
+import com.featureprobe.api.entity.Member;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -12,7 +13,7 @@ public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken
 
     private String password;
 
-    private String role;
+    private Member principal;
 
     public UserPasswordAuthenticationToken(String account, String password) {
         super(null);
@@ -21,16 +22,15 @@ public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken
         super.setAuthenticated(false);
     }
 
-    public UserPasswordAuthenticationToken(String account, String role,
-                                           Collection<? extends GrantedAuthority> authorities) {
+    public UserPasswordAuthenticationToken(Member principal, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
-        this.account = account;
-        this.role = role;
+        this.principal = principal;
+        this.account = principal.getAccount();
         super.setAuthenticated(true);
     }
 
     public boolean isAdmin() {
-        return RoleEnum.ADMIN.name().equals(role);
+        return RoleEnum.ADMIN.name().equals(getRole());
     }
 
     @Override
@@ -39,31 +39,24 @@ public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken
     }
 
     @Override
-    public Object getPrincipal() {
-        return "admin";
+    public Member getPrincipal() {
+        return principal;
     }
 
     public String getAccount() {
         return account;
     }
 
-    public void setAccount(String account) {
-        this.account = account;
-    }
-
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
     public String getRole() {
-        return role;
+        if (principal == null) {
+            return null;
+        }
+        return principal.getRole().name();
     }
 
-    public void setRole(String role) {
-        this.role = role;
-    }
 }

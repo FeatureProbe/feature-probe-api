@@ -6,8 +6,8 @@ create table dictionary
     account         varchar(128) NOT NULL DEFAULT '',
     `deleted`       tinyint      NOT NULL DEFAULT '0',
     `modified_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `created_by`    varchar(32)  NOT NULL DEFAULT '',
+    `created_by`    bigint not null,
     `created_time`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `modified_by`   varchar(32)  NOT NULL DEFAULT '',
+    `modified_by`   bigint not null,
     PRIMARY KEY (`id`)
 )ENGINE=InnoDB collate = utf8mb4_unicode_ci;

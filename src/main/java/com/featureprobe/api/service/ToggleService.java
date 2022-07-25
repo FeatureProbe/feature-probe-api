@@ -409,7 +409,7 @@ public class ToggleService {
                         .segments(segments.stream().collect(Collectors.toMap(Segment::getKey, Function.identity())))
                         .build();
             } catch (Exception e) {
-                log.error("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
+                log.warn("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
                         serverSdkKey, targeting.getToggleKey(), targeting.getEnvironmentKey(), e);
                 return null;
             }

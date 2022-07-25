@@ -70,7 +70,6 @@ public class MetricService {
     public AccessStatusResponse isAccess(String projectKey, String environmentKey, String toggleKey) {
         String serverSdkKey = queryEnvironmentServerSdkKey(projectKey, environmentKey);
         boolean isAccess = eventRepository.existsBySdkKeyAndToggleKey(serverSdkKey, toggleKey);
-
         return new AccessStatusResponse(isAccess);
     }
 
