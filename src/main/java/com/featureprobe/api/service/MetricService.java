@@ -29,7 +29,6 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -188,7 +187,7 @@ public class MetricService {
             Predicate p3 = cb.greaterThanOrEqualTo(root.get("createdTime"), toDate(pointStartTime));
             Predicate p4 = cb.lessThanOrEqualTo(root.get("createdTime"), toDate(pointEndTime));
             query.where(cb.and(p0, p1, p2, p3, p4)).orderBy(cb.desc(root.get("version")));
-            return query.orderBy().getRestriction();
+            return query.getRestriction();
         };
     }
 
