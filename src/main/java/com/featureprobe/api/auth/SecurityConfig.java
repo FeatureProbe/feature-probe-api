@@ -1,6 +1,5 @@
 package com.featureprobe.api.auth;
 
-import com.featureprobe.api.base.config.ConfigProperties;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.repository.MemberRepository;
@@ -14,9 +13,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
@@ -24,8 +23,6 @@ import java.nio.charset.StandardCharsets;
 @EnableWebSecurity
 @AllArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    private ConfigProperties configProperties;
 
     private LoginFailureHandler loginFailureHandler;
 
@@ -48,7 +45,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     JWTAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager,
                                                     MemberRepository memberRepository) {
         JWTAuthenticationFilter jwtAuthenticationFilter =
-                new JWTAuthenticationFilter(authenticationManager, memberRepository, configProperties.getSecret());
+                new JWTAuthenticationFilter(authenticationManager, memberRepository);
         return jwtAuthenticationFilter;
     }
 
@@ -68,6 +65,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.headers().frameOptions().disable();
         http.csrf().disable();
         http
@@ -88,7 +86,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
         http.addFilter(jwtAuthenticationFilter(authenticationManager(), memberRepository))
-                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
+                        UsernamePasswordAuthenticationFilter.class);
     }
 
 }

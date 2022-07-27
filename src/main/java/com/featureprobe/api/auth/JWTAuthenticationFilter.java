@@ -10,13 +10,11 @@ import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.repository.MemberRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.util.Base64Utils;
-
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -30,15 +28,13 @@ import java.util.Map;
 @Slf4j
 public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
 
-    private String secret;
+    private static final String TOKEN_KEY = "token";
 
     MemberRepository memberRepository;
 
-    public JWTAuthenticationFilter(AuthenticationManager authenticationManager, MemberRepository memberRepository,
-                                   String secret) {
+    public JWTAuthenticationFilter(AuthenticationManager authenticationManager, MemberRepository memberRepository) {
         super(authenticationManager);
         this.memberRepository = memberRepository;
-        this.secret = secret;
     }
 
     @Override
@@ -54,9 +50,9 @@ public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
             String payload = JWT.decode(token).getPayload();
             byte[] decode = Base64Utils.decode(payload.getBytes(StandardCharsets.UTF_8));
             String user = new String(decode);
-            Long userId = Long.parseLong((String)JsonMapper.toObject(user, Map.class).get("userId"));
+            Long userId = Long.parseLong(String.valueOf(JsonMapper.toObject(user, Map.class).get("userId")));
             Member member = memberRepository.findById(userId).orElseThrow(() -> new ForbiddenException());
-            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secret)).build();
+            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(member.getPassword())).build();
             DecodedJWT decodedJWT = verifier.verify(token);
             Date expiresAt = decodedJWT.getExpiresAt();
             if (new Date().after(expiresAt)) {
@@ -67,6 +63,11 @@ public class JWTAuthenticationFilter extends BasicAuthenticationFilter {
                     new UserPasswordAuthenticationToken(member,
                             Arrays.asList(new SimpleGrantedAuthority(member.getRole().name())));
             SecurityContextHolder.getContext().setAuthentication(userPasswordAuthenticationToken);
+            if ((expiresAt.getTime() - new Date().getTime()) < 600) {
+                response.setHeader(TOKEN_KEY, JWTUtils.getToken(member));
+            } else {
+                response.setHeader(TOKEN_KEY, token);
+            }
         }catch (Exception e) {
             log.error("Token is forbidden", e);
             throw new ForbiddenException();
