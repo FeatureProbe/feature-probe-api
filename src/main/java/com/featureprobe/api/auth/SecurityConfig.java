@@ -88,7 +88,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
         http.addFilter(jwtAuthenticationFilter(authenticationManager(), memberRepository))
-                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()), 
+                        UsernamePasswordAuthenticationFilter.class);
     }
 
 }
