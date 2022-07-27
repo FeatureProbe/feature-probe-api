@@ -4,6 +4,7 @@ import com.featureprobe.api.base.constants.MetricType
 import com.featureprobe.api.dto.MetricResponse
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Event
+import com.featureprobe.api.entity.MetricsCache
 import com.featureprobe.api.entity.Targeting
 import com.featureprobe.api.entity.VariationHistory
 import com.featureprobe.api.entity.TargetingVersion
@@ -13,6 +14,7 @@ import com.featureprobe.api.model.Variation
 import com.featureprobe.api.model.VariationAccessCounter
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.EventRepository
+import com.featureprobe.api.repository.MetricsCacheRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.VariationHistoryRepository
@@ -29,6 +31,7 @@ class MetricServiceSpec extends Specification {
     VariationHistoryRepository variationHistoryRepository
     TargetingVersionRepository targetingVersionRepository
     TargetingRepository targetingRepository
+    MetricsCacheRepository metricsCacheRepository
 
     def setup() {
         environmentRepository = Mock(EnvironmentRepository)
@@ -36,8 +39,9 @@ class MetricServiceSpec extends Specification {
         variationHistoryRepository = Mock(VariationHistoryRepository)
         targetingVersionRepository = Mock(TargetingVersionRepository)
         targetingRepository = Mock(TargetingRepository)
+        metricsCacheRepository = Mock(MetricsCacheRepository)
         metricService = new MetricService(environmentRepository, eventRepository, variationHistoryRepository,
-                targetingVersionRepository, targetingRepository)
+                targetingVersionRepository, targetingRepository, metricsCacheRepository)
     }
 
     def "test find the last 3 hours of data by metric type"() {
@@ -54,6 +58,7 @@ class MetricServiceSpec extends Specification {
         then:
         1 * environmentRepository.findByProjectKeyAndKey(projectKey, envKey) >> Optional.of(new Environment(serverSdkKey: serverSdkKey))
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> Optional.of(new Targeting(id: 1))
+        2 * metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDate(serverSdkKey, toggleKey, _, _) >> Optional.empty()
         3 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(serverSdkKey, toggleKey,
                 _, _) >> []
         1 * variationHistoryRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> []
@@ -74,6 +79,7 @@ class MetricServiceSpec extends Specification {
                 lastHours)
 
         then:
+        9 * metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDate(_, _, _, _) >> Optional.empty()
         10 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(_, _, _, _) >> []
         lastHours == accessEventPoints.size()
     }
@@ -115,7 +121,7 @@ class MetricServiceSpec extends Specification {
                 "1_10": new VariationHistory(id: 3, name: "blue"),
                 "1_11": new VariationHistory(id: 3, name: "blue")],
                 [new AccessEventPoint("10", [new VariationAccessCounter(value: "1_10", count: 15),
-                                             new VariationAccessCounter(value: "1_11", count: 5)], 1)], MetricType.NAME)
+                                             new VariationAccessCounter(value: "1_11", count: 5)], 1, 1)], MetricType.NAME)
 
         then:
         1 == accessEventPoints.size()
@@ -185,10 +191,10 @@ class MetricServiceSpec extends Specification {
 
     def "test `summaryAccessEvents`"() {
         when:
-        def events = metricService.summaryAccessEvents([new AccessEventPoint("10", [new VariationAccessCounter(value: "true", count: 1)], null),
+        def events = metricService.summaryAccessEvents([new AccessEventPoint("10", [new VariationAccessCounter(value: "true", count: 1)], null, 1),
                                                         new AccessEventPoint("11", [new VariationAccessCounter(value: "false", count: 4),
-                                                                                    new VariationAccessCounter(value: "true", count: 9)], null),
-                                                        new AccessEventPoint("12", [new VariationAccessCounter(value: "true", count: 2)], null),
+                                                                                    new VariationAccessCounter(value: "true", count: 9)], null, 2),
+                                                        new AccessEventPoint("12", [new VariationAccessCounter(value: "true", count: 2)], null, 3),
         ])
 
         then:
@@ -198,30 +204,6 @@ class MetricServiceSpec extends Specification {
         }
         with(events.find { it.value == 'false' }) {
             4 == it.count
-        }
-    }
-
-    def "test `queryAccessEventPoint`"() {
-        def sdkKey = "sdk-key1"
-        def toggleName = "t1"
-        def startTime = LocalDateTime.of(2022, 3, 1, 10, 10, 10)
-        def endTime = LocalDateTime.of(2022, 3, 1, 11, 10, 10)
-
-        when:
-        AccessEventPoint accessEventPoint = metricService.queryAccessEventPoint(sdkKey, toggleName,
-                new Targeting(projectKey: "project_test", environmentKey: "online", toggleKey: "test_toggle"),
-                "HH", startTime, endTime)
-
-
-        then:
-        1 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(sdkKey,
-                toggleName, _, _) >> [new Event(valueIndex: 0, toggleVersion: 1, count: 10),
-                                      new Event(valueIndex: 1, toggleVersion: 1, count: 11)]
-        1 * targetingVersionRepository.findAll(_) >> [new TargetingVersion(version: 10)]
-        with(accessEventPoint) {
-            "11" == it.name
-            10 == it.lastChangeVersion
-            2 == it.values.size()
         }
     }
 }

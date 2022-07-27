@@ -9,12 +9,13 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 @Mapper
-public interface TargetingVersionMapper {
+public interface TargetingVersionMapper extends BaseMapper {
 
     TargetingVersionMapper INSTANCE = Mappers.getMapper(TargetingVersionMapper.class);
 
     @Mapping(target = "content",
             expression = "java(toTargetingContent(targetingVersion.getContent()))")
+    @Mapping(target = "createdBy", expression = "java(getAccount(targetingVersion.getCreatedBy()))")
     TargetingVersionResponse entityToResponse(TargetingVersion targetingVersion);
 
     default TargetingContent toTargetingContent(String content) {
