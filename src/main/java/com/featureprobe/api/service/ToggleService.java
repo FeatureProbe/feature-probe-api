@@ -2,9 +2,9 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.ValidateTypeEnum;
+import com.featureprobe.api.base.enums.VisitFilter;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
-import com.featureprobe.api.base.exception.ServerToggleBuildException;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
 import com.featureprobe.api.dto.ServerResponse;
@@ -16,19 +16,25 @@ import com.featureprobe.api.entity.Event;
 import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.entity.Tag;
 import com.featureprobe.api.entity.Targeting;
+import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.entity.Toggle;
 import com.featureprobe.api.entity.ToggleTagRelation;
+import com.featureprobe.api.entity.VariationHistory;
+import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.mapper.ToggleMapper;
 import com.featureprobe.api.model.ServerSegmentBuilder;
 import com.featureprobe.api.model.TargetingContent;
 import com.featureprobe.api.model.ServerToggleBuilder;
+import com.featureprobe.api.model.Variation;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
 import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TagRepository;
 import com.featureprobe.api.repository.TargetingRepository;
+import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.repository.ToggleTagRepository;
+import com.featureprobe.api.repository.VariationHistoryRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -49,14 +55,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -76,6 +83,10 @@ public class ToggleService {
     private EnvironmentRepository environmentRepository;
 
     private EventRepository eventRepository;
+
+    private TargetingVersionRepository targetingVersionRepository;
+
+    private VariationHistoryRepository variationHistoryRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public ToggleResponse create(String projectKey, ToggleCreateRequest createRequest) {
@@ -104,8 +115,50 @@ public class ToggleService {
         }
         List<Targeting> targetingList = environments.stream().map(environment ->
                 createDefaultTargeting(toggle, environment)).collect(Collectors.toList());
+        List<Targeting> savedTargetingList = targetingRepository.saveAll(targetingList);
+        for (Targeting targeting : savedTargetingList) {
+            saveTargetingVersion(buildTargetingVersion(targeting, ""));
+            saveVariationHistory(targeting);
+        }
+    }
 
-        targetingRepository.saveAll(targetingList);
+    private void saveTargetingVersion(TargetingVersion targetingVersion) {
+        targetingVersionRepository.save(targetingVersion);
+    }
+
+    private void saveVariationHistory(Targeting targeting) {
+        List<Variation> variations = JsonMapper.toObject(targeting.getContent(), TargetingContent.class)
+                .getVariations();
+
+        List<VariationHistory> variationHistories = IntStream.range(0, variations.size())
+                .mapToObj(index -> convertVariationToEntity(targeting, index,
+                        variations.get(index)))
+                .collect(Collectors.toList());
+        variationHistoryRepository.saveAll(variationHistories);
+    }
+
+    private VariationHistory convertVariationToEntity(Targeting targeting, int index, Variation variation) {
+        VariationHistory variationHistory = new VariationHistory();
+        variationHistory.setEnvironmentKey(targeting.getEnvironmentKey());
+        variationHistory.setProjectKey(targeting.getProjectKey());
+        variationHistory.setToggleKey(targeting.getToggleKey());
+        variationHistory.setValue(variation.getValue());
+        variationHistory.setName(variation.getName());
+        variationHistory.setToggleVersion(targeting.getVersion());
+        variationHistory.setValueIndex(index);
+        return variationHistory;
+    }
+
+    private TargetingVersion buildTargetingVersion(Targeting targeting, String comment) {
+        TargetingVersion targetingVersion = new TargetingVersion();
+        targetingVersion.setProjectKey(targeting.getProjectKey());
+        targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
+        targetingVersion.setToggleKey(targeting.getToggleKey());
+        targetingVersion.setContent(targeting.getContent());
+        targetingVersion.setDisabled(targeting.getDisabled());
+        targetingVersion.setVersion(targeting.getVersion());
+        targetingVersion.setComment(comment);
+        return targetingVersion;
     }
 
     private Targeting createDefaultTargeting(Toggle toggle, Environment environment) {
@@ -158,9 +211,9 @@ public class ToggleService {
             Set<String> keys = queryToggleKeysByTags(searchRequest.getTags());
             retainAllKeys(toggleKeys, keys);
         }
-        if (Objects.nonNull(searchRequest.getIsVisited())) {
+        if (Objects.nonNull(searchRequest.getVisitFilter())) {
             isPrecondition = true;
-            Set<String> keys = queryToggleKeysByVisited(searchRequest.getIsVisited(), projectKey, environment);
+            Set<String> keys = queryToggleKeysByVisited(searchRequest.getVisitFilter(), projectKey, environment);
             retainAllKeys(toggleKeys, keys);
         }
         Page<Toggle> togglePage = compoundQuery(projectKey, searchRequest, toggleKeys, isPrecondition);
@@ -216,36 +269,61 @@ public class ToggleService {
         return toggleTagRelations.stream().map(ToggleTagRelation::getToggleKey).collect(Collectors.toSet());
     }
 
-    private Set<String> queryToggleKeysByVisited(Boolean isVisited, String projectKey, Environment environment) {
-        Date lastWeek = Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant());
-        Specification<Event> spec = new Specification<Event>() {
-            @Override
-            public Predicate toPredicate(Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-                Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
-                Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
-                Predicate p3 = cb.greaterThanOrEqualTo(root.get("endDate"), lastWeek);
-                return query.where(cb.and(p3), cb.or(p1, p2)).groupBy(root.get("toggleKey"))
-                        .getRestriction();
-            }
-        };
-        List<Event> events = eventRepository.findAll(spec);
-        Set<String> keys = events.stream().map(Event::getToggleKey).collect(Collectors.toSet());
-        if (isVisited) {
-            return keys;
-        } else {
-            Specification<Toggle> notSpec = new Specification<Toggle>() {
-                @Override
-                public Predicate toPredicate(Root<Toggle> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-                    Predicate p1 = cb.equal(root.get("projectKey"), projectKey);
-                    Predicate p2 = root.get("key").in(keys).not();
-                    return query.where(cb.and(p1, p2)).getRestriction();
-                }
-            };
-            List<Toggle> toggles = toggleRepository.findAll(notSpec);
-            Set<String> notKeys = toggles.stream().map(Toggle::getKey).collect(Collectors.toSet());
-            return notKeys;
+    private Set<String> queryToggleKeysByVisited(VisitFilter visitFilter, String projectKey, Environment environment) {
+        switch (visitFilter) {
+            case IN_WEEK_VISITED:
+                return weekVisitedToggleKeys(environment);
+            case OUT_WEEK_VISITED:
+                return lastVisitBeforeWeekToggleKeys(environment);
+            case NOT_VISITED:
+                return neverVisited(projectKey, environment);
+            default:
+                return new HashSet();
         }
     }
+    
+    private Set<String> allVisitedToggleKeys(Environment environment) {
+        Specification<Event> spec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
+            Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
+            return query.where(cb.or(p1, p2)).groupBy(root.get("toggleKey"))
+                    .getRestriction();
+        };
+        List<Event> events = eventRepository.findAll(spec);
+        return events.stream().map(Event::getToggleKey).collect(Collectors.toSet());
+    }
+
+    private Set<String> weekVisitedToggleKeys(Environment environment) {
+        Date lastWeek = Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant());
+        Specification<Event> spec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
+            Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
+            Predicate p3 = cb.greaterThanOrEqualTo(root.get("endDate"), lastWeek);
+            return query.where(cb.or(p1, p2), cb.and(p3)).groupBy(root.get("toggleKey"))
+                    .getRestriction();
+        };
+        List<Event> events = eventRepository.findAll(spec);
+        return events.stream().map(Event::getToggleKey).collect(Collectors.toSet());
+    }
+
+    private Set<String> lastVisitBeforeWeekToggleKeys(Environment environment) {
+        Set<String> allVisitedKeys = allVisitedToggleKeys(environment);
+        Set<String> weekVisitedKeys = weekVisitedToggleKeys(environment);
+        allVisitedKeys.removeAll(weekVisitedKeys);
+        return allVisitedKeys;
+    }
+
+    private Set<String> neverVisited(String projectKey, Environment environment) {
+        Set<String> allVisitedKeys = allVisitedToggleKeys(environment);
+        Specification<Toggle> notSpec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("projectKey"), projectKey);
+            Predicate p2 = root.get("key").in(allVisitedKeys).not();
+            return query.where(cb.and(p1, p2)).getRestriction();
+        };
+        List<Toggle> toggles = toggleRepository.findAll(notSpec);
+        return toggles.stream().map(Toggle::getKey).collect(Collectors.toSet());
+    }
+
 
     private ToggleItemResponse entityToItemResponse(Toggle toggle, String projectKey, String environmentKey) {
         ToggleItemResponse toggleItem = ToggleMapper.INSTANCE.entityToItemResponse(toggle);
@@ -331,7 +409,7 @@ public class ToggleService {
                         .segments(segments.stream().collect(Collectors.toMap(Segment::getKey, Function.identity())))
                         .build();
             } catch (Exception e) {
-                log.error("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
+                log.warn("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
                         serverSdkKey, targeting.getToggleKey(), targeting.getEnvironmentKey(), e);
                 return null;
             }

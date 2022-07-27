@@ -1,6 +1,7 @@
 package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.ValidateTypeEnum
+import com.featureprobe.api.base.enums.VisitFilter
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.ServerResponse
 import com.featureprobe.api.dto.ToggleCreateRequest
@@ -19,8 +20,10 @@ import com.featureprobe.api.repository.EventRepository
 import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TagRepository
 import com.featureprobe.api.repository.TargetingRepository
+import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.ToggleRepository
 import com.featureprobe.api.repository.ToggleTagRepository
+import com.featureprobe.api.repository.VariationHistoryRepository
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import spock.lang.Specification
@@ -45,6 +48,10 @@ class ToggleServiceSpec extends Specification {
 
     EventRepository eventRepository
 
+    TargetingVersionRepository targetingVersionRepository
+
+    VariationHistoryRepository variationHistoryRepository
+
     def projectKey
     def environmentKey
     def toggleKey
@@ -52,9 +59,6 @@ class ToggleServiceSpec extends Specification {
     def sdkKey
     def rules
     def segmentRules
-    def numberErrorRules
-    def datetimeErrorRules
-    def semVerErrorRules
 
     def setup() {
         toggleRepository = Mock(ToggleRepository)
@@ -64,8 +68,11 @@ class ToggleServiceSpec extends Specification {
         targetingRepository = Mock(TargetingRepository)
         environmentRepository = Mock(EnvironmentRepository)
         eventRepository = Mock(EventRepository)
+        targetingVersionRepository = Mock(TargetingVersionRepository)
+        variationHistoryRepository = Mock(VariationHistoryRepository)
         toggleService = new ToggleService(toggleRepository, segmentRepository, tagRepository, toggleTagRepository,
-                targetingRepository, environmentRepository, eventRepository)
+                targetingRepository, environmentRepository, eventRepository, targetingVersionRepository,
+                variationHistoryRepository)
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
@@ -98,7 +105,7 @@ class ToggleServiceSpec extends Specification {
 
     def "search toggles by filter params"() {
         def toggleSearchRequest =
-                new ToggleSearchRequest(isVisited: true, disabled: false,
+                new ToggleSearchRequest(visitFilter: VisitFilter.IN_WEEK_VISITED, disabled: false,
                         tags: ["test"], keyword: "test", environmentKey: environmentKey)
         when:
         def page = toggleService.query(projectKey, toggleSearchRequest)
