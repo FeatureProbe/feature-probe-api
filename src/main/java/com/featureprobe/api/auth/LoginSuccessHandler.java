@@ -1,7 +1,8 @@
 package com.featureprobe.api.auth;
 
-import com.featureprobe.api.dto.MemberResponse;
+import com.featureprobe.api.dto.CertificationUserResponse;
 import com.featureprobe.api.mapper.JsonMapper;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 @Component
+@AllArgsConstructor
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     @Override
@@ -25,7 +27,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         UserPasswordAuthenticationToken token =
                 (UserPasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-        response.getWriter().write(JsonMapper.toJSONString(new MemberResponse(token.getAccount(), token.getRole())));
+        String jwt = JWTUtils.getToken(token.getPrincipal());
+        response.getWriter()
+                .write(JsonMapper.toJSONString(new CertificationUserResponse(token.getAccount(), token.getRole(),jwt)));
     }
 
 }

@@ -2,6 +2,7 @@ package com.featureprobe.api.auth;
 
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -12,9 +13,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
@@ -29,6 +30,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private CustomLogoutSuccessHandler customLogoutSuccessHandler;
 
+    private MemberRepository memberRepository;
+
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
         UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter =
@@ -39,6 +42,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return userPasswordAuthenticationProcessingFilter;
     }
 
+    JWTAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager,
+                                                    MemberRepository memberRepository) {
+        JWTAuthenticationFilter jwtAuthenticationFilter =
+                new JWTAuthenticationFilter(authenticationManager, memberRepository);
+        return jwtAuthenticationFilter;
+    }
 
     @Bean
     AuthenticationEntryPoint authenticationEntryPoint() {
@@ -56,6 +65,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.headers().frameOptions().disable();
         http.csrf().disable();
         http
@@ -75,8 +85,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .accessDeniedHandler(((httpServletRequest, httpServletResponse, e) ->
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
-        http.addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
-                UsernamePasswordAuthenticationFilter.class);
+        http.addFilter(jwtAuthenticationFilter(authenticationManager(), memberRepository))
+                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
+                        UsernamePasswordAuthenticationFilter.class);
     }
 
 }
