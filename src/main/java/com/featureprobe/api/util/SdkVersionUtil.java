@@ -27,11 +27,11 @@ import okhttp3.Response;
 @Component
 public class SdkVersionUtil {
 
-    private static String JAVA_SDK_VERSION = "java_sdk_version";
-    private static String RUST_SDK_VERSION = "rust_sdk_version";
-    private static String ANDROID_SDK_VERSION = "android_sdk_version";
+    private static final String JAVA_SDK_VERSION = "java_sdk_version";
+    private static final String RUST_SDK_VERSION = "rust_sdk_version";
+    private static final String ANDROID_SDK_VERSION = "android_sdk_version";
 
-    public static Map<String, String> latestVersions = new HashMap<>(3);
+    public static final Map<String, String> latestVersions = new HashMap<>(3);
 
     private static final OkHttpClient httpClient =
         new OkHttpClient.Builder().connectionPool(new ConnectionPool()).callTimeout(10, TimeUnit.SECONDS)
@@ -68,12 +68,18 @@ public class SdkVersionUtil {
 
     private String getRustSdkVersionFromCratesIo() {
         Request request =
-            new Request.Builder().url("https://crates.io/api/v1/crates/feature-probe-server-sdk").get().build();
+            new Request.Builder()
+                .url("https://crates.io/api/v1/crates/feature-probe-server-sdk")
+                .get()
+                .build();
 
         String latestVersion = null;
         try (Response resp = httpClient.newCall(request).execute()) {
             JsonNode respRoot = mapper.readTree(Objects.requireNonNull(resp.body()).byteStream());
-            latestVersion = respRoot.path("crate").path("max_stable_version").asText();
+            latestVersion = respRoot
+                .path("crate")
+                .path("max_stable_version")
+                .asText();
             log.info("Query version info of 'server-sdk-rust' from 'crates.io': latest version {}", latestVersion);
         } catch (Exception e) {
             log.warn("Fail to fetch latest sdk version from 'crates.io'", e);
@@ -83,14 +89,20 @@ public class SdkVersionUtil {
 
 
     private String getSdkVersionFromSearchMavenOrg(String artifact) {
-        Request request =
-            new Request.Builder().url("https://search.maven.org/solrsearch/select?q=com.featureprobe." + artifact).get()
-                .build();
+        Request request = new Request.Builder()
+            .url("https://search.maven.org/solrsearch/select?q=com.featureprobe." + artifact)
+            .get()
+            .build();
 
         String latestVersion = null;
         try (Response resp = httpClient.newCall(request).execute()) {
             JsonNode respRoot = mapper.readTree(Objects.requireNonNull(resp.body()).byteStream());
-            latestVersion = respRoot.path("response").path("docs").path(0).path("latestVersion").asText();
+            latestVersion = respRoot
+                .path("response")
+                .path("docs")
+                .path(0)
+                .path("latestVersion")
+                .asText();
             log.info("Query version info of '{}' from 'search.maven.org': latest version {}", artifact, latestVersion);
         } catch (Exception e) {
             log.warn("Fail to fetch latest sdk version from 'search.maven.org'", e);
@@ -99,14 +111,20 @@ public class SdkVersionUtil {
     }
 
     private String getSdkVersionFromDeveloperAliyunCom(String artifact) {
-        Request request = new Request.Builder().url(
-            "https://developer.aliyun.com/artifact/aliyunMaven/searchArtifactByGav" +
-                "?groupId=com.featureprobe&version=&repoId=central&artifactId=" + artifact).get().build();
+        Request request = new Request.Builder()
+            .url("https://developer.aliyun.com/artifact/aliyunMaven/searchArtifactByGav" +
+                "?groupId=com.featureprobe&version=&repoId=central&artifactId=" + artifact)
+            .get()
+            .build();
 
         String latestVersion = null;
         try (Response resp = httpClient.newCall(request).execute()) {
             JsonNode respRoot = mapper.readTree(Objects.requireNonNull(resp.body()).byteStream());
-            latestVersion = respRoot.path("object").path(0).path("version").asText();
+            latestVersion = respRoot
+                .path("object")
+                .path(0)
+                .path("version")
+                .asText();
             log.info("Query version info of '{}' from 'developer.aliyun.com': latest version {}", artifact,
                 latestVersion);
         } catch (Exception e) {
