@@ -32,7 +32,6 @@ public class UserPasswordAuthenticationProvider implements AuthenticationProvide
             if (member.isPresent()
                     && new BCryptPasswordEncoder().matches(token.getPassword(), member.get().getPassword())) {
                 memberService.updateVisitedTime(token.getAccount());
-
                 return new UserPasswordAuthenticationToken(member.get(),
                         Arrays.asList(new SimpleGrantedAuthority(member.get().getRole().name())));
             }

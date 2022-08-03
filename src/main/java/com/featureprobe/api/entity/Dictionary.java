@@ -8,7 +8,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -22,8 +24,9 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "dictionary")
 @ToString(callSuper = true)
-@Where(clause = "deleted = 0")
 @DynamicInsert
+@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
+@Filter(name = "deletedFilter", condition = "deleted = :deleted")
 public class Dictionary extends AbstractAuditEntity {
 
     private String value;
@@ -32,5 +35,7 @@ public class Dictionary extends AbstractAuditEntity {
     private String key;
 
     private String account;
+
+    private Boolean deleted;
 
 }

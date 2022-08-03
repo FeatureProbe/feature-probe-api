@@ -8,8 +8,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
-import org.hibernate.annotations.Where;
-
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -21,10 +22,13 @@ import javax.persistence.Table;
 @Builder
 @Entity
 @Table(name = "targeting_version")
-@Where(clause = "deleted = 0")
 @DynamicInsert
 @ToString(callSuper = true)
-public class TargetingVersion extends AbstractAuditEntity {
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
+@Filter(name = "deletedFilter", condition = "deleted = :deleted")
+public class TargetingVersion extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "project_key")
     private String projectKey;
@@ -40,6 +44,9 @@ public class TargetingVersion extends AbstractAuditEntity {
     private String content;
 
     private Boolean disabled;
+
+    @Column(name = "organize_id")
+    private String organizeId;
 
     private Long version;
 

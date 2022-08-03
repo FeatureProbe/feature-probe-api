@@ -3,16 +3,21 @@ package com.featureprobe.api.service
 import com.featureprobe.api.dto.TagRequest
 import com.featureprobe.api.entity.Tag
 import com.featureprobe.api.repository.TagRepository
+import org.hibernate.internal.SessionImpl
 import spock.lang.Specification
+
+import javax.persistence.EntityManager
 
 class TagServiceSpec extends Specification {
 
     TagService tagService
     TagRepository tagRepository
+    EntityManager entityManager
 
     def setup() {
         tagRepository = Mock(TagRepository)
-        tagService = new TagService(tagRepository)
+        entityManager = Mock(SessionImpl)
+        tagService = new TagService(tagRepository, entityManager)
     }
 
     def "create tag success"() {

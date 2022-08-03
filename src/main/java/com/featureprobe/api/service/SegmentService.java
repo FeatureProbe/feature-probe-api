@@ -32,6 +32,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
 import java.util.List;
 import java.util.Optional;
@@ -53,20 +55,24 @@ public class SegmentService {
 
     private EnvironmentRepository environmentRepository;
 
+    private SegmentIncludeDeletedService segmentIncludeDeletedService;
+
+    @PersistenceContext
+    public EntityManager entityManager;
+
     public Page<SegmentResponse> list(String projectKey, SegmentSearchRequest searchRequest) {
         if (searchRequest.getIncludeDeleted()) {
             Pageable pageable = PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "created_time");
-            Page<Segment> segments = segmentRepository.findAllByKeywordIncludeDeleted(projectKey,
+            return segmentIncludeDeletedService.findAllByKeywordIncludeDeleted(projectKey,
                     searchRequest.getKeyword(), pageable);
-            return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
         }
         Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest.getKeyword());
         return findPagingBySpec(spec, PageRequestUtil.toCreatedTimeDescSortPageable(searchRequest));
     }
 
     public SegmentResponse create(String projectKey, SegmentCreateRequest createRequest) {
-        validateKey(projectKey, createRequest.getKey());
-        validateName(projectKey, createRequest.getName());
+        segmentIncludeDeletedService.validateKeyIncludeDeleted(projectKey, createRequest.getKey());
+        segmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, createRequest.getName());
         Segment segment = SegmentMapper.INSTANCE.requestToEntity(createRequest);
         segment.setProjectKey(projectKey);
         segment.setUniqueKey(StringUtils.join(projectKey, "$", createRequest.getKey()));
@@ -76,7 +82,7 @@ public class SegmentService {
     public SegmentResponse update(String projectKey, String segmentKey, SegmentUpdateRequest updateRequest) {
         Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
         if (!StringUtils.equals(segment.getName(), updateRequest.getName())) {
-            validateName(projectKey, updateRequest.getName());
+            segmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, updateRequest.getName());
         }
         SegmentMapper.INSTANCE.mapEntity(updateRequest, segment);
         return SegmentMapper.INSTANCE.entityToResponse(segmentRepository.save(segment));
@@ -125,19 +131,6 @@ public class SegmentService {
         return SegmentMapper.INSTANCE.entityToResponse(segment);
     }
 
-    public void validateExists(String projectKey, ValidateTypeEnum type, String value) {
-        switch (type) {
-            case KEY:
-                validateKey(projectKey, value);
-                break;
-            case NAME:
-                validateName(projectKey, value);
-                break;
-            default:
-                break;
-        }
-    }
-
     private Specification<Segment> buildQuerySpec(String projectKey, String keyword) {
         return (root, query, cb) -> {
             Predicate p3 = cb.equal(root.get("projectKey"), projectKey);
@@ -158,15 +151,4 @@ public class SegmentService {
         return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
     }
 
-    private void validateKey(String projectKey, String key) {
-        if (segmentRepository.countByKeyIncludeDeleted(projectKey, key) > 0) {
-            throw new ResourceConflictException(ResourceType.SEGMENT);
-        }
-    }
-
-    private void validateName(String projectKey, String name) {
-        if (segmentRepository.countByNameIncludeDeleted(projectKey, name) > 0) {
-            throw new ResourceConflictException(ResourceType.SEGMENT);
-        }
-    }
 }

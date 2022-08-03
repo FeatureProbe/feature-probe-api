@@ -1,6 +1,7 @@
 package com.featureprobe.api.base.entity;
 
 import com.featureprobe.api.entity.Member;
+import com.featureprobe.api.entity.TenantSupport;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;

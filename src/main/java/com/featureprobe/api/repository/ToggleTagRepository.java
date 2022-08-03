@@ -10,8 +10,4 @@ import java.util.List;
 @Repository
 public interface ToggleTagRepository extends JpaRepository<ToggleTagRelation, Long> {
 
-    @Query(value = "SELECT tt.* FROM tag t INNER JOIN toggle_tag tt ON t.id = tt.tag_id "
-            + "WHERE t.name in (?1) AND t.deleted = 0", nativeQuery = true)
-    List<ToggleTagRelation> findByNames(List<String> names);
-
 }

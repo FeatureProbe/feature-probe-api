@@ -23,6 +23,8 @@ import org.springframework.data.domain.Pageable
 import spock.lang.Specification
 import spock.lang.Title
 
+import javax.persistence.EntityManager
+
 @Title("Segment Unit Test")
 class SegmentServiceSpec extends Specification{
 
@@ -38,6 +40,10 @@ class SegmentServiceSpec extends Specification{
 
     SegmentService segmentService
 
+    SegmentIncludeDeletedService segmentIncludeDeletedService
+
+    EntityManager entityManager
+
     def projectKey
     def segmentKey
     def segmentName
@@ -49,8 +55,9 @@ class SegmentServiceSpec extends Specification{
         targetingRepository = Mock(TargetingRepository)
         toggleRepository = Mock(ToggleRepository)
         environmentRepository = Mock(EnvironmentRepository)
+        segmentIncludeDeletedService = new SegmentIncludeDeletedService(segmentRepository, entityManager)
         segmentService = new SegmentService(segmentRepository, targetingSegmentRepository, targetingRepository,
-                toggleRepository, environmentRepository)
+                toggleRepository, environmentRepository, segmentIncludeDeletedService, entityManager)
 
         projectKey = "feature_probe"
         segmentKey = "test_segment_key"
@@ -84,7 +91,7 @@ class SegmentServiceSpec extends Specification{
         then:
         1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >>
                 new Segment(name: segmentName, key: segmentKey, rules: rules)
-        1 * segmentRepository.countByNameIncludeDeleted(projectKey, "segment_test_update") >> 0
+        1 * segmentRepository.existsByProjectKeyAndName(projectKey, "segment_test_update") >> false
         1 * segmentRepository.save(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules)
         with(updated) {
             segmentName == updated.name
@@ -111,18 +118,18 @@ class SegmentServiceSpec extends Specification{
 
     def "check segment key" () {
         when:
-        segmentService.validateExists(projectKey, ValidateTypeEnum.KEY, segmentKey)
+        segmentIncludeDeletedService.validateExistsIncludeDeleted(projectKey, ValidateTypeEnum.KEY, segmentKey)
         then:
-        1 * segmentRepository.countByKeyIncludeDeleted(projectKey, segmentKey) >> 1
+        1 * segmentRepository.existsByProjectKeyAndKey(projectKey, segmentKey) >> true
         then:
         thrown ResourceConflictException
     }
 
     def "check segment name" () {
         when:
-        segmentService.validateExists(projectKey, ValidateTypeEnum.NAME, segmentName)
+        segmentIncludeDeletedService.validateExistsIncludeDeleted(projectKey, ValidateTypeEnum.NAME, segmentName)
         then:
-        1 * segmentRepository.countByNameIncludeDeleted(projectKey, segmentName) >> 1
+        1 * segmentRepository.existsByProjectKeyAndName(projectKey, segmentName) >> true
         then:
         thrown ResourceConflictException
     }
@@ -188,7 +195,7 @@ class SegmentServiceSpec extends Specification{
                 new SegmentSearchRequest(includeDeleted: true, pageIndex: 0, pageSize: 5))
 
         then:
-        1 * segmentRepository.findAllByKeywordIncludeDeleted(_, _, _) >>
+        1 * segmentRepository.findAll(_, _) >>
                 new PageImpl<>([new Segment(key: "test_segment")], Pageable.ofSize(1), 1)
         1 == segments.size()
     }

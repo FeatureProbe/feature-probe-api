@@ -19,11 +19,8 @@ public interface EnvironmentRepository extends JpaRepository<Environment, Long> 
 
     boolean existsByProjectKeyAndKey(String projectKey, String key);
 
+    boolean existsByProjectKeyAndName(String projectKey, String name);
+
     Optional<Environment> findByProjectKeyAndKey(String projectKey, String key);
 
-    @Query(value = "SELECT count(id) FROM environment WHERE project_key = ?1 AND `key` = ?2", nativeQuery = true)
-    int countByKeyIncludeDeleted(String projectKey, String key);
-
-    @Query(value = "SELECT count(id) FROM environment WHERE project_key = ?1 AND name = ?2", nativeQuery = true)
-    int countByNameIncludeDeleted(String projectKey, String name);
 }

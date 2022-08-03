@@ -7,12 +7,24 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.DynamicInsert;
-import org.hibernate.annotations.Where;
-
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -22,9 +34,12 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "tag")
 @DynamicInsert
-@Where(clause = "deleted = 0")
 @ToString(callSuper = true)
-public class Tag extends AbstractAuditEntity {
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
+@Filter(name = "deletedFilter", condition = "deleted = :deleted")
+public class Tag extends AbstractAuditEntity implements TenantSupport {
 
     private String name;
 
@@ -32,5 +47,11 @@ public class Tag extends AbstractAuditEntity {
     private String projectKey;
 
     private Boolean deleted;
+
+    @Column(name = "organize_id")
+    private String organizeId;
+
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "tags")
+    private Set<Toggle> toggles;
 
 }
