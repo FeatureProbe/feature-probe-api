@@ -30,6 +30,8 @@ class EnvironmentServiceSpec extends Specification {
 
     EnvironmentUpdateRequest updateRequest
 
+    EnvironmentIncludeDeletedService environmentIncludeDeletedService
+
     def projectName
     def projectKey
     def environmentName
@@ -52,8 +54,9 @@ class EnvironmentServiceSpec extends Specification {
         environmentRepository = Mock(EnvironmentRepository)
         toggleRepository = Mock(ToggleRepository)
         targetingRepository = Mock(TargetingRepository)
+        environmentIncludeDeletedService = new EnvironmentIncludeDeletedService(environmentRepository)
         environmentService = new EnvironmentService(environmentRepository, projectRepository,
-                toggleRepository, targetingRepository)
+                toggleRepository, targetingRepository, environmentIncludeDeletedService)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
         updateRequest = new EnvironmentUpdateRequest(name: "env_test_update")
     }
@@ -64,8 +67,8 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 new Optional<>(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 0
-        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 0
+        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> false
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, environmentName) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         1 * toggleRepository.findAllByProjectKey(projectKey) >> [new Toggle(name: toggleName,
@@ -86,7 +89,7 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 1
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, createRequest.getName()) >> true
         then:
         thrown ResourceConflictException
     }
@@ -98,7 +101,7 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
                 Optional.of(new Environment(name: environmentName, key: environmentKey))
-        1 * environmentRepository.countByNameIncludeDeleted(projectKey, updateRequest.name) >> 0
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, updateRequest.name) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         with(ret) {
@@ -135,18 +138,18 @@ class EnvironmentServiceSpec extends Specification {
 
     def "check environment key" () {
         when:
-        environmentService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
+        environmentIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
         then:
-        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 1
+        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> true
         then:
         thrown ResourceConflictException
     }
 
     def "check environment name" () {
         when:
-        environmentService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
+        environmentIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
         then:
-        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 1
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, environmentName) >> true
         then:
         thrown ResourceConflictException
     }

@@ -3,6 +3,7 @@ package com.featureprobe.api.base.exception;
 import com.featureprobe.api.base.enums.ResourceType;
 
 public class ResourceNotFoundException extends RuntimeException {
+
     ResourceType resourceType;
     String resourceKey;
 

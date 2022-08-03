@@ -1,6 +1,5 @@
 package com.featureprobe.api.service
 
-import com.featureprobe.api.auth.UserPasswordAuthenticationToken
 import com.featureprobe.api.base.enums.RoleEnum
 import com.featureprobe.api.base.exception.ForbiddenException
 import com.featureprobe.api.base.exception.ResourceConflictException
@@ -15,16 +14,21 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import spock.lang.Specification
 
 class MemberServiceSpec extends Specification {
 
     MemberRepository memberRepository
+    MemberIncludeDeletedService memberIncludeDeletedService
     MemberService memberService
+
 
     def setup() {
         memberRepository = Mock(MemberRepository)
-        memberService = new MemberService(memberRepository)
+        memberIncludeDeletedService = new MemberIncludeDeletedService(memberRepository)
+        memberService = new MemberService(memberRepository, memberIncludeDeletedService)
     }
 
     def "create a member success"() {
@@ -33,7 +37,7 @@ class MemberServiceSpec extends Specification {
                 new MemberCreateRequest(accounts: ["root"], password: "root"))
 
         then:
-        1 * memberRepository.findByAccountIncludeDeleted("root") >> Optional.empty()
+        1 * memberRepository.existsByAccount("root") >> false
         1 * memberRepository.saveAll(_) >> [new Member(account: "root", password: "password", role: RoleEnum.MEMBER)]
         with(savedMember) {
             1 == savedMember.size()
@@ -42,7 +46,7 @@ class MemberServiceSpec extends Specification {
 
     def "create a member failed when member existed"() {
         given:
-        memberRepository.findByAccountIncludeDeleted("root") >> Optional.of(new Member())
+        memberRepository.existsByAccount("root") >> true
 
         when:
         memberService.create(new MemberCreateRequest(accounts: ["root"], password: "root"))
@@ -157,8 +161,7 @@ class MemberServiceSpec extends Specification {
         def response = memberService.queryByAccount("root")
 
         then:
-        1 * memberRepository.findByAccountIncludeDeleted("root") >> Optional.of(
-                new Member(account: "root", role: RoleEnum.MEMBER))
+        1 * memberRepository.findByAccount("root") >> Optional.of(new Member(account: "root", role: RoleEnum.ADMIN))
         with(response) {
             "root" == account
         }
@@ -169,13 +172,14 @@ class MemberServiceSpec extends Specification {
         memberService.queryByAccount("abc")
         
         then:
-        1 * memberRepository.findByAccountIncludeDeleted("abc") >> Optional.empty()
+        1 * memberRepository.findByAccount("abc") >> Optional.empty()
         thrown(ResourceNotFoundException)
     }
 
     private setAuthContext(String account, String role) {
         SecurityContextHolder.setContext(new SecurityContextImpl(
-                new UserPasswordAuthenticationToken(new Member(account: account, role: role), null)))
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
     }
 
 }

@@ -30,7 +30,6 @@ public class UserPasswordAuthenticationProcessingFilter extends AbstractAuthenti
         Map<String, String> authParam = mapper.readValue(body, Map.class);
         String account = authParam.get("account");
         String password = authParam.get("password");
-
         return getAuthenticationManager().authenticate(new UserPasswordAuthenticationToken(account, password));
     }
 }

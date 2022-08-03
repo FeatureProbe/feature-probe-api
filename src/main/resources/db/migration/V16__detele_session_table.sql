@@ -1,0 +1,3 @@
+drop table SPRING_SESSION_ATTRIBUTES;
+drop table SPRING_SESSION;
+

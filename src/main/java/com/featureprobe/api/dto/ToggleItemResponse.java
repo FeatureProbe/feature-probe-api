@@ -1,9 +1,8 @@
 package com.featureprobe.api.dto;
 
 import lombok.Data;
-
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 @Data
 public class ToggleItemResponse {
@@ -16,7 +15,7 @@ public class ToggleItemResponse {
 
     private String desc;
 
-    private List<String> tags;
+    private Set<String> tags;
 
     private Boolean disabled;
 

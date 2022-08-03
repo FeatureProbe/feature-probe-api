@@ -31,6 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -60,6 +62,9 @@ public class TargetingService {
     private TargetingVersionRepository targetingVersionRepository;
 
     private VariationHistoryRepository variationHistoryRepository;
+
+    @PersistenceContext
+    public EntityManager entityManager;
 
     @Transactional(rollbackFor = Exception.class)
     public TargetingResponse update(String projectKey, String environmentKey,

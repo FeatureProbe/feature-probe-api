@@ -15,9 +15,9 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
-
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Mapper
@@ -26,6 +26,7 @@ public interface ToggleMapper extends BaseMapper {
     ToggleMapper INSTANCE = Mappers.getMapper(ToggleMapper.class);
 
     @Mapping(target = "modifiedBy", expression = "java(getAccount(toggle.getModifiedBy()))")
+    @Mapping(target = "tags", expression = "java(toTagNames(toggle.getTags()))")
     ToggleItemResponse entityToItemResponse(Toggle toggle);
 
     @Mapping(target = "variations", expression = "java(toVariation(toggle.getVariations()))")
@@ -33,11 +34,11 @@ public interface ToggleMapper extends BaseMapper {
     @Mapping(target = "modifiedBy", expression = "java(getAccount(toggle.getModifiedBy()))")
     ToggleResponse entityToResponse(Toggle toggle);
 
-    default List<String> toTagNames(List<Tag> tags) {
+    default Set<String> toTagNames(Set<Tag> tags) {
         if (CollectionUtils.isEmpty(tags)) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
-        return tags.stream().map(Tag::getName).collect(Collectors.toList());
+        return tags.stream().map(Tag::getName).collect(Collectors.toSet());
     }
 
     default List<Variation> toVariation(String variation) {

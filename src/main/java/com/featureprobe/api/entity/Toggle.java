@@ -12,8 +12,9 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Where;
-
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -21,7 +22,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -31,9 +33,12 @@ import java.util.List;
 @Entity
 @Table(name = "toggle")
 @DynamicInsert
-@Where(clause = "deleted = 0")
 @ToString(callSuper = true)
-public class Toggle extends AbstractAuditEntity {
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
+@Filter(name = "deletedFilter", condition = "deleted = :deleted")
+public class Toggle extends AbstractAuditEntity implements TenantSupport {
 
     private String name;
 
@@ -61,11 +66,14 @@ public class Toggle extends AbstractAuditEntity {
 
     private Boolean deleted;
 
+    @Column(name = "organize_id")
+    private String organizeId;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "toggle_tag", joinColumns = {@JoinColumn(name = "toggle_key", referencedColumnName = "key")},
-            inverseJoinColumns = {@JoinColumn(name = "tag_id")})
+            inverseJoinColumns = {@JoinColumn(name = "tag_id", referencedColumnName = "id")})
     @Fetch(FetchMode.JOIN)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private List<Tag> tags;
+    private Set<Tag> tags = new HashSet<>();
 
 }

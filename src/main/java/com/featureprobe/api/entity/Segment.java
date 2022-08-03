@@ -8,7 +8,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -24,8 +26,11 @@ import javax.persistence.Version;
 @Table(name = "segment")
 @DynamicInsert
 @ToString(callSuper = true)
-@Where(clause = "deleted = 0")
-public class Segment extends AbstractAuditEntity {
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
+@Filter(name = "deletedFilter", condition = "deleted = :deleted")
+public class Segment extends AbstractAuditEntity implements TenantSupport {
 
     private String name;
 
@@ -46,5 +51,8 @@ public class Segment extends AbstractAuditEntity {
     private String rules;
 
     private Boolean deleted;
+
+    @Column(name = "organize_id")
+    private String organizeId;
 
 }

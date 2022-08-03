@@ -1,6 +1,6 @@
 package com.featureprobe.api.service;
 
-import com.featureprobe.api.auth.UserPasswordAuthenticationToken;
+import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.exception.ForbiddenException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
@@ -25,34 +25,25 @@ public class DictionaryService {
 
 
     public DictionaryResponse save(String key, String value) {
-        Optional<Dictionary> dictionaryOptional = dictionaryRepository.findByAccountAndKey(findLoggedInAccount(), key);
+        Optional<Dictionary> dictionaryOptional = dictionaryRepository
+                .findByAccountAndKey(TokenHelper.getAccount(), key);
         if(dictionaryOptional.isPresent()) {
             Dictionary dictionary = dictionaryOptional.get();
             dictionary.setValue(value);
-            dictionary.setAccount(findLoggedInAccount());
+            dictionary.setAccount(TokenHelper.getAccount());
             return DictionaryMapper.INSTANCE.entityToResponse(dictionaryRepository.save(dictionary));
         }
         Dictionary dictionary = new Dictionary();
         dictionary.setKey(key);
         dictionary.setValue(value);
-        dictionary.setAccount(findLoggedInAccount());
+        dictionary.setAccount(TokenHelper.getAccount());
         return DictionaryMapper.INSTANCE.entityToResponse(dictionaryRepository.save(dictionary));
     }
     
     public DictionaryResponse query(String key) {
-        Dictionary dictionary = dictionaryRepository.findByAccountAndKey(findLoggedInAccount(), key).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.DICTIONARY, key));
+        Dictionary dictionary = dictionaryRepository.findByAccountAndKey(TokenHelper.getAccount(), key)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.DICTIONARY, key));
         return DictionaryMapper.INSTANCE.entityToResponse(dictionary);
     }
 
-
-
-    private String findLoggedInAccount() {
-        UserPasswordAuthenticationToken authentication =
-                (UserPasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-        if (Objects.isNull(authentication)) {
-            throw new ForbiddenException();
-        }
-        return authentication.getAccount();
-    }
 }

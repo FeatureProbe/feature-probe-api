@@ -34,3 +34,11 @@ logging:
   config: classpath:logback/logback.xml
   file:
     path: ./logs
+
+app:
+  security:
+    jwt:
+      keystore-location: keys/keystore.jks
+      keystore-password: password
+      key-alias: jwtsigning
+      private-key-passphrase: password

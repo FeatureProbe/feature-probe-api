@@ -16,12 +16,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     boolean existsByKey(String key);
 
+    boolean existsByName(String name);
+
     List<Project> findAllByNameContainsIgnoreCaseOrDescriptionContainsIgnoreCase(String keywordName,
                                                                                  String keywordDesc);
-
-    @Query(value = "SELECT count(id) FROM project WHERE `key` = ?1", nativeQuery = true)
-    int countByKeyIncludeDeleted(String key);
-
-    @Query(value = "SELECT count(id) FROM project WHERE name = ?1", nativeQuery = true)
-    int countByNameIncludeDeleted(String name);
 }

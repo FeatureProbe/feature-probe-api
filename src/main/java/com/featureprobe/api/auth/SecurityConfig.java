@@ -2,7 +2,6 @@ package com.featureprobe.api.auth;
 
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
-import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +13,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import java.nio.charset.StandardCharsets;
@@ -24,13 +25,11 @@ import java.nio.charset.StandardCharsets;
 @AllArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    public static final String AUTHORITIES_CLAIM_NAME = "roles";
+
     private LoginFailureHandler loginFailureHandler;
 
     private LoginSuccessHandler loginSuccessHandler;
-
-    private CustomLogoutSuccessHandler customLogoutSuccessHandler;
-
-    private MemberRepository memberRepository;
 
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
@@ -40,13 +39,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         userPasswordAuthenticationProcessingFilter.setAuthenticationSuccessHandler(loginSuccessHandler);
         userPasswordAuthenticationProcessingFilter.setAuthenticationFailureHandler(loginFailureHandler);
         return userPasswordAuthenticationProcessingFilter;
-    }
-
-    JWTAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager,
-                                                    MemberRepository memberRepository) {
-        JWTAuthenticationFilter jwtAuthenticationFilter =
-                new JWTAuthenticationFilter(authenticationManager, memberRepository);
-        return jwtAuthenticationFilter;
     }
 
     @Bean
@@ -72,12 +64,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .formLogin()
                 .loginProcessingUrl("/login")
                 .and()
-            .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessHandler(customLogoutSuccessHandler)
-                .and()
             .authorizeRequests()
-                .antMatchers( "/login", "/logout", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
+                .antMatchers( "/login", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()
@@ -85,9 +73,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .accessDeniedHandler(((httpServletRequest, httpServletResponse, e) ->
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
-        http.addFilter(jwtAuthenticationFilter(authenticationManager(), memberRepository))
-                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
+        http.addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
                         UsernamePasswordAuthenticationFilter.class);
+        http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(authenticationConverter());
+    }
+
+    protected JwtAuthenticationConverter authenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        authoritiesConverter.setAuthorityPrefix("");
+        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        return converter;
     }
 
 }

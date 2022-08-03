@@ -12,10 +12,13 @@ import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingSegmentRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.VariationHistoryRepository
+import org.hibernate.internal.SessionImpl
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import spock.lang.Specification
 import spock.lang.Title
+
+import javax.persistence.EntityManager
 
 @Title("Targeting Unit Test")
 class TargetingServiceSpec extends Specification {
@@ -27,6 +30,7 @@ class TargetingServiceSpec extends Specification {
     TargetingSegmentRepository targetingSegmentRepository
     TargetingVersionRepository targetingVersionRepository
     VariationHistoryRepository variationHistoryRepository
+    EntityManager entityManager
 
     def projectKey
     def environmentKey
@@ -42,8 +46,9 @@ class TargetingServiceSpec extends Specification {
         targetingSegmentRepository = Mock(TargetingSegmentRepository)
         targetingVersionRepository = Mock(TargetingVersionRepository)
         variationHistoryRepository = Mock(VariationHistoryRepository)
+        entityManager = Mock(SessionImpl)
         targetingService = new TargetingService(targetingRepository, segmentRepository,
-                targetingSegmentRepository, targetingVersionRepository, variationHistoryRepository)
+                targetingSegmentRepository, targetingVersionRepository, variationHistoryRepository, entityManager)
 
         projectKey = "feature_probe"
         environmentKey = "test"
