@@ -17,7 +17,7 @@ public class AuditingConfig implements AuditorAware {
     public Optional<Member> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof JwtAuthenticationToken)) {
-            return null;
+            return Optional.of(new Member(1L, ""));
         }
         return Optional.of(new Member(TokenHelper.getUserId(), TokenHelper.getAccount()));
     }

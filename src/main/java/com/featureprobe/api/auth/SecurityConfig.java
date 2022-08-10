@@ -1,8 +1,8 @@
 package com.featureprobe.api.auth;
 
+import com.featureprobe.api.base.config.AppConfig;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
-import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -19,6 +20,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 @Slf4j
 @Configuration
@@ -32,6 +34,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private LoginSuccessHandler loginSuccessHandler;
 
+    private AppConfig appConfig;
+
+    private UserPasswordAuthenticationProvider userPasswordAuthenticationProvider;
+
+    private GuestAuthenticationProvider guestAuthenticationProvider;
+
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
         UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter =
@@ -40,6 +48,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         userPasswordAuthenticationProcessingFilter.setAuthenticationSuccessHandler(loginSuccessHandler);
         userPasswordAuthenticationProcessingFilter.setAuthenticationFailureHandler(loginFailureHandler);
         return userPasswordAuthenticationProcessingFilter;
+    }
+
+    GuestAuthenticationProcessingFilter guestAuthenticationProcessingFilter(
+            AuthenticationManager authenticationManager) {
+        GuestAuthenticationProcessingFilter guestAuthenticationProcessingFilter = new
+                GuestAuthenticationProcessingFilter();
+        guestAuthenticationProcessingFilter.setAuthenticationManager(authenticationManager);
+        guestAuthenticationProcessingFilter.setAuthenticationFailureHandler(loginFailureHandler);
+        guestAuthenticationProcessingFilter.setAuthenticationSuccessHandler(loginSuccessHandler);
+        return guestAuthenticationProcessingFilter;
     }
 
     @Bean
@@ -66,7 +84,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .loginProcessingUrl("/login")
                 .and()
             .authorizeRequests()
-                .antMatchers( "/login", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
+                .antMatchers( "/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()
@@ -75,8 +93,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
         http.addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
-                        UsernamePasswordAuthenticationFilter.class);
+                UsernamePasswordAuthenticationFilter.class);
+        if (!appConfig.isGuestDisabled()) {
+            http.addFilterBefore(guestAuthenticationProcessingFilter(authenticationManager()),
+                    UserPasswordAuthenticationProcessingFilter.class);
+        }
         http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(authenticationConverter());
+    }
+
+    @Override
+    protected AuthenticationManager authenticationManager() throws Exception {
+        ProviderManager authenticationManager = new ProviderManager(Arrays.asList(userPasswordAuthenticationProvider,
+                guestAuthenticationProvider));
+        return authenticationManager;
     }
 
     protected JwtAuthenticationConverter authenticationConverter() {

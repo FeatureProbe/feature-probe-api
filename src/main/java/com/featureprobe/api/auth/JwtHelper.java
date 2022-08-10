@@ -30,6 +30,7 @@ public class JwtHelper {
     private static final String ACCOUNT_KEY = "account";
     private static final String USER_ID_KEY = "userId";
     private static final String ROLE_KEY = "role";
+    private static final String ORGANIZE = "organizes";
 
     private final RSAPrivateKey privateKey;
     private final RSAPublicKey publicKey;
@@ -38,11 +39,11 @@ public class JwtHelper {
     public String createJwtForMember(Member member) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(Instant.now().toEpochMilli());
-        calendar.add(Calendar.MINUTE, 30);
+        calendar.add(Calendar.HOUR, 12);
         JWTCreator.Builder jwtBuilder = JWT.create().withSubject(member.getAccount());
-        jwtBuilder.withClaim("account", member.getAccount());
-        jwtBuilder.withClaim("userId", member.getId());
-        jwtBuilder.withClaim("role", member.getRole().name());
+        jwtBuilder.withClaim(ACCOUNT_KEY, member.getAccount());
+        jwtBuilder.withClaim(USER_ID_KEY, member.getId());
+        jwtBuilder.withClaim(ROLE_KEY, member.getRole().name());
         List<UserOrganize> organizes = new ArrayList<>();
         for(Organize organize: member.getOrganizes()) {
             UserOrganize userOrganize = organizeService.queryUserOrganize(organize.getId(), member.getId());
@@ -50,7 +51,7 @@ public class JwtHelper {
         }
         Map<Long, UserOrganize> userOrganizeMap = organizes.stream().collect(Collectors
                 .toMap(UserOrganize::getOrganizeId, Function.identity()));
-        jwtBuilder.withClaim("organizes", JsonMapper.toJSONString(userOrganizeMap));
+        jwtBuilder.withClaim(ORGANIZE, JsonMapper.toJSONString(userOrganizeMap));
         return jwtBuilder
                 .withNotBefore(new Date())
                 .withExpiresAt(calendar.getTime())

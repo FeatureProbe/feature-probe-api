@@ -28,7 +28,7 @@ public class TagService {
         List<Tag> tags = tagRepository.findByProjectKey(projectKey);
         return tags.stream().map(TagMapper.INSTANCE::entityToResponse).collect(Collectors.toList());
     }
-
+    
     public TagResponse create(String projectKey, TagRequest tagRequest) {
         Tag tag = tagRepository.findByProjectKeyAndName(projectKey, tagRequest.getName());
         if (tag == null) {

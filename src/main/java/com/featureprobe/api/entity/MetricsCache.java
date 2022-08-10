@@ -32,6 +32,7 @@ public class MetricsCache {
     @Column(name = "toggle_key")
     private String toggleKey;
 
+    @Column(columnDefinition = "TEXT")
     private String data;
 
     @Column(name = "start_date")

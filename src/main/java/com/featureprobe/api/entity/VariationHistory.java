@@ -1,5 +1,6 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,7 +28,7 @@ import java.io.Serializable;
 @Table(name = "variation_history")
 @DynamicInsert
 @ToString(callSuper = true)
-@EntityListeners(AuditingEntityListener.class)
+@EntityListeners({AuditingEntityListener.class, TenantEntityListener.class})
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
 public class VariationHistory implements Serializable, TenantSupport {
@@ -48,6 +49,7 @@ public class VariationHistory implements Serializable, TenantSupport {
     @Column(name = "toggle_version")
     private Long toggleVersion;
 
+    @Column(columnDefinition = "TEXT")
     private String value;
 
     @Column(name = "value_index")
@@ -56,6 +58,6 @@ public class VariationHistory implements Serializable, TenantSupport {
     private String name;
 
     @Column(name = "organize_id")
-    private String organizeId;
+    private Long organizeId;
 
 }

@@ -42,3 +42,9 @@ app:
       keystore-password: password
       key-alias: jwtsigning
       private-key-passphrase: password
+      exclude-tenant-uri:
+        - /api/server/toggles
+        - /api/server/sdk_keys
+        - /api/server/events
+      guest-disabled: false
+      guest-default-password: Guest_12345

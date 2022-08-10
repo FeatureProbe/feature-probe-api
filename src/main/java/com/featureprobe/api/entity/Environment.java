@@ -1,11 +1,14 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Filter;
@@ -13,6 +16,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -21,11 +25,13 @@ import javax.persistence.Table;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Builder
 @Entity
 @Table(name = "environment")
 @DynamicInsert
+@EntityListeners(TenantEntityListener.class)
 @ToString(callSuper = true)
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
@@ -44,10 +50,11 @@ public class Environment extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "client_sdk_key")
     private String clientSdkKey;
 
-    private Boolean deleted;
+    @Column(columnDefinition = "TINYINT")
+    private boolean deleted;
 
     @Column(name = "organize_id")
-    private String organizeId;
+    private Long organizeId;
 
     @ManyToOne
     @JoinColumn(name = "project_key", referencedColumnName = "key")

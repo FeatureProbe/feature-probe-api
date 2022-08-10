@@ -32,8 +32,11 @@ public class TenantServiceAspect {
                 field.setAccessible(true);
                 EntityManager entityManager = (EntityManager) field.get(pjp.getTarget());
                 Session session = entityManager.unwrap(Session.class);
-                session.enableFilter("tenantFilter").setParameter("organizeId", TenantContext.getCurrentTenant())
-                        .validate();
+                ExcludeTenant excludeTenantAnnotation = clazz.getAnnotation(ExcludeTenant.class);
+                if (Objects.isNull(excludeTenantAnnotation)) {
+                    session.enableFilter("tenantFilter").setParameter("organizeId", TenantContext.getCurrentTenant())
+                            .validate();
+                }
                 IncludeDeleted includeDeletedAnnotation = getMethodAnnotation(pjp, IncludeDeleted.class);
                 if (Objects.isNull(includeDeletedAnnotation)) {
                     session.enableFilter("deletedFilter").setParameter("deleted", false)

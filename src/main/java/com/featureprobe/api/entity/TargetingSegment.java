@@ -1,5 +1,6 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.Table;
 
 @EqualsAndHashCode(callSuper = true)
@@ -23,6 +25,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "targeting_segment")
 @DynamicInsert
+@EntityListeners(TenantEntityListener.class)
 @ToString(callSuper = true)
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
@@ -38,7 +41,7 @@ public class TargetingSegment extends AbstractAuditEntity implements TenantSuppo
     private String projectKey;
 
     @Column(name = "organize_id")
-    private String organizeId;
+    private Long organizeId;
 
     public TargetingSegment(Long targetingId, String segmentKey, String projectKey) {
         this.targetingId = targetingId;

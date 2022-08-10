@@ -8,6 +8,8 @@ import com.featureprobe.api.service.aspect.IncludeDeleted;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Optional;
 
 @Service
@@ -15,6 +17,9 @@ import java.util.Optional;
 public class MemberIncludeDeletedService {
 
     private MemberRepository memberRepository;
+
+    @PersistenceContext
+    public EntityManager entityManager;
 
     @IncludeDeleted
     public boolean validateAccountIncludeDeleted(String account) {

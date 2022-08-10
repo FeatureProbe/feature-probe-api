@@ -147,7 +147,6 @@
             <version>1.2-groovy-2.4</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>

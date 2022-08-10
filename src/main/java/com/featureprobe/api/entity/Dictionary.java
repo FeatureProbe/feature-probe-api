@@ -29,6 +29,7 @@ import javax.persistence.Table;
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
 public class Dictionary extends AbstractAuditEntity {
 
+    @Column(columnDefinition = "TEXT")
     private String value;
 
     @Column(name = "[key]")
@@ -36,6 +37,7 @@ public class Dictionary extends AbstractAuditEntity {
 
     private String account;
 
-    private Boolean deleted;
+    @Column(columnDefinition = "TINYINT")
+    private boolean deleted;
 
 }

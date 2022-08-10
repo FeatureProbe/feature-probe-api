@@ -24,9 +24,14 @@ import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.ToggleRepository
 import com.featureprobe.api.repository.ToggleTagRepository
 import com.featureprobe.api.repository.VariationHistoryRepository
+import com.featureprobe.sdk.server.FeatureProbe
 import org.hibernate.internal.SessionImpl
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -40,8 +45,6 @@ class ToggleServiceSpec extends Specification {
     ToggleIncludeDeletedService toggleIncludeDeletedService
 
     ToggleRepository toggleRepository
-
-    SegmentRepository segmentRepository
 
     TagRepository tagRepository
 
@@ -57,6 +60,8 @@ class ToggleServiceSpec extends Specification {
 
     VariationHistoryRepository variationHistoryRepository
 
+    FeatureProbe featureProbe
+
     EntityManager entityManager
 
     def projectKey
@@ -69,7 +74,6 @@ class ToggleServiceSpec extends Specification {
 
     def setup() {
         toggleRepository = Mock(ToggleRepository)
-        segmentRepository = Mock(SegmentRepository)
         tagRepository = Mock(TagRepository)
         toggleTagRepository = Mock(ToggleTagRepository)
         targetingRepository = Mock(TargetingRepository)
@@ -77,11 +81,12 @@ class ToggleServiceSpec extends Specification {
         eventRepository = Mock(EventRepository)
         targetingVersionRepository = Mock(TargetingVersionRepository)
         variationHistoryRepository = Mock(VariationHistoryRepository)
+        featureProbe = new FeatureProbe("_")
         entityManager = Mock(SessionImpl)
         toggleIncludeDeletedService = new ToggleIncludeDeletedService(toggleRepository, entityManager)
-        toggleService = new ToggleService(toggleRepository, segmentRepository, tagRepository, targetingRepository,
+        toggleService = new ToggleService(toggleRepository, tagRepository, targetingRepository,
                 environmentRepository, eventRepository, targetingVersionRepository,
-                variationHistoryRepository, toggleIncludeDeletedService, entityManager)
+                variationHistoryRepository, toggleIncludeDeletedService, featureProbe, entityManager)
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
@@ -99,6 +104,7 @@ class ToggleServiceSpec extends Specification {
         segmentRules = "[{\"conditions\":[{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"is one of\"," +
                 "\"objects\":[\"zhangsan\",\"wangwu\",\"lishi\",\"miss\"]},{\"type\":\"string\",\"subject\":\"userId\"," +
                 "\"predicate\":\"is one of\",\"objects\":[\"huahau\",\"kaka\",\"dada\"]}],\"name\":\"\"}]"
+        setAuthContext("Admin", "ADMIN")
     }
 
     def "query toggle by key"() {
@@ -205,24 +211,9 @@ class ToggleServiceSpec extends Specification {
         thrown ResourceConflictException
     }
 
-    def "query server toggles by server sdkKey"() {
-        when:
-        def serverResponse = toggleService.queryServerTogglesByServerSdkKey(sdkKey)
-
-        then:
-        2 * environmentRepository.findByServerSdkKey(sdkKey) >>
-                Optional.of(new Environment(project: new Project(key: projectKey), key: environmentKey))
-        2 * segmentRepository.findAllByProjectKey(projectKey) >>
-                [new Segment(projectKey: projectKey, key: "test_segment",
-                        uniqueKey: projectKey + "\$test_segment", rules: segmentRules)]
-        1 * toggleRepository.findAllByProjectKey(projectKey) >>
-                [new Toggle(projectKey: projectKey, key: toggleKey, returnType: "string", clientAvailability: false)]
-        1 * targetingRepository.findAllByProjectKeyAndEnvironmentKey(projectKey, environmentKey) >>
-                [new Targeting(projectKey: projectKey, environmentKey: environmentKey,
-                        toggleKey: toggleKey, content: rules, disabled: false)]
-        with(serverResponse) {
-            1 == toggles.size()
-            1 == segments.size()
-        }
+    private setAuthContext(String account, String role) {
+        SecurityContextHolder.setContext(new SecurityContextImpl(
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
     }
 }

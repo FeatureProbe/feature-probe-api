@@ -1,9 +1,9 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.enums.ValidateTypeEnum;
-import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
+import com.featureprobe.api.base.exception.ResourceOverflowException;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
 import com.featureprobe.api.dto.ProjectResponse;
@@ -12,16 +12,14 @@ import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Project;
 import com.featureprobe.api.mapper.ProjectMapper;
 import com.featureprobe.api.repository.ProjectRepository;
-import com.featureprobe.api.service.aspect.IncludeDeleted;
 import com.featureprobe.api.util.SdkKeyGenerateUtil;
+import com.featureprobe.sdk.server.FPUser;
+import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.Session;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.ArrayList;
@@ -37,11 +35,16 @@ public class ProjectService {
 
     private ProjectIncludeDeletedService projectIncludeDeletedService;
 
+    private FeatureProbe featureProbe;
+
     @PersistenceContext
     public EntityManager entityManager;
 
+    private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_project_limiter";
+
     @Transactional(rollbackFor = Exception.class)
     public ProjectResponse create(ProjectCreateRequest createRequest) {
+        validateLimit();
         return ProjectMapper.INSTANCE.entityToResponse(createProject(createRequest));
     }
 
@@ -55,6 +58,15 @@ public class ProjectService {
         return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
     }
 
+    private void validateLimit() {
+        long total = projectRepository.count();
+        FPUser user = new FPUser(String.valueOf(TokenHelper.getUserId()));
+        user.with("account", TokenHelper.getAccount());
+        double limitNum = featureProbe.numberValue(LIMITER_TOGGLE_KEY, user , -1);
+        if (limitNum > 0 && total >= limitNum) {
+            throw new ResourceOverflowException(ResourceType.PROJECT);
+        }
+    }
 
     private Project createProject(ProjectCreateRequest createRequest) {
         projectIncludeDeletedService.validateKeyIncludeDeleted(createRequest.getKey());

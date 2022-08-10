@@ -1,5 +1,6 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,6 +18,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
@@ -34,7 +36,8 @@ import java.util.Set;
 @Table(name = "toggle")
 @DynamicInsert
 @ToString(callSuper = true)
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@EntityListeners(TenantEntityListener.class)
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "long")})
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
@@ -45,29 +48,32 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "[key]")
     private String key;
 
-    @Column(name = "description")
+    @Column(name = "description" , columnDefinition = "TEXT")
     private String desc;
 
-    @Column(name = "return_type")
+    @Column(name = "return_type", columnDefinition = "CHAR")
     private String returnType;
 
     @Column(name = "disabled_serve")
     private Integer disabledServe;
 
+    @Column(columnDefinition = "TEXT")
     private String variations;
 
     @Column(name = "project_key")
     private String projectKey;
 
-    @Column(name = "client_availability")
+    @Column(name = "client_availability", columnDefinition = "TINYINT")
     private Boolean clientAvailability;
 
+    @Column(columnDefinition = "TINYINT")
     private Boolean archived;
 
+    @Column(columnDefinition = "TINYINT")
     private Boolean deleted;
 
     @Column(name = "organize_id")
-    private String organizeId;
+    private Long organizeId;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "toggle_tag", joinColumns = {@JoinColumn(name = "toggle_key", referencedColumnName = "key")},

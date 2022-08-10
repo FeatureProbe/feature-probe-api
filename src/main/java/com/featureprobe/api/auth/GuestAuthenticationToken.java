@@ -6,7 +6,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import java.util.Collection;
 
-public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken {
+public class GuestAuthenticationToken extends AbstractAuthenticationToken {
 
     private String account;
 
@@ -14,14 +14,14 @@ public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken
 
     private Member principal;
 
-    public UserPasswordAuthenticationToken(String account, String password) {
+    public GuestAuthenticationToken(String account, String password) {
         super(null);
         this.account = account;
         this.password = password;
         super.setAuthenticated(false);
     }
 
-    public UserPasswordAuthenticationToken(Member principal, Collection<? extends GrantedAuthority> authorities) {
+    public GuestAuthenticationToken(Member principal, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.principal = principal;
         this.account = principal.getAccount();

@@ -8,10 +8,15 @@ import com.featureprobe.api.dto.ProjectUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
 import com.featureprobe.api.repository.ProjectRepository
+import com.featureprobe.sdk.server.FeatureProbe
 import org.hibernate.internal.SessionImpl
+import org.powermock.api.mockito.PowerMockito
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.util.CollectionUtils
 import spock.lang.Specification
-
 import javax.persistence.EntityManager
 
 class ProjectServiceSpec extends Specification {
@@ -28,6 +33,8 @@ class ProjectServiceSpec extends Specification {
 
     ProjectIncludeDeletedService projectIncludeDeletedService
 
+    FeatureProbe featureProbe
+
     EntityManager entityManager
 
     def projectKey
@@ -40,11 +47,13 @@ class ProjectServiceSpec extends Specification {
         keyword = "feature"
         projectRepository = Mock(ProjectRepository)
         entityManager = Mock(SessionImpl)
+        featureProbe = new FeatureProbe("_")
         projectIncludeDeletedService = new ProjectIncludeDeletedService(projectRepository, entityManager)
-        projectService = new ProjectService(projectRepository, projectIncludeDeletedService, entityManager)
+        projectService = new ProjectService(projectRepository, projectIncludeDeletedService, featureProbe, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
         projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)
+        setAuthContext("Admin", "ADMIN")
     }
 
     def "project list"() {
@@ -103,6 +112,12 @@ class ProjectServiceSpec extends Specification {
         1 * projectRepository.existsByName(projectName) >> true
         then:
         thrown ResourceConflictException
+    }
+
+    private setAuthContext(String account, String role) {
+        SecurityContextHolder.setContext(new SecurityContextImpl(
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
     }
 
 }

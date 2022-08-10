@@ -17,11 +17,11 @@ create table organize_user
     id             bigint auto_increment primary key,
     organize_id    bigint   not null,
     user_id        bigint   not null,
-    `role`         varchar(32)  NOT NULL,
-    `modified_time` datetime     NOT NULL,
-    `created_by`    bigint  NOT NULL,
-    `created_time`  datetime     NOT NULL,
-    `modified_by`   bigint  NOT NULL
+    `role`         varchar(32) default 'OWNER'  NOT NULL,
+    `modified_time` datetime default  CURRENT_TIMESTAMP  not null,
+    `created_by`    bigint  default 1 NOT NULL,
+    `created_time`  datetime default  CURRENT_TIMESTAMP  not null,
+    `modified_by`   bigint  default 1 NOT NULL
 ) collate = utf8mb4_unicode_ci;
 
 insert into organize_user(organize_id, user_id, role, modified_time, created_by, created_time, modified_by)

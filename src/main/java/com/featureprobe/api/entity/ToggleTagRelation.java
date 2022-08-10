@@ -1,5 +1,6 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.ParamDef;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -28,6 +30,7 @@ import javax.persistence.Table;
 @Table(name = "toggle_tag")
 @DynamicInsert
 @ToString(callSuper = true)
+@EntityListeners(TenantEntityListener.class)
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
 public class ToggleTagRelation implements TenantSupport {
@@ -43,6 +46,6 @@ public class ToggleTagRelation implements TenantSupport {
     private String toggleKey;
 
     @Column(name = "organize_id")
-    private String organizeId;
+    private Long organizeId;
 
 }
