@@ -13,6 +13,7 @@ import com.featureprobe.api.dto.SegmentResponse;
 import com.featureprobe.api.dto.SegmentSearchRequest;
 import com.featureprobe.api.dto.SegmentUpdateRequest;
 import com.featureprobe.api.dto.ToggleSegmentResponse;
+import com.featureprobe.api.service.SegmentIncludeDeletedService;
 import com.featureprobe.api.service.SegmentService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class SegmentController {
 
     private SegmentService segmentService;
+
+    private SegmentIncludeDeletedService segmentIncludeDeletedService;
 
     @GetMapping
     @GetApiResponse
@@ -98,7 +101,7 @@ public class SegmentController {
     public BaseResponse exists(@PathVariable("projectKey") String projectKey,
                                @RequestParam ValidateTypeEnum type,
                                @RequestParam String value) {
-        segmentService.validateExists(projectKey, type, value);
+        segmentIncludeDeletedService.validateExistsIncludeDeleted(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 }

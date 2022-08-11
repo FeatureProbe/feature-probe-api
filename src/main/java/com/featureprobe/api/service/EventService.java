@@ -9,6 +9,7 @@ import com.featureprobe.api.entity.Event;
 import com.featureprobe.api.model.VariationAccessCounter;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
+import com.featureprobe.api.service.aspect.ExcludeTenant;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,10 +24,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @AllArgsConstructor
+@ExcludeTenant
 public class EventService {
 
     private EventRepository eventRepository;
     private EnvironmentRepository environmentRepository;
+
 
     public void create(String serverSdkKey, List<EventCreateRequest> requests) {
         Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey)

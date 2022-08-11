@@ -11,7 +11,15 @@ import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.ProjectRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.ToggleRepository
+import com.featureprobe.sdk.server.FeatureProbe
+import org.hibernate.internal.SessionImpl
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import spock.lang.Specification
+
+import javax.persistence.EntityManager
 
 class EnvironmentServiceSpec extends Specification {
 
@@ -29,6 +37,11 @@ class EnvironmentServiceSpec extends Specification {
     EnvironmentCreateRequest createRequest
 
     EnvironmentUpdateRequest updateRequest
+
+    EnvironmentIncludeDeletedService environmentIncludeDeletedService
+
+    FeatureProbe featureProbe
+    EntityManager entityManager
 
     def projectName
     def projectKey
@@ -52,10 +65,14 @@ class EnvironmentServiceSpec extends Specification {
         environmentRepository = Mock(EnvironmentRepository)
         toggleRepository = Mock(ToggleRepository)
         targetingRepository = Mock(TargetingRepository)
+        featureProbe = new FeatureProbe("_")
+        entityManager = Mock(SessionImpl)
+        environmentIncludeDeletedService = new EnvironmentIncludeDeletedService(environmentRepository)
         environmentService = new EnvironmentService(environmentRepository, projectRepository,
-                toggleRepository, targetingRepository)
+                toggleRepository, targetingRepository, environmentIncludeDeletedService, featureProbe, entityManager)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
         updateRequest = new EnvironmentUpdateRequest(name: "env_test_update")
+        setAuthContext("Admin", "ADMIN")
     }
 
     def "Create environment"() {
@@ -64,8 +81,8 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 new Optional<>(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 0
-        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 0
+        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> false
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, environmentName) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         1 * toggleRepository.findAllByProjectKey(projectKey) >> [new Toggle(name: toggleName,
@@ -86,7 +103,7 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 1
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, createRequest.getName()) >> true
         then:
         thrown ResourceConflictException
     }
@@ -98,7 +115,7 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
                 Optional.of(new Environment(name: environmentName, key: environmentKey))
-        1 * environmentRepository.countByNameIncludeDeleted(projectKey, updateRequest.name) >> 0
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, updateRequest.name) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         with(ret) {
@@ -120,35 +137,28 @@ class EnvironmentServiceSpec extends Specification {
         "client-123" == environment.clientSdkKey
     }
 
-    def "test get sdk server key"() {
-        given:
-        environmentRepository.findByServerSdkKeyOrClientSdkKey("key1", "key1") >>
-                Optional.of(new Environment(serverSdkKey: "key001"))
-
-        when:
-        def sdkServerKey = environmentService.getSdkServerKey("key1")
-
-        then:
-        "key001" == sdkServerKey
-
-    }
-
     def "check environment key" () {
         when:
-        environmentService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
+        environmentIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
         then:
-        1 * environmentRepository.countByKeyIncludeDeleted(projectKey, environmentKey) >> 1
+        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> true
         then:
         thrown ResourceConflictException
     }
 
     def "check environment name" () {
         when:
-        environmentService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
+        environmentIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
         then:
-        1 * environmentRepository.countByNameIncludeDeleted(projectKey, environmentName) >> 1
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, environmentName) >> true
         then:
         thrown ResourceConflictException
+    }
+
+    private setAuthContext(String account, String role) {
+        SecurityContextHolder.setContext(new SecurityContextImpl(
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
     }
 }
 

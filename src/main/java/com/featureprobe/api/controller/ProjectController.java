@@ -12,6 +12,7 @@ import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
 import com.featureprobe.api.dto.ProjectResponse;
 import com.featureprobe.api.dto.ProjectUpdateRequest;
+import com.featureprobe.api.service.ProjectIncludeDeletedService;
 import com.featureprobe.api.service.ProjectService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,6 +42,8 @@ import java.util.List;
 public class ProjectController {
 
     private ProjectService projectService;
+
+    private ProjectIncludeDeletedService projectIncludeDeletedService;
 
     @PostMapping
     @CreateApiResponse
@@ -78,7 +81,7 @@ public class ProjectController {
     public BaseResponse exists(
             @RequestParam ValidateTypeEnum type,
             @RequestParam String value) {
-        projectService.validateExists(type, value);
+        projectIncludeDeletedService.validateExists(type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

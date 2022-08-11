@@ -34,6 +34,18 @@ public class WebExceptionAspect {
         response.getWriter().write(toErrorResponse(ResponseCode.NOT_FOUND, resourceNotFoundMessage));
     }
 
+    @ExceptionHandler(value = ResourceOverflowException.class)
+    public void resourceOverflowHandler(HttpServletResponse response, ResourceOverflowException e)
+            throws IOException {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        String resourceNameMessage = i18nUtil.getResourceNameMessage(e.resourceType);
+        String resourceOverflowMessage = i18nUtil.get(ResponseCode.NOT_FOUND.messageKey(),
+                new Object[]{resourceNameMessage});
+
+        response.getWriter().write(toErrorResponse(ResponseCode.OVERFLOW, resourceOverflowMessage));
+    }
+
     @ExceptionHandler(value = ResourceConflictException.class)
     public void resourceConflictHandler(HttpServletResponse response, ResourceConflictException e)
             throws IOException {
@@ -41,6 +53,7 @@ public class WebExceptionAspect {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.getWriter().write(toErrorResponse(ResponseCode.CONFLICT));
     }
+
 
     @ExceptionHandler(value = ForbiddenException.class)
     public void forbiddenHandler(HttpServletResponse response, ForbiddenException e)

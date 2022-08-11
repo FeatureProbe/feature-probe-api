@@ -8,13 +8,17 @@ import com.featureprobe.api.dto.ProjectUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
 import com.featureprobe.api.repository.ProjectRepository
-import org.springframework.boot.test.context.SpringBootTest
+import com.featureprobe.sdk.server.FeatureProbe
+import org.hibernate.internal.SessionImpl
+import org.powermock.api.mockito.PowerMockito
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.util.CollectionUtils
 import spock.lang.Specification
-import spock.lang.Title
+import javax.persistence.EntityManager
 
-@Title("Project Unit Test")
-@SpringBootTest
 class ProjectServiceSpec extends Specification {
 
     ProjectService projectService
@@ -27,6 +31,12 @@ class ProjectServiceSpec extends Specification {
 
     ProjectUpdateRequest projectUpdateRequest
 
+    ProjectIncludeDeletedService projectIncludeDeletedService
+
+    FeatureProbe featureProbe
+
+    EntityManager entityManager
+
     def projectKey
     def projectName
     def keyword
@@ -36,10 +46,14 @@ class ProjectServiceSpec extends Specification {
         projectKey = "test_project"
         keyword = "feature"
         projectRepository = Mock(ProjectRepository)
-        projectService = new ProjectService(projectRepository)
+        entityManager = Mock(SessionImpl)
+        featureProbe = new FeatureProbe("_")
+        projectIncludeDeletedService = new ProjectIncludeDeletedService(projectRepository, entityManager)
+        projectService = new ProjectService(projectRepository, projectIncludeDeletedService, featureProbe, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
         projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)
+        setAuthContext("Admin", "ADMIN")
     }
 
     def "project list"() {
@@ -57,8 +71,8 @@ class ProjectServiceSpec extends Specification {
         when:
         def ret = projectService.create(createRequest)
         then:
-        1 * projectRepository.countByKeyIncludeDeleted(projectKey) >> 0
-        1 * projectRepository.countByNameIncludeDeleted(projectName) >> 0
+        1 * projectRepository.existsByKey(projectKey) >> false
+        1 * projectRepository.existsByName(projectName) >> false
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey,
                 environments: [new Environment()])
         with(ret) {
@@ -74,7 +88,7 @@ class ProjectServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey))
-        1 * projectRepository.countByNameIncludeDeleted(projectUpdateRequest.name) >> 0
+        1 * projectRepository.existsByName(projectUpdateRequest.name) >> false
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey)
         with(ret) {
             projectName == it.name
@@ -84,20 +98,26 @@ class ProjectServiceSpec extends Specification {
 
     def "check project key" () {
         when:
-        projectService.validateExists(ValidateTypeEnum.KEY, projectKey)
+        projectIncludeDeletedService.validateExists(ValidateTypeEnum.KEY, projectKey)
         then:
-        1 * projectRepository.countByKeyIncludeDeleted(projectKey) >> 1
+        1 * projectRepository.existsByKey(projectKey) >> true
         then:
         thrown ResourceConflictException
     }
 
     def "check project name" () {
         when:
-        projectService.validateExists(ValidateTypeEnum.NAME, projectName)
+        projectIncludeDeletedService.validateExists(ValidateTypeEnum.NAME, projectName)
         then:
-        1 * projectRepository.countByNameIncludeDeleted(projectName) >> 1
+        1 * projectRepository.existsByName(projectName) >> true
         then:
         thrown ResourceConflictException
+    }
+
+    private setAuthContext(String account, String role) {
+        SecurityContextHolder.setContext(new SecurityContextImpl(
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
     }
 
 }

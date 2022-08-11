@@ -1,14 +1,12 @@
 package com.featureprobe.api.controller;
 
-
 import com.featureprobe.api.base.doc.CreateApiResponse;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.dto.EventCreateRequest;
 import com.featureprobe.api.dto.SdkKeyResponse;
 import com.featureprobe.api.dto.ServerResponse;
-import com.featureprobe.api.service.EnvironmentService;
 import com.featureprobe.api.service.EventService;
-import com.featureprobe.api.service.ToggleService;
+import com.featureprobe.api.service.ServerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 
 @Slf4j
@@ -31,15 +28,15 @@ import java.util.List;
 @AllArgsConstructor
 public class ServerController {
 
-    private ToggleService toggleService;
-    private EnvironmentService environmentService;
+    private ServerService serverService;
+
     private EventService eventService;
 
     @GetApiResponse
     @GetMapping("/sdk_keys")
     @Operation(summary = "List sdk keys", description = "Get all sdk keys.")
     public SdkKeyResponse queryAllSdkKeys() {
-        return environmentService.queryAllSdkKeys();
+        return serverService.queryAllSdkKeys();
     }
 
     @GetApiResponse
@@ -47,7 +44,7 @@ public class ServerController {
     @Operation(summary = "Fetch toggles", description = "Fetch toggle & segments by server sdk key.")
     public ServerResponse fetchToggles(@Parameter(description = "sdk key")
                                        @RequestHeader(value = "Authorization") String sdkKey) {
-        return toggleService.queryServerTogglesByServerSdkKey(environmentService.getSdkServerKey(sdkKey));
+        return serverService.queryServerTogglesByServerSdkKey(sdkKey);
     }
 
     @CreateApiResponse
@@ -57,7 +54,7 @@ public class ServerController {
             @RequestBody @Validated List<EventCreateRequest> batchRequest,
             @Parameter(description = "sdk key")
             @RequestHeader(value = "Authorization") String sdkKey) {
-        eventService.create(environmentService.getSdkServerKey(sdkKey), batchRequest);
+        eventService.create(serverService.getSdkServerKey(sdkKey), batchRequest);
     }
 
 }

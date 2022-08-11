@@ -1,40 +1,35 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.enums.VisitFilter;
-import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
+import com.featureprobe.api.base.exception.ResourceOverflowException;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
-import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
-import com.featureprobe.api.entity.Segment;
 import com.featureprobe.api.entity.Tag;
 import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.entity.Toggle;
-import com.featureprobe.api.entity.ToggleTagRelation;
 import com.featureprobe.api.entity.VariationHistory;
 import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.mapper.ToggleMapper;
-import com.featureprobe.api.model.ServerSegmentBuilder;
 import com.featureprobe.api.model.TargetingContent;
-import com.featureprobe.api.model.ServerToggleBuilder;
 import com.featureprobe.api.model.Variation;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
-import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TagRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.ToggleRepository;
-import com.featureprobe.api.repository.ToggleTagRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
+import com.featureprobe.sdk.server.FPUser;
+import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -46,22 +41,20 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -72,11 +65,7 @@ public class ToggleService {
 
     private ToggleRepository toggleRepository;
 
-    private SegmentRepository segmentRepository;
-
     private TagRepository tagRepository;
-
-    private ToggleTagRepository toggleTagRepository;
 
     private TargetingRepository targetingRepository;
 
@@ -88,23 +77,41 @@ public class ToggleService {
 
     private VariationHistoryRepository variationHistoryRepository;
 
+    private ToggleIncludeDeletedService toggleIncludeDeletedService;
+
+    private FeatureProbe featureProbe;
+
+    @PersistenceContext
+    public EntityManager entityManager;
+
+    private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_toggle_limiter";
+
     @Transactional(rollbackFor = Exception.class)
     public ToggleResponse create(String projectKey, ToggleCreateRequest createRequest) {
+        validateLimit(projectKey);
         Toggle toggle = createToggle(projectKey, createRequest);
         createDefaultTargetingEntities(projectKey, toggle);
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
+
+    private void validateLimit(String projectKey) {
+        long total = toggleRepository.countByProjectKey(projectKey);
+        FPUser user = new FPUser(String.valueOf(TokenHelper.getUserId()));
+        user.with("account", TokenHelper.getAccount());
+        double limitNum = featureProbe.numberValue(LIMITER_TOGGLE_KEY, user , -1);
+        if (limitNum > 0 && total >= limitNum) {
+            throw new ResourceOverflowException(ResourceType.TOGGLE);
+        }
+    }
+
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        validateKey(projectKey, createRequest.getKey());
-        validateName(projectKey, createRequest.getName());
+        toggleIncludeDeletedService.validateKeyIncludeDeleted(projectKey, createRequest.getKey());
+        toggleIncludeDeletedService.validateNameIncludeDeleted(projectKey, createRequest.getName());
         Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
         toggle.setProjectKey(projectKey);
-        toggle.setDeleted(false);
-        toggle.setArchived(false);
         setToggleTagRefs(toggle, createRequest.getTags());
-        toggleRepository.save(toggle);
-        return toggle;
+        return toggleRepository.save(toggle);
     }
 
     private void createDefaultTargetingEntities(String projectKey, Toggle toggle) {
@@ -178,7 +185,7 @@ public class ToggleService {
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
         if(!StringUtils.equals(toggle.getName(), updateRequest.getName())) {
-            validateName(projectKey, updateRequest.getName());
+            toggleIncludeDeletedService.validateNameIncludeDeleted(projectKey, updateRequest.getName());
         }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);
         setToggleTagRefs(toggle, updateRequest.getTags());
@@ -189,7 +196,7 @@ public class ToggleService {
     }
 
     private void setToggleTagRefs(Toggle toggle, String[] tagNames) {
-        List<Tag> tags = tagRepository.findByProjectKeyAndNameIn(toggle.getProjectKey(), tagNames);
+        Set<Tag> tags = tagRepository.findByProjectKeyAndNameIn(toggle.getProjectKey(), tagNames);
         toggle.setTags(tags);
     }
 
@@ -264,10 +271,17 @@ public class ToggleService {
         return targetingList.stream().map(Targeting::getToggleKey).collect(Collectors.toSet());
     }
 
-    private Set<String> queryToggleKeysByTags(List<String> tags) {
-        List<ToggleTagRelation> toggleTagRelations = toggleTagRepository.findByNames(tags);
-        return toggleTagRelations.stream().map(ToggleTagRelation::getToggleKey).collect(Collectors.toSet());
+    private Set<String> queryToggleKeysByTags(List<String> tagNames) {
+        List<Tag> tags = tagRepository.findByNameIn(tagNames);
+        Set<String> toggleKeys = new TreeSet<>();
+        tags.forEach(tag -> {
+            Set<String> collect = tag.getToggles().stream().map(Toggle::getKey).collect(Collectors.toSet());
+            toggleKeys.addAll(collect);
+        });
+        return toggleKeys;
     }
+
+
 
     private Set<String> queryToggleKeysByVisited(VisitFilter visitFilter, String projectKey, Environment environment) {
         switch (visitFilter) {
@@ -324,11 +338,10 @@ public class ToggleService {
         return toggles.stream().map(Toggle::getKey).collect(Collectors.toSet());
     }
 
-
     private ToggleItemResponse entityToItemResponse(Toggle toggle, String projectKey, String environmentKey) {
         ToggleItemResponse toggleItem = ToggleMapper.INSTANCE.entityToItemResponse(toggle);
-        List<Tag> tags = tagRepository.selectTagsByToggleKey(toggle.getKey());
-        toggleItem.setTags(tags.stream().map(Tag::getName).collect(Collectors.toList()));
+        Set<Tag> tags = toggle.getTags();
+        toggleItem.setTags(tags.stream().map(Tag::getName).collect(Collectors.toSet()));
         Targeting targeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
                 environmentKey, toggle.getKey()).get();
         toggleItem.setDisabled(targeting.getDisabled());
@@ -359,88 +372,6 @@ public class ToggleService {
     public ToggleResponse queryByKey(String projectKey, String toggleKey) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
-    }
-
-    public ServerResponse queryServerTogglesByServerSdkKey(String serverSdkKey) {
-        return new ServerResponse(queryTogglesBySdkKey(serverSdkKey), querySegmentsBySdkKey(serverSdkKey));
-    }
-
-    private List<com.featureprobe.sdk.server.model.Segment> querySegmentsBySdkKey(String serverSdkKey) {
-        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey).get();
-        if (Objects.isNull(environment)) {
-            return Collections.emptyList();
-        }
-        List<Segment> segments = segmentRepository.findAllByProjectKey(environment.getProject().getKey());
-        return segments.stream().map(segment -> {
-            try {
-                return new ServerSegmentBuilder().builder()
-                        .uniqueId(segment.getUniqueKey())
-                        .version(segment.getVersion())
-                        .rules(segment.getRules())
-                        .build();
-            } catch (Exception e) {
-                log.error("Build server segment failed, server sdk key: {}, segment key: {}",
-                        serverSdkKey, segment.getKey(), e);
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toList());
-    }
-
-    private List<com.featureprobe.sdk.server.model.Toggle> queryTogglesBySdkKey(String serverSdkKey) {
-        Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey).get();
-        if (Objects.isNull(environment)) {
-            return Collections.emptyList();
-        }
-        List<Segment> segments = segmentRepository.findAllByProjectKey(environment.getProject().getKey());
-        List<Toggle> toggles = toggleRepository.findAllByProjectKey(environment.getProject().getKey());
-        Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKey(
-                environment.getProject().getKey(),
-                environment.getKey()).stream().collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
-        return toggles.stream().map(toggle -> {
-            Targeting targeting = targetingByKey.get(toggle.getKey());
-            try {
-                return new ServerToggleBuilder().builder()
-                        .key(toggle.getKey())
-                        .disabled(targeting.getDisabled())
-                        .version(targeting.getVersion())
-                        .returnType(toggle.getReturnType())
-                        .forClient(toggle.getClientAvailability())
-                        .rules(targeting.getContent())
-                        .segments(segments.stream().collect(Collectors.toMap(Segment::getKey, Function.identity())))
-                        .build();
-            } catch (Exception e) {
-                log.warn("Build server toggle failed, server sdk key: {}, toggle key: {}, env key: {}",
-                        serverSdkKey, targeting.getToggleKey(), targeting.getEnvironmentKey(), e);
-                return null;
-            }
-
-        }).filter(Objects::nonNull).collect(Collectors.toList());
-    }
-
-    public void validateExists(String projectKey, ValidateTypeEnum type, String  value) {
-        switch (type) {
-            case KEY:
-                validateKey(projectKey, value);
-                break;
-            case NAME:
-                validateName(projectKey, value);
-                break;
-            default:
-                break;
-        }
-    }
-
-
-    private void validateKey(String projectKey, String key) {
-        if (toggleRepository.countByKeyIncludeDeleted(projectKey, key) > 0) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
-        }
-    }
-
-    private void validateName(String projectKey, String name) {
-        if (toggleRepository.countByNameIncludeDeleted(projectKey, name) > 0) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
-        }
     }
 
 }

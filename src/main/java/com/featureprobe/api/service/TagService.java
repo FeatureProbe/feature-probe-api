@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,11 +21,14 @@ public class TagService {
 
     private TagRepository tagRepository;
 
+    @PersistenceContext
+    public EntityManager entityManager;
+
     public List<TagResponse> queryByProjectKey(String projectKey) {
         List<Tag> tags = tagRepository.findByProjectKey(projectKey);
         return tags.stream().map(TagMapper.INSTANCE::entityToResponse).collect(Collectors.toList());
     }
-
+    
     public TagResponse create(String projectKey, TagRequest tagRequest) {
         Tag tag = tagRepository.findByProjectKeyAndName(projectKey, tagRequest.getName());
         if (tag == null) {

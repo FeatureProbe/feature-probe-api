@@ -1,7 +1,6 @@
 package com.featureprobe.api.controller;
 
-
-import com.featureprobe.api.auth.UserPasswordAuthenticationToken;
+import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.dto.MemberCreateRequest;
 import com.featureprobe.api.dto.MemberDeleteRequest;
@@ -15,7 +14,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,9 +38,7 @@ public class MemberController {
     @GetMapping("/current")
     @Operation(summary = "Current login member", description = "")
     public MemberResponse currentLoginMember() {
-        UserPasswordAuthenticationToken authentication =
-                (UserPasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-        return new MemberResponse(authentication.getAccount(), authentication.getRole());
+        return new MemberResponse(TokenHelper.getAccount(), TokenHelper.getRole());
     }
 
     @PostMapping

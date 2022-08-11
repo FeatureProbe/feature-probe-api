@@ -4,7 +4,6 @@ import com.featureprobe.api.base.enums.RoleEnum;
 import com.featureprobe.api.entity.Member;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-
 import java.util.Collection;
 
 public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken {

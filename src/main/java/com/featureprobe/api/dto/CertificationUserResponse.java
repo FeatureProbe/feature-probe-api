@@ -11,5 +11,7 @@ public class CertificationUserResponse {
 
     private String role;
 
+    private Long organizeId;
+
     private String token;
 }

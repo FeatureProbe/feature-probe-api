@@ -1,5 +1,6 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,10 +9,14 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
@@ -24,8 +29,12 @@ import javax.persistence.Version;
 @Table(name = "segment")
 @DynamicInsert
 @ToString(callSuper = true)
-@Where(clause = "deleted = 0")
-public class Segment extends AbstractAuditEntity {
+@EntityListeners(TenantEntityListener.class)
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
+@Filter(name = "deletedFilter", condition = "deleted = :deleted")
+public class Segment extends AbstractAuditEntity implements TenantSupport {
 
     private String name;
 
@@ -43,8 +52,13 @@ public class Segment extends AbstractAuditEntity {
     @Version
     private Long version;
 
+    @Column(columnDefinition = "TEXT")
     private String rules;
 
-    private Boolean deleted;
+    @Column(columnDefinition = "TINYINT")
+    private boolean deleted;
+
+    @Column(name = "organize_id")
+    private Long organizeId;
 
 }

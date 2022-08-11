@@ -4,6 +4,7 @@ public enum ResponseCode {
 
     CONFLICT("conflict", MessageKey.CONFLICT),
     NOT_FOUND("not_found", MessageKey.NOT_FOUND),
+    OVERFLOW("overflow", MessageKey.OVERFLOW),
     INVALID_REQUEST("invalid_request", MessageKey.INVALID_REQUEST),
     FORBIDDEN("forbidden", MessageKey.FORBIDDEN);
 

@@ -1,13 +1,16 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
@@ -25,8 +28,10 @@ import java.io.Serializable;
 @Table(name = "variation_history")
 @DynamicInsert
 @ToString(callSuper = true)
-@EntityListeners(AuditingEntityListener.class)
-public class VariationHistory implements Serializable {
+@EntityListeners({AuditingEntityListener.class, TenantEntityListener.class})
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+public class VariationHistory implements Serializable, TenantSupport {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,11 +49,15 @@ public class VariationHistory implements Serializable {
     @Column(name = "toggle_version")
     private Long toggleVersion;
 
+    @Column(columnDefinition = "TEXT")
     private String value;
 
     @Column(name = "value_index")
     private Integer valueIndex;
 
     private String name;
+
+    @Column(name = "organize_id")
+    private Long organizeId;
 
 }

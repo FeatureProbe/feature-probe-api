@@ -17,8 +17,14 @@ import java.util.Map;
 @Slf4j
 public class UserPasswordAuthenticationProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
+    private static final String GUEST_LOGIN_PATH = "/login";
+
+    private static final String GUEST_LOGIN_ACCOUNT_PARAM = "account";
+
+    private static final String GUEST_LOGIN_PASSWORD_PARAM = "password";
+
     protected UserPasswordAuthenticationProcessingFilter() {
-        super("/login");
+        super(GUEST_LOGIN_PATH);
     }
 
     @Override
@@ -28,9 +34,8 @@ public class UserPasswordAuthenticationProcessingFilter extends AbstractAuthenti
         InputStream is = request.getInputStream();
         String body = IOUtils.toString(is, StandardCharsets.UTF_8);
         Map<String, String> authParam = mapper.readValue(body, Map.class);
-        String account = authParam.get("account");
-        String password = authParam.get("password");
-
+        String account = authParam.get(GUEST_LOGIN_ACCOUNT_PARAM);
+        String password = authParam.get(GUEST_LOGIN_PASSWORD_PARAM);
         return getAuthenticationManager().authenticate(new UserPasswordAuthenticationToken(account, password));
     }
 }

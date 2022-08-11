@@ -1,5 +1,6 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,10 +9,12 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
-import org.hibernate.annotations.Where;
-
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.Table;
 
 @EqualsAndHashCode(callSuper = true)
@@ -21,10 +24,14 @@ import javax.persistence.Table;
 @Builder
 @Entity
 @Table(name = "targeting_version")
-@Where(clause = "deleted = 0")
 @DynamicInsert
 @ToString(callSuper = true)
-public class TargetingVersion extends AbstractAuditEntity {
+@EntityListeners(TenantEntityListener.class)
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
+@Filter(name = "deletedFilter", condition = "deleted = :deleted")
+public class TargetingVersion extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "project_key")
     private String projectKey;
@@ -37,9 +44,14 @@ public class TargetingVersion extends AbstractAuditEntity {
 
     private String comment;
 
+    @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Column(columnDefinition = "TINYINT")
     private Boolean disabled;
+
+    @Column(name = "organize_id")
+    private Long organizeId;
 
     private Long version;
 

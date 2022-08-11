@@ -10,6 +10,7 @@ import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
 import com.featureprobe.api.dto.EnvironmentResponse;
 import com.featureprobe.api.dto.EnvironmentUpdateRequest;
+import com.featureprobe.api.service.EnvironmentIncludeDeletedService;
 import com.featureprobe.api.service.EnvironmentService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,6 +36,8 @@ public class EnvironmentController {
 
     private EnvironmentService environmentService;
 
+    private EnvironmentIncludeDeletedService environmentIncludeDeletedService;
+
     @PostMapping
     @CreateApiResponse
     @Operation(summary = "Create environment", description = "Create a new environment.")
@@ -51,7 +54,7 @@ public class EnvironmentController {
                                       @RequestBody @Validated EnvironmentUpdateRequest updateRequest) {
         return environmentService.update(projectKey, environmentKey, updateRequest);
     }
-
+    
     @GetMapping("/{environmentKey}")
     @GetApiResponse
     @Operation(summary = "Query environment", description = "Query a environment.")
@@ -66,7 +69,7 @@ public class EnvironmentController {
     public BaseResponse exists(@PathVariable("projectKey") String projectKey,
                                @RequestParam ValidateTypeEnum type,
                                @RequestParam String value) {
-        environmentService.validateExists(projectKey, type, value);
+        environmentIncludeDeletedService.validateExists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

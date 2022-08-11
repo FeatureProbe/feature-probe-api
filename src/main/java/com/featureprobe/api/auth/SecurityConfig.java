@@ -1,8 +1,8 @@
 package com.featureprobe.api.auth;
 
+import com.featureprobe.api.base.config.AppConfig;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
-import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -10,13 +10,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 @Slf4j
 @Configuration
@@ -24,13 +28,17 @@ import java.nio.charset.StandardCharsets;
 @AllArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    public static final String AUTHORITIES_CLAIM_NAME = "roles";
+
     private LoginFailureHandler loginFailureHandler;
 
     private LoginSuccessHandler loginSuccessHandler;
 
-    private CustomLogoutSuccessHandler customLogoutSuccessHandler;
+    private AppConfig appConfig;
 
-    private MemberRepository memberRepository;
+    private UserPasswordAuthenticationProvider userPasswordAuthenticationProvider;
+
+    private GuestAuthenticationProvider guestAuthenticationProvider;
 
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
@@ -42,11 +50,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return userPasswordAuthenticationProcessingFilter;
     }
 
-    JWTAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager,
-                                                    MemberRepository memberRepository) {
-        JWTAuthenticationFilter jwtAuthenticationFilter =
-                new JWTAuthenticationFilter(authenticationManager, memberRepository);
-        return jwtAuthenticationFilter;
+    GuestAuthenticationProcessingFilter guestAuthenticationProcessingFilter(
+            AuthenticationManager authenticationManager) {
+        GuestAuthenticationProcessingFilter guestAuthenticationProcessingFilter = new
+                GuestAuthenticationProcessingFilter();
+        guestAuthenticationProcessingFilter.setAuthenticationManager(authenticationManager);
+        guestAuthenticationProcessingFilter.setAuthenticationFailureHandler(loginFailureHandler);
+        guestAuthenticationProcessingFilter.setAuthenticationSuccessHandler(loginSuccessHandler);
+        return guestAuthenticationProcessingFilter;
     }
 
     @Bean
@@ -72,12 +83,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .formLogin()
                 .loginProcessingUrl("/login")
                 .and()
-            .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessHandler(customLogoutSuccessHandler)
-                .and()
             .authorizeRequests()
-                .antMatchers( "/login", "/logout", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
+                .antMatchers( "/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()
@@ -85,9 +92,29 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .accessDeniedHandler(((httpServletRequest, httpServletResponse, e) ->
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
-        http.addFilter(jwtAuthenticationFilter(authenticationManager(), memberRepository))
-                .addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
-                        UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
+                UsernamePasswordAuthenticationFilter.class);
+        if (!appConfig.isGuestDisabled()) {
+            http.addFilterBefore(guestAuthenticationProcessingFilter(authenticationManager()),
+                    UserPasswordAuthenticationProcessingFilter.class);
+        }
+        http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(authenticationConverter());
+    }
+
+    @Override
+    protected AuthenticationManager authenticationManager() throws Exception {
+        ProviderManager authenticationManager = new ProviderManager(Arrays.asList(userPasswordAuthenticationProvider,
+                guestAuthenticationProvider));
+        return authenticationManager;
+    }
+
+    protected JwtAuthenticationConverter authenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        authoritiesConverter.setAuthorityPrefix("");
+        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        return converter;
     }
 
 }

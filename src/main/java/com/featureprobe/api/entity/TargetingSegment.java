@@ -1,6 +1,6 @@
 package com.featureprobe.api.entity;
 
-
+import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,12 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
-
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.Table;
 
 @EqualsAndHashCode(callSuper = true)
@@ -22,9 +25,11 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "targeting_segment")
 @DynamicInsert
+@EntityListeners(TenantEntityListener.class)
 @ToString(callSuper = true)
-public class TargetingSegment extends AbstractAuditEntity {
-
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
+@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+public class TargetingSegment extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "targeting_id")
     private Long targetingId;
@@ -34,5 +39,14 @@ public class TargetingSegment extends AbstractAuditEntity {
 
     @Column(name = "project_key")
     private String projectKey;
+
+    @Column(name = "organize_id")
+    private Long organizeId;
+
+    public TargetingSegment(Long targetingId, String segmentKey, String projectKey) {
+        this.targetingId = targetingId;
+        this.segmentKey = segmentKey;
+        this.projectKey = projectKey;
+    }
 
 }

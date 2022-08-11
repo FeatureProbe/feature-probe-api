@@ -22,7 +22,6 @@ public class AttributeService {
 
     @Transactional(rollbackFor = Exception.class)
     public AttributeResponse create(String projectKey, AttributeRequest attributeRequest) {
-
         Attribute attribute = new Attribute();
         attribute.setProjectKey(projectKey);
         attribute.setKey(attributeRequest.getKey());

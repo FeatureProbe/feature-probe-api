@@ -1,9 +1,9 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.enums.ValidateTypeEnum;
-import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
+import com.featureprobe.api.base.exception.ResourceOverflowException;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
 import com.featureprobe.api.dto.EnvironmentResponse;
 import com.featureprobe.api.dto.EnvironmentUpdateRequest;
@@ -19,11 +19,15 @@ import com.featureprobe.api.repository.ProjectRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.util.SdkKeyGenerateUtil;
+import com.featureprobe.sdk.server.FPUser;
+import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,19 +43,21 @@ public class EnvironmentService {
 
     private TargetingRepository targetingRepository;
 
-    public SdkKeyResponse queryAllSdkKeys() {
-        SdkKeyResponse sdkKeyResponse = new SdkKeyResponse();
-        List<Environment> environments = environmentRepository.findAll();
-        environments.stream().forEach(environment -> sdkKeyResponse.put(environment.getClientSdkKey(),
-                environment.getServerSdkKey()));
-        return sdkKeyResponse;
-    }
+    private EnvironmentIncludeDeletedService environmentIncludeDeletedService;
+
+    private FeatureProbe featureProbe;
+
+    @PersistenceContext
+    public EntityManager entityManager;
+
+    private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_env_limiter";
 
     @Transactional(rollbackFor = Exception.class)
     public EnvironmentResponse create(String projectKey, EnvironmentCreateRequest createRequest) {
+        validateLimit(projectKey);
         Project project = projectRepository.findByKey(projectKey).get();
-        validateKey(projectKey, createRequest.getKey());
-        validateName(projectKey, createRequest.getName());
+        environmentIncludeDeletedService.validateKeyIncludeDeleted(projectKey, createRequest.getKey());
+        environmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, createRequest.getName());
         Environment environment = EnvironmentMapper.INSTANCE.requestToEntity(createRequest);
         environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
         environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
@@ -65,7 +71,7 @@ public class EnvironmentService {
                                       EnvironmentUpdateRequest updateRequest) {
         Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
         if (!StringUtils.equals(environment.getName(), updateRequest.getName())) {
-            validateName(projectKey, updateRequest.getName());
+            environmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, updateRequest.getName());
         }
         EnvironmentMapper.INSTANCE.mapEntity(updateRequest, environment);
         if (updateRequest.isResetServerSdk()) {
@@ -83,35 +89,13 @@ public class EnvironmentService {
         return EnvironmentMapper.INSTANCE.entityToResponse(environment);
     }
 
-    public String getSdkServerKey(String serverKeyOrClientKey) {
-        return environmentRepository.findByServerSdkKeyOrClientSdkKey(serverKeyOrClientKey, serverKeyOrClientKey)
-                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, serverKeyOrClientKey))
-                .getServerSdkKey();
-    }
-
-    public void validateExists(String projectKey, ValidateTypeEnum type, String value) {
-        switch (type) {
-            case KEY:
-                validateKey(projectKey, value);
-                break;
-            case NAME:
-                validateName(projectKey, value);
-                break;
-            default:
-                break;
-        }
-
-    }
-
-    private void validateKey(String projectKey, String key) {
-        if (environmentRepository.countByKeyIncludeDeleted(projectKey, key) > 0) {
-            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
-        }
-    }
-
-    private void validateName(String projectKey, String name) {
-        if (environmentRepository.countByNameIncludeDeleted(projectKey, name) > 0) {
-            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+    private void validateLimit(String projectKey) {
+        long total = environmentRepository.countByProjectKey(projectKey);
+        FPUser user = new FPUser(String.valueOf(TokenHelper.getUserId()));
+        user.with("account", TokenHelper.getAccount());
+        double limitNum = featureProbe.numberValue(LIMITER_TOGGLE_KEY, user , -1);
+        if (limitNum > 0 && total >= limitNum) {
+            throw new ResourceOverflowException(ResourceType.ENVIRONMENT);
         }
     }
 
