@@ -52,7 +52,7 @@ public class GuestService {
         "INSERT INTO `targeting` (`organize_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, " +
                 "`modified_time`) VALUES (${organize_id}, 'feature_toggle01', 'online', '${project_key}', " +
-                "3, 1, '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
+                "1, 1, '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
                 "{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
                 "\\\"不可见\\\",\\\"description\\\":\\\"运营活动对用户不可见\\\"},{\\\"value\\\":\\\"true\\\"," +
                 "\\\"name\\\":\\\"可见\\\",\\\"description\\\":\\\"运营活动对用户可见\\\"}]}', 0, " +
@@ -86,7 +86,7 @@ public class GuestService {
 
         "INSERT INTO `targeting` (`organize_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organize_id}, 'feature_toggle02', 'online', '${project_key}', 3, 0, " +
+                "VALUES (${organize_id}, 'feature_toggle02', 'online', '${project_key}', 1, 0, " +
                 "'{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
@@ -128,7 +128,7 @@ public class GuestService {
 
         "INSERT INTO `targeting` (`organize_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organize_id}, 'feature_toggle03', 'online', '${project_key}', 11, 0, '{\\\"rules\\\":[]," +
+                "VALUES (${organize_id}, 'feature_toggle03', 'online', '${project_key}', 1, 0, '{\\\"rules\\\":[]," +
                 "\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":{\\\"split\\\":[6000,4000]}," +
                 "\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"不可见\\\",\\\"description\\\"" +
                 ":\\\"运营活动对用户不可见\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"可见\\\",\\\"" +
@@ -161,7 +161,7 @@ public class GuestService {
 
         "INSERT INTO `targeting` (`organize_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organize_id}, 'feature_toggle04', 'online', '${project_key}', 4, 0, " +
+                "VALUES (${organize_id}, 'feature_toggle04', 'online', '${project_key}', 1, 0, " +
                 "'{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
