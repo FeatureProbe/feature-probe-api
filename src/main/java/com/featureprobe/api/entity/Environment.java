@@ -4,7 +4,6 @@ import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +12,8 @@ import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.JoinColumnOrFormula;
+import org.hibernate.annotations.JoinColumnsOrFormulas;
 import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -57,6 +58,10 @@ public class Environment extends AbstractAuditEntity implements TenantSupport {
     private Long organizeId;
 
     @ManyToOne
-    @JoinColumn(name = "project_key", referencedColumnName = "key")
+    @JoinColumnsOrFormulas(value = {
+            @JoinColumnOrFormula(column=@JoinColumn(name ="project_key", referencedColumnName ="key",
+                    insertable =false, updatable = false)),
+            @JoinColumnOrFormula(column=@JoinColumn(name ="organize_id", referencedColumnName ="organize_id",
+                    insertable =false, updatable = false))})
     private Project project;
 }
