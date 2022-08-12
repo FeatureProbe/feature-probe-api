@@ -54,14 +54,22 @@ public class Environment extends AbstractAuditEntity implements TenantSupport {
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
 
-    @Column(name = "organize_id")
-    private Long organizeId;
+//    @Column(name = "organize_id")
+//    private Long organizeId;
 
     @ManyToOne
     @JoinColumnsOrFormulas(value = {
-            @JoinColumnOrFormula(column=@JoinColumn(name ="project_key", referencedColumnName ="key",
-                    insertable =false, updatable = false)),
-            @JoinColumnOrFormula(column=@JoinColumn(name ="organize_id", referencedColumnName ="organize_id",
-                    insertable =false, updatable = false))})
+            @JoinColumnOrFormula(column=@JoinColumn(name ="project_key", referencedColumnName ="key")),
+            @JoinColumnOrFormula(column=@JoinColumn(name ="organize_id", referencedColumnName ="organize_id"))})
     private Project project;
+
+    @Override
+    public Long getOrganizeId() {
+        return project.getOrganizeId();
+    }
+
+    @Override
+    public void setOrganizeId(Long organizeId) {
+        project.setOrganizeId(organizeId);
+    }
 }
