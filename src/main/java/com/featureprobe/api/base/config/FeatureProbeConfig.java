@@ -27,7 +27,7 @@ public class FeatureProbeConfig {
                 .eventUrl(new URL(LOCAL_HOST + ":" + serverProperties.getPort() + FEATURE_PROBE_API_EVENT_PATH))
                 .synchronizerUrl(new URL(LOCAL_HOST + ":" + serverProperties.getPort() +
                         FEATURE_PROBE_API_SYNCHRONIZER_PATH))
-                .pollingMode(Duration.ofSeconds(10000))
+                .pollingMode(Duration.ofSeconds(10))
                 .useMemoryRepository()
                 .build();
         return new FeatureProbe(MANAGER_PROJECT_SDK_KEY, config);
