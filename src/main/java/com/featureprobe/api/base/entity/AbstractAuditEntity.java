@@ -3,6 +3,8 @@ package com.featureprobe.api.base.entity;
 import com.featureprobe.api.entity.Member;
 import com.featureprobe.api.entity.TenantSupport;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -21,10 +23,12 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
 
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-@Data
+@Getter
+@Setter
 public abstract class AbstractAuditEntity implements Serializable {
 
     @Id
@@ -50,4 +54,27 @@ public abstract class AbstractAuditEntity implements Serializable {
     @ManyToOne
     @JoinColumn(name = "modified_by", referencedColumnName = "id", nullable = false)
     private Member modifiedBy;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AbstractAuditEntity that = (AbstractAuditEntity) o;
+        return Objects.equals(id, that.id) && Objects.equals(createdTime, that.createdTime)
+                && Objects.equals(modifiedTime, that.modifiedTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, createdTime, modifiedTime);
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractAuditEntity{" +
+                "id=" + id +
+                ", createdTime=" + createdTime +
+                ", modifiedTime=" + modifiedTime +
+                '}';
+    }
 }

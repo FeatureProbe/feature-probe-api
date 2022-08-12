@@ -17,5 +17,6 @@ public interface TargetingRepository extends JpaRepository<Targeting, Long>, Jpa
     List<Targeting> findAllByProjectKeyAndEnvironmentKeyAndDisabled(String projectKey, String environmentKey,
                                                                     boolean disabled);
 
-    List<Targeting> findAllByProjectKeyAndEnvironmentKey(String projectKey, String environmentKey);
+    List<Targeting> findAllByProjectKeyAndEnvironmentKeyAndOrganizeId(String projectKey, String environmentKey,
+                                                                      Long organizeId);
 }

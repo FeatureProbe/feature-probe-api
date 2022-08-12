@@ -70,11 +70,14 @@ public class ServerService {
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
-        List<Segment> segments = segmentRepository.findAllByProjectKey(environment.getProject().getKey());
-        List<Toggle> toggles = toggleRepository.findAllByProjectKey(environment.getProject().getKey());
-        Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKey(
+        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
+                environment.getOrganizeId());
+        List<Toggle> toggles = toggleRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
+                environment.getOrganizeId());
+        Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKeyAndOrganizeId(
                 environment.getProject().getKey(),
-                environment.getKey()).stream().collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
+                environment.getKey(), environment.getOrganizeId()).stream().
+                collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
         return toggles.stream().map(toggle -> {
             Targeting targeting = targetingByKey.get(toggle.getKey());
             try {
@@ -101,7 +104,8 @@ public class ServerService {
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
-        List<Segment> segments = segmentRepository.findAllByProjectKey(environment.getProject().getKey());
+        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
+                environment.getOrganizeId());
         return segments.stream().map(segment -> {
             try {
                 return new ServerSegmentBuilder().builder()

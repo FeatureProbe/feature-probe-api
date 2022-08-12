@@ -11,7 +11,7 @@ public interface SegmentRepository extends JpaRepository<Segment, Long>, JpaSpec
 
     Segment findByProjectKeyAndKey(String projectKey, String key);
 
-    List<Segment> findAllByProjectKey(String projectKey);
+    List<Segment> findAllByProjectKeyAndOrganizeId(String projectKey, Long organizeId);
 
     boolean existsByProjectKeyAndKey(String projectKey, String key);
 

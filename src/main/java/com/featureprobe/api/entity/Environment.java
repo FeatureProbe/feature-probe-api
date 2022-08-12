@@ -15,15 +15,19 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.JoinColumnOrFormula;
 import org.hibernate.annotations.JoinColumnsOrFormulas;
 import org.hibernate.annotations.ParamDef;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import java.io.Serializable;
 
-
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(exclude = "project")
+@ToString(callSuper = true, exclude = "project")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -33,12 +37,11 @@ import javax.persistence.Table;
 @Table(name = "environment")
 @DynamicInsert
 @EntityListeners(TenantEntityListener.class)
-@ToString(callSuper = true)
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
-public class Environment extends AbstractAuditEntity implements TenantSupport {
+public class Environment extends AbstractAuditEntity implements TenantSupport, Serializable {
 
     private String name;
 
@@ -54,13 +57,10 @@ public class Environment extends AbstractAuditEntity implements TenantSupport {
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
 
-//    @Column(name = "organize_id")
-//    private Long organizeId;
-
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumnsOrFormulas(value = {
-            @JoinColumnOrFormula(column=@JoinColumn(name ="project_key", referencedColumnName ="key")),
-            @JoinColumnOrFormula(column=@JoinColumn(name ="organize_id", referencedColumnName ="organize_id"))})
+            @JoinColumnOrFormula(column=@JoinColumn(name ="organize_id", referencedColumnName ="organize_id")),
+            @JoinColumnOrFormula(column=@JoinColumn(name ="project_key", referencedColumnName ="key"))})
     private Project project;
 
     @Override
@@ -72,4 +72,5 @@ public class Environment extends AbstractAuditEntity implements TenantSupport {
     public void setOrganizeId(Long organizeId) {
         project.setOrganizeId(organizeId);
     }
+
 }
