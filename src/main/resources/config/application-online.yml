@@ -46,5 +46,5 @@ app:
         - /api/server/toggles
         - /api/server/sdk_keys
         - /api/server/events
-      guest-disabled: false
+      guest-disabled: true
       guest-default-password: Guest_12345
