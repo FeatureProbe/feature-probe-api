@@ -18,8 +18,10 @@ import com.featureprobe.api.repository.MetricsCacheRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.VariationHistoryRepository
+import org.hibernate.internal.SessionImpl
 import spock.lang.Specification
 
+import javax.persistence.EntityManager
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -32,6 +34,7 @@ class MetricServiceSpec extends Specification {
     TargetingVersionRepository targetingVersionRepository
     TargetingRepository targetingRepository
     MetricsCacheRepository metricsCacheRepository
+    EntityManager entityManager
 
     def setup() {
         environmentRepository = Mock(EnvironmentRepository)
@@ -40,8 +43,9 @@ class MetricServiceSpec extends Specification {
         targetingVersionRepository = Mock(TargetingVersionRepository)
         targetingRepository = Mock(TargetingRepository)
         metricsCacheRepository = Mock(MetricsCacheRepository)
+        entityManager = Mock(SessionImpl)
         metricService = new MetricService(environmentRepository, eventRepository, variationHistoryRepository,
-                targetingVersionRepository, targetingRepository, metricsCacheRepository)
+                targetingVersionRepository, targetingRepository, metricsCacheRepository, entityManager)
     }
 
     def "test find the last 3 hours of data by metric type"() {

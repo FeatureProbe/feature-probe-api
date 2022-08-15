@@ -60,11 +60,11 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, '${project_key}', " +
-                "'feature_toggle01', 'online', 2, 'true', 1, '可见')",
+                "'feature_toggle01', 'online', 1, 'true', 1, '可见')",
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, '${project_key}', " +
-                "'feature_toggle01', 'online', 2, 'false', 0, '不可见')",
+                "'feature_toggle01', 'online', 1, 'false', 0, '不可见')",
 
         "INSERT INTO `targeting_version` (`organize_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
@@ -99,11 +99,11 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, '${project_key}', " +
-                "'feature_toggle02', 'online', 2, 'true', 1, '可见')",
+                "'feature_toggle02', 'online', 1, 'true', 1, '可见')",
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, '${project_key}', " +
-                "'feature_toggle02', 'online', 2, 'false', 0, '不可见')",
+                "'feature_toggle02', 'online', 1, 'false', 0, '不可见')",
 
         "INSERT INTO `targeting_version` (`organize_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
@@ -136,11 +136,11 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, '${project_key}', " +
-                "'feature_toggle03', 'online', 2, 'true', 1, '可见')",
+                "'feature_toggle03', 'online', 1, 'true', 1, '可见')",
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, '${project_key}', " +
-                "'feature_toggle03', 'online', 2, 'false', 0, '不可见')",
+                "'feature_toggle03', 'online', 1, 'false', 0, '不可见')",
 
         "INSERT INTO `targeting_version` (`organize_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
@@ -179,11 +179,11 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, '${project_key}', " +
-                "'feature_toggle04', 'online', 3, '20', 1, '$20')",
+                "'feature_toggle04', 'online', 1, '20', 1, '$20')",
 
         "INSERT INTO `variation_history` (`organize_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organize_id}, " +
-                "'${project_key}', 'feature_toggle04', 'online', 3, '10', 0, '$10')",
+                "'${project_key}', 'feature_toggle04', 'online', 1, '10', 0, '$10')",
 
         "INSERT INTO `targeting_version` (`organize_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +

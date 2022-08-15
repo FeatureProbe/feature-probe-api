@@ -25,8 +25,8 @@ public class TenantContext {
     }
 
     public static void clear() {
-        currentTenant.set(null);
-        currentOrganize.set(null);
+        currentTenant.remove();
+        currentOrganize.remove();
     }
 
 }

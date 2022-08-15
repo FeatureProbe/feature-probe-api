@@ -29,6 +29,9 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -61,6 +64,9 @@ public class MetricService {
     private TargetingVersionRepository targetingVersionRepository;
     private TargetingRepository targetingRepository;
     private MetricsCacheRepository metricsCacheRepository;
+
+    @PersistenceContext
+    public EntityManager entityManager;
 
     private static final int MAX_QUERY_HOURS = 12 * 24;
     private static final int MAX_QUERY_POINT_COUNT = 12;
