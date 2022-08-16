@@ -41,6 +41,8 @@ import java.util.Set;
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
+@FilterDef(name = "archivedFilter", parameters = {@ParamDef(name = "archived", type = "boolean")})
+@Filter(name = "archivedFilter", condition = "archived = :archived")
 public class Toggle extends AbstractAuditEntity implements TenantSupport {
 
     private String name;
@@ -64,13 +66,13 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     private String projectKey;
 
     @Column(name = "client_availability", columnDefinition = "TINYINT")
-    private Boolean clientAvailability;
+    private boolean clientAvailability;
 
     @Column(columnDefinition = "TINYINT")
-    private Boolean archived;
+    private boolean archived;
 
     @Column(columnDefinition = "TINYINT")
-    private Boolean deleted;
+    private boolean deleted;
 
     @Column(name = "organize_id")
     private Long organizeId;

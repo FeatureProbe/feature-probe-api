@@ -41,6 +41,8 @@ import java.io.Serializable;
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
+@FilterDef(name = "archivedFilter", parameters = {@ParamDef(name = "archived", type = "boolean")})
+@Filter(name = "archivedFilter", condition = "archived = :archived")
 public class Environment extends AbstractAuditEntity implements TenantSupport, Serializable {
 
     private String name;
@@ -56,6 +58,9 @@ public class Environment extends AbstractAuditEntity implements TenantSupport, S
 
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
+
+    @Column(columnDefinition = "TINYINT")
+    private boolean archived;
 
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumnsOrFormulas(value = {

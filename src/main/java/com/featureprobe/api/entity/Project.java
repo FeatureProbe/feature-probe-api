@@ -37,6 +37,8 @@ import java.util.List;
 @Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
+@FilterDef(name = "archivedFilter", parameters = {@ParamDef(name = "archived", type = "boolean")})
+@Filter(name = "archivedFilter", condition = "archived = :archived")
 public class Project extends AbstractAuditEntity implements TenantSupport, Serializable {
 
     @Column(name = "[key]")
@@ -48,6 +50,9 @@ public class Project extends AbstractAuditEntity implements TenantSupport, Seria
 
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
+
+    @Column(columnDefinition = "TINYINT")
+    private boolean archived;
 
     @Column(name = "organize_id")
     private Long organizeId;
