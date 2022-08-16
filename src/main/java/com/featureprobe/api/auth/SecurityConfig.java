@@ -96,7 +96,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
-                .antMatchers("/projects/**").hasAnyAuthority(OrganizeRoleEnum.OWNER.name(), OrganizeRoleEnum.WRITER.name())
+                .antMatchers("/projects/**").hasAnyAuthority(OrganizeRoleEnum.OWNER.name(),
+                        OrganizeRoleEnum.WRITER.name())
                 .anyRequest().authenticated()
                 .and()
                 .exceptionHandling()
