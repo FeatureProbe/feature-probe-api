@@ -1,8 +1,12 @@
 package com.featureprobe.api.auth;
 
 import com.featureprobe.api.base.config.AppConfig;
+import com.featureprobe.api.base.enums.OrganizeRoleEnum;
 import com.featureprobe.api.dto.BaseResponse;
+import com.featureprobe.api.entity.Member;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.model.MemberModel;
+import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -11,14 +15,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -26,9 +34,9 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    public static final String AUTHORITIES_CLAIM_NAME = "roles";
 
     private LoginFailureHandler loginFailureHandler;
 
@@ -39,6 +47,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private UserPasswordAuthenticationProvider userPasswordAuthenticationProvider;
 
     private GuestAuthenticationProvider guestAuthenticationProvider;
+
+    private MemberRepository memberRepository;
 
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
@@ -80,15 +90,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.headers().frameOptions().disable();
         http.csrf().disable();
         http
-            .formLogin()
+                .formLogin()
                 .loginProcessingUrl("/login")
                 .and()
-            .authorizeRequests()
-                .antMatchers( "/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
+                .authorizeRequests()
+                .antMatchers("/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
+                .antMatchers("/projects/**").hasAnyAuthority(OrganizeRoleEnum.OWNER.name(),
+                        OrganizeRoleEnum.WRITER.name())
                 .anyRequest().authenticated()
                 .and()
-            .exceptionHandling()
+                .exceptionHandling()
                 .accessDeniedHandler(((httpServletRequest, httpServletResponse, e) ->
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
@@ -102,7 +114,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Override
-    protected AuthenticationManager authenticationManager() throws Exception {
+    protected AuthenticationManager authenticationManager() {
         ProviderManager authenticationManager = new ProviderManager(Arrays.asList(userPasswordAuthenticationProvider,
                 guestAuthenticationProvider));
         return authenticationManager;
@@ -111,10 +123,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected JwtAuthenticationConverter authenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
         authoritiesConverter.setAuthorityPrefix("");
-        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+        authoritiesConverter.setAuthoritiesClaimName(JwtHelper.AUTHORITIES_CLAIM_NAME);
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
         return converter;
     }
-
 }

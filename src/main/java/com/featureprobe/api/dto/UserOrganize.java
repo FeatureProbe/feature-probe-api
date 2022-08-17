@@ -13,4 +13,7 @@ public class UserOrganize {
 
     private OrganizeRoleEnum role;
 
+    public String getRoleName() {
+        return role.name();
+    }
 }

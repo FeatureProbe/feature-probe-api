@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,24 +38,28 @@ public class MemberController {
 
     @GetMapping("/current")
     @Operation(summary = "Current login member", description = "")
+    @PreAuthorize("hasAnyAuthority('OWNER', 'WRITER')")
     public MemberResponse currentLoginMember() {
         return new MemberResponse(TokenHelper.getAccount(), TokenHelper.getRole());
     }
 
     @PostMapping
     @Operation(summary = "Create member", description = "Create a new member")
+    @PreAuthorize("hasAuthority('OWNER')")
     public List<MemberResponse> create(@Validated @RequestBody MemberCreateRequest createRequest) {
         return memberService.create(createRequest);
     }
 
     @GetMapping
     @Operation(summary = "List Member", description = "Get a list of all member")
+    @PreAuthorize("hasAnyAuthority('OWNER', 'WRITER')")
     public Page<MemberResponse> list(MemberSearchRequest searchRequest) {
         return memberService.query(searchRequest);
     }
 
     @PatchMapping
     @Operation(summary = "Update member", description = "Update a member")
+    @PreAuthorize("hasAuthority('OWNER')")
     public MemberResponse update(@Validated @RequestBody MemberUpdateRequest updateRequest) {
         return memberService.update(updateRequest);
     }
@@ -67,6 +72,7 @@ public class MemberController {
 
     @DeleteMapping
     @Operation(summary = "Delete member", description = "Logical delete a member")
+    @PreAuthorize("hasAuthority('OWNER')")
     public MemberResponse delete(@Validated @RequestBody MemberDeleteRequest deleteRequest) {
         return memberService.delete(deleteRequest.getAccount());
     }
