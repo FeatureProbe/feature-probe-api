@@ -1,32 +1,32 @@
 package com.featureprobe.api.auth.tenant;
 
-import com.featureprobe.api.dto.UserOrganize;
+import com.featureprobe.api.dto.OrganizationMember;
 
 public class TenantContext {
 
     private static ThreadLocal<String> currentTenant = new ThreadLocal<>();
 
-    private static ThreadLocal<UserOrganize> currentOrganize = new ThreadLocal<>();
+    private static ThreadLocal<OrganizationMember> currentOrganization = new ThreadLocal<>();
 
     public static String getCurrentTenant() {
         return currentTenant.get();
     }
 
-    public static UserOrganize getCurrentOrganize() {
-        return currentOrganize.get();
+    public static OrganizationMember getCurrentOrganization() {
+        return currentOrganization.get();
     }
 
     public static void setCurrentTenant(String tenant) {
         currentTenant.set(tenant);
     }
 
-    public static void setCurrentOrganize(UserOrganize userOrganize) {
-        currentOrganize.set(userOrganize);
+    public static void setCurrentOrganization(OrganizationMember organizationMember) {
+        currentOrganization.set(organizationMember);
     }
 
     public static void clear() {
         currentTenant.remove();
-        currentOrganize.remove();
+        currentOrganization.remove();
     }
 
 }

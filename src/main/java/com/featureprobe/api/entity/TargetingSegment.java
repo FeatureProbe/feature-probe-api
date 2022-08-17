@@ -27,8 +27,8 @@ import javax.persistence.Table;
 @DynamicInsert
 @EntityListeners(TenantEntityListener.class)
 @ToString(callSuper = true)
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
-@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
+@Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 public class TargetingSegment extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "targeting_id")
@@ -40,8 +40,8 @@ public class TargetingSegment extends AbstractAuditEntity implements TenantSuppo
     @Column(name = "project_key")
     private String projectKey;
 
-    @Column(name = "organize_id")
-    private Long organizeId;
+    @Column(name = "organization_id")
+    private Long organizationId;
 
     public TargetingSegment(Long targetingId, String segmentKey, String projectKey) {
         this.targetingId = targetingId;

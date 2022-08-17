@@ -1,7 +1,7 @@
 package com.featureprobe.api.service
 
 import com.featureprobe.api.auth.tenant.TenantContext
-import com.featureprobe.api.base.enums.OrganizeRoleEnum
+import com.featureprobe.api.base.enums.OrganizationRoleEnum
 import com.featureprobe.api.base.enums.RoleEnum
 import com.featureprobe.api.base.exception.ForbiddenException
 import com.featureprobe.api.base.exception.ResourceConflictException
@@ -10,13 +10,12 @@ import com.featureprobe.api.dto.MemberCreateRequest
 import com.featureprobe.api.dto.MemberModifyPasswordRequest
 import com.featureprobe.api.dto.MemberSearchRequest
 import com.featureprobe.api.dto.MemberUpdateRequest
-import com.featureprobe.api.dto.UserOrganize
 import com.featureprobe.api.entity.Member
-import com.featureprobe.api.entity.Organize
-import com.featureprobe.api.entity.OrganizeUser
+import com.featureprobe.api.entity.Organization
+import com.featureprobe.api.entity.OrganizationMember
 import com.featureprobe.api.repository.MemberRepository
-import com.featureprobe.api.repository.OrganizeRepository
-import com.featureprobe.api.repository.OrganizeUserRepository
+import com.featureprobe.api.repository.OrganizationRepository
+import com.featureprobe.api.repository.OrganizationMemberRepository
 import org.hibernate.internal.SessionImpl
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -32,21 +31,21 @@ class MemberServiceSpec extends Specification {
 
     MemberRepository memberRepository
     MemberIncludeDeletedService memberIncludeDeletedService
-    OrganizeRepository organizeRepository
-    OrganizeUserRepository organizeUserRepository
+    OrganizationRepository organizationRepository
+    OrganizationMemberRepository organizationMemberRepository
     MemberService memberService
     EntityManager entityManager
 
 
     def setup() {
         memberRepository = Mock(MemberRepository)
-        organizeRepository = Mock(OrganizeRepository)
-        organizeUserRepository = Mock(OrganizeUserRepository)
+        organizationRepository = Mock(OrganizationRepository)
+        organizationMemberRepository = Mock(OrganizationMemberRepository)
         entityManager = Mock(SessionImpl)
         memberIncludeDeletedService = new MemberIncludeDeletedService(memberRepository,  entityManager)
-        memberService = new MemberService(memberRepository, memberIncludeDeletedService, organizeRepository,
-                organizeUserRepository, entityManager)
-        TenantContext.setCurrentOrganize(new UserOrganize(1, "organize", OrganizeRoleEnum.OWNER))
+        memberService = new MemberService(memberRepository, memberIncludeDeletedService, organizationRepository,
+                organizationMemberRepository, entityManager)
+        TenantContext.setCurrentOrganization(new com.featureprobe.api.dto.OrganizationMember(1, "organization", OrganizationRoleEnum.OWNER))
     }
 
     def "create a member success"() {
@@ -56,7 +55,7 @@ class MemberServiceSpec extends Specification {
 
         then:
         1 * memberRepository.existsByAccount("root") >> false
-        1 * organizeRepository.findById(_) >> Optional.of(new Organize(id: 1, name: "organize name"))
+        1 * organizationRepository.findById(_) >> Optional.of(new Organization(id: 1, name: "organization name"))
         1 * memberRepository.saveAll(_) >> [new Member(account: "root", password: "password", role: RoleEnum.MEMBER)]
         with(savedMember) {
             1 == savedMember.size()
@@ -168,7 +167,7 @@ class MemberServiceSpec extends Specification {
                 pageIndex: 0, pageSize: 10))
 
         then:
-        1 * organizeUserRepository.findAll(_, _) >> new PageImpl<>([new OrganizeUser(userId: 1)],
+        1 * organizationMemberRepository.findAll(_, _) >> new PageImpl<>([new OrganizationMember(memberId: 1)],
                 PageRequest.of(1, 10), 1)
         1 * memberRepository.findAllById([1]) >> [new Member()]
         with(list) {

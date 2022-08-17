@@ -34,7 +34,8 @@ public class TenantServiceAspect {
                 Session session = entityManager.unwrap(Session.class);
                 ExcludeTenant excludeTenantAnnotation = clazz.getAnnotation(ExcludeTenant.class);
                 if (Objects.isNull(excludeTenantAnnotation)) {
-                    session.enableFilter("tenantFilter").setParameter("organizeId", TenantContext.getCurrentTenant())
+                    session.enableFilter("tenantFilter").setParameter("organizationId",
+                                    Long.parseLong(TenantContext.getCurrentTenant()))
                             .validate();
                 }
                 IncludeDeleted includeDeletedAnnotation = getMethodAnnotation(pjp, IncludeDeleted.class);

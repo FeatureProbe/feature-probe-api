@@ -1,7 +1,5 @@
 package com.featureprobe.api.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import com.featureprobe.api.base.enums.RoleEnum;
 import lombok.AllArgsConstructor;
@@ -56,10 +54,10 @@ public class Member extends AbstractAuditEntity implements AuthenticatedPrincipa
     private Boolean deleted;
 
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
-    @JoinTable(name = "organize_user", joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "organize_id"))
+    @JoinTable(name = "organization_member", joinColumns = @JoinColumn(name = "member_id"),
+            inverseJoinColumns = @JoinColumn(name = "organization_id"))
     @Fetch(FetchMode.JOIN)
-    private List<Organize> organizes = new ArrayList<>();
+    private List<Organization> organizations = new ArrayList<>();
 
     @Override
     public String getName() {

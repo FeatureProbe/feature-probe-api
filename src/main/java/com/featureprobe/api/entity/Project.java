@@ -33,8 +33,8 @@ import java.util.List;
 @DynamicInsert
 @EntityListeners(TenantEntityListener.class)
 @ToString(callSuper = true, exclude = "environments")
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
-@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
+@Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
 public class Project extends AbstractAuditEntity implements TenantSupport, Serializable {
@@ -49,8 +49,8 @@ public class Project extends AbstractAuditEntity implements TenantSupport, Seria
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
 
-    @Column(name = "organize_id")
-    private Long organizeId;
+    @Column(name = "organization_id")
+    private Long organizationId;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.PERSIST)
     private List<Environment> environments;

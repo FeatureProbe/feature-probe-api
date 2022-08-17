@@ -29,8 +29,8 @@ import java.io.Serializable;
 @DynamicInsert
 @ToString(callSuper = true)
 @EntityListeners({AuditingEntityListener.class, TenantEntityListener.class})
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
-@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
+@Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 public class VariationHistory implements Serializable, TenantSupport {
 
     @Id
@@ -57,7 +57,6 @@ public class VariationHistory implements Serializable, TenantSupport {
 
     private String name;
 
-    @Column(name = "organize_id")
-    private Long organizeId;
-
+    @Column(name = "organization_id")
+    private Long organizationId;
 }

@@ -27,10 +27,8 @@ import javax.persistence.Table;
 @DynamicInsert
 @ToString(callSuper = true)
 @EntityListeners(TenantEntityListener.class)
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
-@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
-@FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
-@Filter(name = "deletedFilter", condition = "deleted = :deleted")
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
+@Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 public class TargetingVersion extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "project_key")
@@ -50,8 +48,8 @@ public class TargetingVersion extends AbstractAuditEntity implements TenantSuppo
     @Column(columnDefinition = "TINYINT")
     private Boolean disabled;
 
-    @Column(name = "organize_id")
-    private Long organizeId;
+    @Column(name = "organization_id")
+    private Long organizationId;
 
     private Long version;
 

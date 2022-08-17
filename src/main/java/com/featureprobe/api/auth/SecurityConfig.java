@@ -1,11 +1,9 @@
 package com.featureprobe.api.auth;
 
 import com.featureprobe.api.base.config.AppConfig;
-import com.featureprobe.api.base.enums.OrganizeRoleEnum;
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import com.featureprobe.api.dto.BaseResponse;
-import com.featureprobe.api.entity.Member;
 import com.featureprobe.api.mapper.JsonMapper;
-import com.featureprobe.api.model.MemberModel;
 import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +20,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -47,8 +42,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private UserPasswordAuthenticationProvider userPasswordAuthenticationProvider;
 
     private GuestAuthenticationProvider guestAuthenticationProvider;
-
-    private MemberRepository memberRepository;
 
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
@@ -96,8 +89,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
-                .antMatchers("/projects/**").hasAnyAuthority(OrganizeRoleEnum.OWNER.name(),
-                        OrganizeRoleEnum.WRITER.name())
+                .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
+                        OrganizationRoleEnum.WRITER.name())
                 .anyRequest().authenticated()
                 .and()
                 .exceptionHandling()

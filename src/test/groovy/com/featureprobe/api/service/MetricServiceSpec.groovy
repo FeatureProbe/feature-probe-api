@@ -1,13 +1,13 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.auth.tenant.TenantContext
 import com.featureprobe.api.base.constants.MetricType
+import com.featureprobe.api.base.enums.OrganizationRoleEnum
 import com.featureprobe.api.dto.MetricResponse
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Event
-import com.featureprobe.api.entity.MetricsCache
 import com.featureprobe.api.entity.Targeting
 import com.featureprobe.api.entity.VariationHistory
-import com.featureprobe.api.entity.TargetingVersion
 import com.featureprobe.api.model.AccessEventPoint
 import com.featureprobe.api.model.TargetingContent
 import com.featureprobe.api.model.Variation
@@ -19,6 +19,10 @@ import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.VariationHistoryRepository
 import org.hibernate.internal.SessionImpl
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import spock.lang.Specification
 
 import javax.persistence.EntityManager
@@ -46,6 +50,9 @@ class MetricServiceSpec extends Specification {
         entityManager = Mock(SessionImpl)
         metricService = new MetricService(environmentRepository, eventRepository, variationHistoryRepository,
                 targetingVersionRepository, targetingRepository, metricsCacheRepository, entityManager)
+        TenantContext.setCurrentTenant("1")
+        TenantContext.setCurrentOrganization(new com.featureprobe.api.dto.OrganizationMember(1,
+                "organization", OrganizationRoleEnum.OWNER))
     }
 
     def "test find the last 3 hours of data by metric type"() {
@@ -209,5 +216,11 @@ class MetricServiceSpec extends Specification {
         with(events.find { it.value == 'false' }) {
             4 == it.count
         }
+    }
+
+    private setAuthContext(String account, String role) {
+        SecurityContextHolder.setContext(new SecurityContextImpl(
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
     }
 }

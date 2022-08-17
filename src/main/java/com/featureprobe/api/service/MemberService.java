@@ -12,12 +12,12 @@ import com.featureprobe.api.dto.MemberResponse;
 import com.featureprobe.api.dto.MemberSearchRequest;
 import com.featureprobe.api.dto.MemberUpdateRequest;
 import com.featureprobe.api.entity.Member;
-import com.featureprobe.api.entity.Organize;
-import com.featureprobe.api.entity.OrganizeUser;
+import com.featureprobe.api.entity.Organization;
+import com.featureprobe.api.entity.OrganizationMember;
 import com.featureprobe.api.mapper.MemberMapper;
 import com.featureprobe.api.repository.MemberRepository;
-import com.featureprobe.api.repository.OrganizeRepository;
-import com.featureprobe.api.repository.OrganizeUserRepository;
+import com.featureprobe.api.repository.OrganizationRepository;
+import com.featureprobe.api.repository.OrganizationMemberRepository;
 import com.featureprobe.api.service.aspect.ExcludeTenant;
 import com.featureprobe.api.util.PageRequestUtil;
 import lombok.AllArgsConstructor;
@@ -52,9 +52,9 @@ public class MemberService {
 
     private MemberIncludeDeletedService memberIncludeDeletedService;
 
-    private OrganizeRepository organizeRepository;
+    private OrganizationRepository organizationRepository;
 
-    private OrganizeUserRepository organizeUserRepository;
+    private OrganizationMemberRepository organizationMemberRepository;
 
     @PersistenceContext
     public EntityManager entityManager;
@@ -110,8 +110,9 @@ public class MemberService {
         Member member = new Member();
         member.setAccount(account);
         member.setPassword(new BCryptPasswordEncoder().encode(password));
-        Organize organize = organizeRepository.findById(TenantContext.getCurrentOrganize().getOrganizeId()).get();
-        member.setOrganizes(Arrays.asList(organize));
+        Organization organization = organizationRepository.findById(TenantContext.getCurrentOrganization()
+                .getOrganizationId()).get();
+        member.setOrganizations(Arrays.asList(organization));
         return member;
     }
 
@@ -133,17 +134,19 @@ public class MemberService {
 
     public Page<MemberResponse> query(MemberSearchRequest searchRequest) {
         Pageable pageable = PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "createdTime");
-        Specification<OrganizeUser> spec = (root, query, cb) -> {
-            Predicate p1 = cb.equal(root.get("organizeId"), TenantContext.getCurrentOrganize().getOrganizeId());
+        Specification<OrganizationMember> spec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("organizationId"), TenantContext.getCurrentOrganization()
+                    .getOrganizationId());
             return query.where(cb.and(p1)).groupBy(root.get("userId"))
                     .getRestriction();
         };
-        Page<OrganizeUser> organizeUsers = organizeUserRepository.findAll(spec, pageable);
-        List<Long> memberIds = organizeUsers.getContent().stream().map(OrganizeUser::getUserId)
+        Page<OrganizationMember> organizationMembers = organizationMemberRepository.findAll(spec, pageable);
+        List<Long> memberIds = organizationMembers.getContent().stream().map(OrganizationMember::getMemberId)
                 .collect(Collectors.toList());
         Map<Long, Member> memberMap = memberRepository.findAllById(memberIds).stream()
                 .collect(Collectors.toMap(Member::getId, Function.identity()));
-        return organizeUsers.map(item -> MemberMapper.INSTANCE.entityToResponse(memberMap.get(item.getUserId())));
+        return organizationMembers.map(item ->
+                MemberMapper.INSTANCE.entityToResponse(memberMap.get(item.getMemberId())));
     }
 
     public MemberResponse queryByAccount(String account) {

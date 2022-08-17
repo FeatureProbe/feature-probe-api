@@ -77,15 +77,15 @@ class ServerServiceSpec extends Specification {
 
         then:
         1 * environmentRepository.findByServerSdkKeyOrClientSdkKey(_, _) >>
-                Optional.of(new Environment(project: new Project(key: projectKey, organizeId: 1), key: environmentKey, serverSdkKey: sdkKey))
+                Optional.of(new Environment(project: new Project(key: projectKey, organizationId: 1), key: environmentKey, serverSdkKey: sdkKey))
         2 * environmentRepository.findByServerSdkKey(sdkKey) >>
-                Optional.of(new Environment(project: new Project(key: projectKey, organizeId: 1), key: environmentKey))
-        2 * segmentRepository.findAllByProjectKeyAndOrganizeId(projectKey, 1) >>
+                Optional.of(new Environment(project: new Project(key: projectKey, organizationId: 1), key: environmentKey))
+        2 * segmentRepository.findAllByProjectKeyAndOrganizationId(projectKey, 1) >>
                 [new Segment(projectKey: projectKey, key: "test_segment",
                         uniqueKey: projectKey + "\$test_segment", rules: segmentRules)]
-        1 * toggleRepository.findAllByProjectKeyAndOrganizeId(projectKey, 1) >>
+        1 * toggleRepository.findAllByProjectKeyAndOrganizationId(projectKey, 1) >>
                 [new Toggle(projectKey: projectKey, key: toggleKey, returnType: "string", clientAvailability: false)]
-        1 * targetingRepository.findAllByProjectKeyAndEnvironmentKeyAndOrganizeId(projectKey, environmentKey, 1) >>
+        1 * targetingRepository.findAllByProjectKeyAndEnvironmentKeyAndOrganizationId(projectKey, environmentKey, 1) >>
                 [new Targeting(projectKey: projectKey, environmentKey: environmentKey,
                         toggleKey: toggleKey, content: rules, disabled: false)]
         with(serverResponse) {

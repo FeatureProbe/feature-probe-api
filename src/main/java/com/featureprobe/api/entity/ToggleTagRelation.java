@@ -31,8 +31,8 @@ import javax.persistence.Table;
 @DynamicInsert
 @ToString(callSuper = true)
 @EntityListeners(TenantEntityListener.class)
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
-@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
+@Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 public class ToggleTagRelation implements TenantSupport {
 
     @Id
@@ -45,7 +45,7 @@ public class ToggleTagRelation implements TenantSupport {
     @Column(name = "toggle_key")
     private String toggleKey;
 
-    @Column(name = "organize_id")
-    private Long organizeId;
+    @Column(name = "organization_id")
+    private Long organizationId;
 
 }

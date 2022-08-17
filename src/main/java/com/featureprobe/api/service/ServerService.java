@@ -70,14 +70,14 @@ public class ServerService {
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
-        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
-                environment.getOrganizeId());
-        List<Toggle> toggles = toggleRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
-                environment.getOrganizeId());
-        Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKeyAndOrganizeId(
-                environment.getProject().getKey(),
-                environment.getKey(), environment.getOrganizeId()).stream().
-                collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
+        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizationId(
+                environment.getProject().getKey(), environment.getOrganizationId());
+        List<Toggle> toggles = toggleRepository.findAllByProjectKeyAndOrganizationId(environment.getProject().getKey(),
+                environment.getOrganizationId());
+        Map<String, Targeting> targetingByKey = targetingRepository
+                .findAllByProjectKeyAndEnvironmentKeyAndOrganizationId(environment.getProject().getKey(),
+                        environment.getKey(), environment.getOrganizationId()).stream()
+                .collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
         return toggles.stream().map(toggle -> {
             Targeting targeting = targetingByKey.get(toggle.getKey());
             try {
@@ -104,8 +104,8 @@ public class ServerService {
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
-        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
-                environment.getOrganizeId());
+        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizationId(
+                environment.getProject().getKey(), environment.getOrganizationId());
         return segments.stream().map(segment -> {
             try {
                 return new ServerSegmentBuilder().builder()

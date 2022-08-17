@@ -2,8 +2,8 @@ package com.featureprobe.api.entity;
 
 public interface TenantSupport {
 
-    Long getOrganizeId();
+    Long getOrganizationId();
 
-    void setOrganizeId(Long organizeId);
+    void setOrganizationId(Long organizationId);
 
 }
