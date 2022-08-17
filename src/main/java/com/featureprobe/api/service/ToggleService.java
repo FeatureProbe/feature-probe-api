@@ -2,7 +2,9 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.enums.VisitFilter;
+import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ResourceOverflowException;
 import com.featureprobe.api.dto.ToggleCreateRequest;
@@ -28,6 +30,7 @@ import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
+import com.featureprobe.api.service.aspect.IncludeDeleted;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
@@ -77,8 +80,6 @@ public class ToggleService {
 
     private VariationHistoryRepository variationHistoryRepository;
 
-    private ToggleIncludeDeletedService toggleIncludeDeletedService;
-
     private FeatureProbe featureProbe;
 
     @PersistenceContext
@@ -106,8 +107,8 @@ public class ToggleService {
     }
 
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        toggleIncludeDeletedService.validateKeyIncludeDeleted(projectKey, createRequest.getKey());
-        toggleIncludeDeletedService.validateNameIncludeDeleted(projectKey, createRequest.getName());
+        validateKey(projectKey, createRequest.getKey());
+        validateName(projectKey, createRequest.getName());
         Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
         toggle.setProjectKey(projectKey);
         setToggleTagRefs(toggle, createRequest.getTags());
@@ -185,7 +186,7 @@ public class ToggleService {
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
         if(!StringUtils.equals(toggle.getName(), updateRequest.getName())) {
-            toggleIncludeDeletedService.validateNameIncludeDeleted(projectKey, updateRequest.getName());
+            validateName(projectKey, updateRequest.getName());
         }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);
         setToggleTagRefs(toggle, updateRequest.getTags());
@@ -193,6 +194,31 @@ public class ToggleService {
         toggleRepository.save(toggle);
 
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
+    }
+
+    public void validateExists(String projectKey, ValidateTypeEnum type, String  value) {
+        switch (type) {
+            case KEY:
+                validateKey(projectKey, value);
+                break;
+            case NAME:
+                validateName(projectKey, value);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void validateKey(String projectKey, String key) {
+        if (toggleRepository.existsByProjectKeyAndKey(projectKey, key)) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
+    private void validateName(String projectKey, String name) {
+        if (toggleRepository.existsByProjectKeyAndName(projectKey, name)) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
     }
 
     private void setToggleTagRefs(Toggle toggle, String[] tagNames) {

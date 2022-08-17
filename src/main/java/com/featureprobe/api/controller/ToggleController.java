@@ -14,7 +14,6 @@ import com.featureprobe.api.dto.ToggleItemResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
-import com.featureprobe.api.service.ToggleIncludeDeletedService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import com.featureprobe.api.service.ToggleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,8 +43,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ToggleController {
 
     private ToggleService toggleService;
-
-    private ToggleIncludeDeletedService toggleIncludeDeletedService;
 
     @GetMapping
     @GetApiResponse
@@ -88,7 +85,7 @@ public class ToggleController {
     public BaseResponse checkKey(@PathVariable("projectKey") String projectKey,
                                  @RequestParam ValidateTypeEnum type,
                                  @RequestParam String value){
-        toggleIncludeDeletedService.validateExists(projectKey, type, value);
+        toggleService.validateExists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

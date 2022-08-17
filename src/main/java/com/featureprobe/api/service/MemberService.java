@@ -4,6 +4,7 @@ import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.auth.tenant.TenantContext;
 import com.featureprobe.api.base.constants.MessageKey;
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.RoleEnum;
 import com.featureprobe.api.base.exception.ForbiddenException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.dto.MemberCreateRequest;
@@ -109,6 +110,7 @@ public class MemberService {
     private Member newMember(String account, String password) {
         Member member = new Member();
         member.setAccount(account);
+        member.setRole(RoleEnum.MEMBER);
         member.setPassword(new BCryptPasswordEncoder().encode(password));
         Organization organization = organizationRepository.findById(TenantContext.getCurrentOrganization()
                 .getOrganizationId()).get();
@@ -137,7 +139,7 @@ public class MemberService {
         Specification<OrganizationMember> spec = (root, query, cb) -> {
             Predicate p1 = cb.equal(root.get("organizationId"), TenantContext.getCurrentOrganization()
                     .getOrganizationId());
-            return query.where(cb.and(p1)).groupBy(root.get("userId"))
+            return query.where(cb.and(p1)).groupBy(root.get("memberId"))
                     .getRestriction();
         };
         Page<OrganizationMember> organizationMembers = organizationMemberRepository.findAll(spec, pageable);

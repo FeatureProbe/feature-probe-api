@@ -10,7 +10,6 @@ import com.featureprobe.api.entity.Project
 import com.featureprobe.api.repository.ProjectRepository
 import com.featureprobe.sdk.server.FeatureProbe
 import org.hibernate.internal.SessionImpl
-import org.powermock.api.mockito.PowerMockito
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
 import org.springframework.security.oauth2.jwt.Jwt
@@ -31,8 +30,6 @@ class ProjectServiceSpec extends Specification {
 
     ProjectUpdateRequest projectUpdateRequest
 
-    ProjectIncludeDeletedService projectIncludeDeletedService
-
     FeatureProbe featureProbe
 
     EntityManager entityManager
@@ -48,8 +45,7 @@ class ProjectServiceSpec extends Specification {
         projectRepository = Mock(ProjectRepository)
         entityManager = Mock(SessionImpl)
         featureProbe = new FeatureProbe("_")
-        projectIncludeDeletedService = new ProjectIncludeDeletedService(projectRepository, entityManager)
-        projectService = new ProjectService(projectRepository, projectIncludeDeletedService, featureProbe, entityManager)
+        projectService = new ProjectService(projectRepository, featureProbe, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
         projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)
@@ -98,7 +94,7 @@ class ProjectServiceSpec extends Specification {
 
     def "check project key" () {
         when:
-        projectIncludeDeletedService.validateExists(ValidateTypeEnum.KEY, projectKey)
+        projectService.validateExists(ValidateTypeEnum.KEY, projectKey)
         then:
         1 * projectRepository.existsByKey(projectKey) >> true
         then:
@@ -107,7 +103,7 @@ class ProjectServiceSpec extends Specification {
 
     def "check project name" () {
         when:
-        projectIncludeDeletedService.validateExists(ValidateTypeEnum.NAME, projectName)
+        projectService.validateExists(ValidateTypeEnum.NAME, projectName)
         then:
         1 * projectRepository.existsByName(projectName) >> true
         then:

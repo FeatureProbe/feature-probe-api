@@ -55,24 +55,17 @@ public class SegmentService {
 
     private EnvironmentRepository environmentRepository;
 
-    private SegmentIncludeDeletedService segmentIncludeDeletedService;
-
     @PersistenceContext
     public EntityManager entityManager;
 
     public Page<SegmentResponse> list(String projectKey, SegmentSearchRequest searchRequest) {
-        if (searchRequest.getIncludeDeleted()) {
-            Pageable pageable = PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "created_time");
-            return segmentIncludeDeletedService.findAllByKeywordIncludeDeleted(projectKey,
-                    searchRequest.getKeyword(), pageable);
-        }
         Specification<Segment> spec = buildQuerySpec(projectKey, searchRequest.getKeyword());
         return findPagingBySpec(spec, PageRequestUtil.toCreatedTimeDescSortPageable(searchRequest));
     }
 
     public SegmentResponse create(String projectKey, SegmentCreateRequest createRequest) {
-        segmentIncludeDeletedService.validateKeyIncludeDeleted(projectKey, createRequest.getKey());
-        segmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, createRequest.getName());
+        validateKey(projectKey, createRequest.getKey());
+        validateName(projectKey, createRequest.getName());
         Segment segment = SegmentMapper.INSTANCE.requestToEntity(createRequest);
         segment.setProjectKey(projectKey);
         segment.setUniqueKey(StringUtils.join(projectKey, "$", createRequest.getKey()));
@@ -82,7 +75,7 @@ public class SegmentService {
     public SegmentResponse update(String projectKey, String segmentKey, SegmentUpdateRequest updateRequest) {
         Segment segment = segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey);
         if (!StringUtils.equals(segment.getName(), updateRequest.getName())) {
-            segmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, updateRequest.getName());
+            validateName(projectKey, updateRequest.getName());
         }
         SegmentMapper.INSTANCE.mapEntity(updateRequest, segment);
         return SegmentMapper.INSTANCE.entityToResponse(segmentRepository.save(segment));
@@ -151,4 +144,49 @@ public class SegmentService {
         return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
     }
 
+    public void validateExists(String projectKey, ValidateTypeEnum type, String value) {
+        switch (type) {
+            case KEY:
+                validateKey(projectKey, value);
+                break;
+            case NAME:
+                validateName(projectKey, value);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void validateKey(String projectKey, String key) {
+        if (segmentRepository.existsByProjectKeyAndKey(projectKey, key)) {
+            throw new ResourceConflictException(ResourceType.SEGMENT);
+        }
+    }
+
+    public void validateName(String projectKey, String name) {
+        if (segmentRepository.existsByProjectKeyAndName(projectKey, name)) {
+            throw new ResourceConflictException(ResourceType.SEGMENT);
+        }
+    }
+
+    public Page<SegmentResponse> findAllByKeyword(String projectKey, String keyword, Pageable pageable) {
+        Specification<Segment> spec = buildQueryKeywordSpec(projectKey, keyword);
+        Page<Segment> segments = segmentRepository.findAll(spec, pageable);
+        return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
+    }
+
+    private Specification<Segment> buildQueryKeywordSpec(String projectKey, String keyword) {
+        return (root, query, cb) -> {
+            Predicate p3 = cb.equal(root.get("projectKey"), projectKey);
+            if (StringUtils.isNotBlank(keyword)) {
+                Predicate p0 = cb.like(root.get("name"), "%" + keyword + "%");
+                Predicate p1 = cb.like(root.get("key"), "%" + keyword + "%");
+                Predicate p2 = cb.like(root.get("description"), "%" + keyword + "%");
+                query.where(cb.or(p0, p1, p2), cb.and(p3));
+            } else {
+                query.where(p3);
+            }
+            return query.getRestriction();
+        };
+    }
 }

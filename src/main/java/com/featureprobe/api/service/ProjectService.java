@@ -2,6 +2,8 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
+import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ResourceOverflowException;
 import com.featureprobe.api.dto.ProjectCreateRequest;
@@ -33,8 +35,6 @@ public class ProjectService {
 
     private ProjectRepository projectRepository;
 
-    private ProjectIncludeDeletedService projectIncludeDeletedService;
-
     private FeatureProbe featureProbe;
 
     @PersistenceContext
@@ -52,7 +52,7 @@ public class ProjectService {
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
         Project project = projectRepository.findByKey(projectKey).get();
         if (!StringUtils.equals(project.getName(), updateRequest.getName())) {
-            projectIncludeDeletedService.validateNameIncludeDeleted(updateRequest.getName());
+            validateName(updateRequest.getName());
         }
         ProjectMapper.INSTANCE.mapEntity(updateRequest, project);
         return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
@@ -69,8 +69,8 @@ public class ProjectService {
     }
 
     private Project createProject(ProjectCreateRequest createRequest) {
-        projectIncludeDeletedService.validateKeyIncludeDeleted(createRequest.getKey());
-        projectIncludeDeletedService.validateNameIncludeDeleted(createRequest.getName());
+        validateKey(createRequest.getKey());
+        validateName(createRequest.getName());
         Project createProject = ProjectMapper.INSTANCE.requestToEntity(createRequest);
         createProject.setDeleted(false);
         createProject.setEnvironments(createDefaultEnv(createProject));
@@ -110,6 +110,33 @@ public class ProjectService {
         onlineEnv.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
         onlineEnv.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
         return onlineEnv;
+    }
+
+    public void validateExists(ValidateTypeEnum type, String value) {
+
+        switch (type) {
+            case KEY:
+                validateKey(value);
+                break;
+            case NAME:
+                validateName(value);
+                break;
+            default:
+                break;
+        }
+
+    }
+
+    private void validateKey(String key) {
+        if (projectRepository.existsByKey(key)) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
+    }
+
+    private void validateName(String name) {
+        if (projectRepository.existsByName(name)) {
+            throw new ResourceConflictException(ResourceType.PROJECT);
+        }
     }
 
 }

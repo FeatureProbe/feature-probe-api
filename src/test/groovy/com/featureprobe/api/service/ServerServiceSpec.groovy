@@ -79,7 +79,7 @@ class ServerServiceSpec extends Specification {
         1 * environmentRepository.findByServerSdkKeyOrClientSdkKey(_, _) >>
                 Optional.of(new Environment(project: new Project(key: projectKey, organizationId: 1), key: environmentKey, serverSdkKey: sdkKey))
         2 * environmentRepository.findByServerSdkKey(sdkKey) >>
-                Optional.of(new Environment(project: new Project(key: projectKey, organizationId: 1), key: environmentKey))
+                Optional.of(new Environment(project: new Project(key: projectKey, organizationId: 1), key: environmentKey, organizationId: 1))
         2 * segmentRepository.findAllByProjectKeyAndOrganizationId(projectKey, 1) >>
                 [new Segment(projectKey: projectKey, key: "test_segment",
                         uniqueKey: projectKey + "\$test_segment", rules: segmentRules)]

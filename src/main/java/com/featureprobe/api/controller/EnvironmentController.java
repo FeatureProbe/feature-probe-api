@@ -10,7 +10,6 @@ import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
 import com.featureprobe.api.dto.EnvironmentResponse;
 import com.featureprobe.api.dto.EnvironmentUpdateRequest;
-import com.featureprobe.api.service.EnvironmentIncludeDeletedService;
 import com.featureprobe.api.service.EnvironmentService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,8 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class EnvironmentController {
 
     private EnvironmentService environmentService;
-
-    private EnvironmentIncludeDeletedService environmentIncludeDeletedService;
 
     @PostMapping
     @CreateApiResponse
@@ -69,7 +66,7 @@ public class EnvironmentController {
     public BaseResponse exists(@PathVariable("projectKey") String projectKey,
                                @RequestParam ValidateTypeEnum type,
                                @RequestParam String value) {
-        environmentIncludeDeletedService.validateExists(projectKey, type, value);
+        environmentService.validateExists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

@@ -18,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextImpl
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import spock.lang.Specification
-
 import javax.persistence.EntityManager
 
 class EnvironmentServiceSpec extends Specification {
@@ -37,8 +36,6 @@ class EnvironmentServiceSpec extends Specification {
     EnvironmentCreateRequest createRequest
 
     EnvironmentUpdateRequest updateRequest
-
-    EnvironmentIncludeDeletedService environmentIncludeDeletedService
 
     FeatureProbe featureProbe
     EntityManager entityManager
@@ -67,9 +64,8 @@ class EnvironmentServiceSpec extends Specification {
         targetingRepository = Mock(TargetingRepository)
         featureProbe = new FeatureProbe("_")
         entityManager = Mock(SessionImpl)
-        environmentIncludeDeletedService = new EnvironmentIncludeDeletedService(environmentRepository)
         environmentService = new EnvironmentService(environmentRepository, projectRepository,
-                toggleRepository, targetingRepository, environmentIncludeDeletedService, featureProbe, entityManager)
+                toggleRepository, targetingRepository, featureProbe, entityManager)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
         updateRequest = new EnvironmentUpdateRequest(name: "env_test_update")
         setAuthContext("Admin", "ADMIN")
@@ -139,7 +135,7 @@ class EnvironmentServiceSpec extends Specification {
 
     def "check environment key" () {
         when:
-        environmentIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
+        environmentService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
         then:
         1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> true
         then:
@@ -148,7 +144,7 @@ class EnvironmentServiceSpec extends Specification {
 
     def "check environment name" () {
         when:
-        environmentIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
+        environmentService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
         then:
         1 * environmentRepository.existsByProjectKeyAndName(projectKey, environmentName) >> true
         then:
