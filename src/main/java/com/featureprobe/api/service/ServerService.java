@@ -17,6 +17,7 @@ import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.service.aspect.ExcludeTenant;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
@@ -45,7 +46,7 @@ public class ServerService {
     @PersistenceContext
     public EntityManager entityManager;
 
-
+    @Cacheable(value="all_sdk_key_map")
     public SdkKeyResponse queryAllSdkKeys() {
         SdkKeyResponse sdkKeyResponse = new SdkKeyResponse();
         List<Environment> environments = environmentRepository.findAll();

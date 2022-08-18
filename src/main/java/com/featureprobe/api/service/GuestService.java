@@ -45,9 +45,9 @@ public class GuestService {
             "`description`, `return_type`, `disabled_serve`, `variations`, `project_key`, `archived`, " +
             "`client_availability`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
             "VALUES (${organization_id}, 'feature toggle01', 'feature_toggle01', '', 'boolean', 0, " +
-            "'[{\\\"value\\\":\\\"false\\\", \\\"name\\\":\\\"不可见\\\"," +
-            "\\\"description\\\":\\\"运营活动对用户不可见\\\"},{\\\"value\\\":" +
-            "\\\"true\\\",\\\"name\\\":\\\"可见\\\",\\\"description\\\":\\\"运营活动对用户可见\\\"}]', " +
+            "'[{\\\"value\\\":\\\"false\\\", \\\"name\\\":\\\"disabled\\\"," +
+            "\\\"description\\\":\\\"\\\"},{\\\"value\\\":" +
+            "\\\"true\\\",\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]', " +
             "'${project_key}', 0, 1, 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
@@ -55,34 +55,34 @@ public class GuestService {
                 "`modified_time`) VALUES (${organization_id}, 'feature_toggle01', 'online', '${project_key}', " +
                 "1, 1, '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
                 "{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
-                "\\\"不可见\\\",\\\"description\\\":\\\"运营活动对用户不可见\\\"},{\\\"value\\\":\\\"true\\\"," +
-                "\\\"name\\\":\\\"可见\\\",\\\"description\\\":\\\"运营活动对用户可见\\\"}]}', 0, " +
+                "\\\"disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\"," +
+                "\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]}', 0, " +
                 "${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle01', 'online', 1, 'true', 1, '可见')",
+                "'feature_toggle01', 'online', 1, 'true', 1, 'enabled')",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle01', 'online', 1, 'false', 0, '不可见')",
+                "'feature_toggle01', 'online', 1, 'false', 0, 'disabled')",
 
         "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
                 "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
                 "'feature_toggle01', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
                 "\\\"defaultServe\\\":{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
-                "\\\"name\\\":\\\"不可见\\\",\\\"description\\\":\\\"运营活动对用户不可见\\\"}," +
-                "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"可见\\\",\\\"description\\\":\\\"" +
-                "运营活动对用户可见\\\"}]}', 1, 1, 0, now(), ${user_id}, now(), ${user_id})",
+                "\\\"name\\\":\\\"disabled\\\",\\\"description\\\":\\\"\\\"}," +
+                "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"" +
+                "\\\"}]}', 1, 1, 0, now(), ${user_id}, now(), ${user_id})",
 
 
         "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
                 "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
                 "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'feature toggle02', " +
                 "'feature_toggle02', '', 'boolean', 0, '[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"" +
-                "不可见\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":" +
-                "\\\"可见\\\",\\\"description\\\":\\\"\\\"}]', '${project_key}', " +
+                "disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":" +
+                "\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]', '${project_key}', " +
                 "0, 1, 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
@@ -92,19 +92,19 @@ public class GuestService {
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
                 "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"测试组可见\\\",\\\"serve\\\":{\\\"select\\\":1},\\\"notEmptyConditions\\\":true}]," +
+                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":1},\\\"notEmptyConditions\\\":true}]," +
                 "\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":{\\\"select\\\":0}," +
-                "\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"不可见\\\"," +
-                "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"可见\\\"," +
+                "\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"disabled\\\"," +
+                "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"enabled\\\"," +
                 "\\\"description\\\":\\\"\\\"}]}', 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle02', 'online', 1, 'true', 1, '可见')",
+                "'feature_toggle02', 'online', 1, 'true', 1, 'enabled')",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle02', 'online', 1, 'false', 0, '不可见')",
+                "'feature_toggle02', 'online', 1, 'false', 0, 'disabled')",
 
         "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
@@ -113,18 +113,18 @@ public class GuestService {
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
                 "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"测试组可见\\\",\\\"serve\\\":{\\\"select\\\":1}," +
+                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":1}," +
                 "\\\"notEmptyConditions\\\":true}],\\\"disabledServe\\\":{\\\"select\\\":0}," +
                 "\\\"defaultServe\\\":{\\\"select\\\":0},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
-                "\\\"name\\\":\\\"不可见\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\"," +
-                "\\\"name\\\":\\\"可见\\\",\\\"description\\\":\\\"\\\"}]}', 0, 1, 0,  now(), ${user_id}, " +
+                "\\\"name\\\":\\\"disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\"," +
+                "\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]}', 0, 1, 0,  now(), ${user_id}, " +
                 "now(), ${user_id})",
 
         "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
                 "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
                 "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'feature toggle03', " +
-                "'feature_toggle03', '', 'boolean', 0, '[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"不可见\\\"," +
-                "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"可见\\\"," +
+                "'feature_toggle03', '', 'boolean', 0, '[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"disabled\\\"," +
+                "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"enabled\\\"," +
                 "\\\"description\\\":\\\"\\\"}]', '${project_key}', 0, 1, 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
@@ -132,33 +132,33 @@ public class GuestService {
                 "VALUES (${organization_id}, 'feature_toggle03', 'online', '${project_key}', 1, 0, " +
                 "'{\\\"rules\\\":[], \\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
                 "{\\\"split\\\":[6000,4000]}, \\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
-                "\\\"不可见\\\",\\\"description\\\":\\\"运营活动对用户不可见\\\"},{\\\"value\\\":\\\"true\\\"," +
-                "\\\"name\\\":\\\"可见\\\",\\\"description\\\":\\\"运营活动对用户可见\\\"}]}', 0,  " +
+                "\\\"disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\"," +
+                "\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]}', 0,  " +
                 "${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle03', 'online', 1, 'true', 1, '可见')",
+                "'feature_toggle03', 'online', 1, 'true', 1, 'enabled')",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle03', 'online', 1, 'false', 0, '不可见')",
+                "'feature_toggle03', 'online', 1, 'false', 0, 'disabled')",
 
         "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
                 "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
                 "'feature_toggle03', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
                 "\\\"defaultServe\\\":{\\\"split\\\":[8000,2000]},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
-                "\\\"name\\\":\\\"不可见\\\",\\\"description\\\":\\\"运营活动对用户不可见\\\"},{\\\"value\\\"" +
-                ":\\\"true\\\",\\\"name\\\":\\\"可见\\\",\\\"description\\\":\\\"运营活动对用户可见\\\"}]}', 0, " +
+                "\\\"name\\\":\\\"disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\"" +
+                ":\\\"true\\\",\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]}', 0, " +
                 "1, 0, now(), ${user_id}, now(), ${user_id})",
 
         "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
                 "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
                 "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'feature toggle04', " +
                 "'feature_toggle04', '', 'number', 1, '[{\\\"value\\\":\\\"10\\\",\\\"name\\\":\\\"$10\\\"," +
-                "\\\"description\\\":\\\"商品价格为10美元\\\"},{\\\"value\\\":\\\"20\\\",\\\"name\\\":\\\"$20\\\"," +
-                "\\\"description\\\":\\\"商品价格为10美元\\\"}]', '${project_key}', 0, 1, 0, ${user_id}, " +
+                "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\",\\\"name\\\":\\\"$20\\\"," +
+                "\\\"description\\\":\\\"\\\"}]', '${project_key}', 0, 1, 0, ${user_id}, " +
                 "${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
@@ -168,16 +168,16 @@ public class GuestService {
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
                 "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"00001, 00002 用户商品价格为$10\\\",\\\"serve\\\":{\\\"select\\\":0}," +
+                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":0}," +
                 "\\\"notEmptyConditions\\\":true},{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00003\\\"],\\\"segmentType\\\":false,\\\"numberType\\\":false," +
-                "\\\"datetimeType\\\":false,\\\"semVerType\\\":false}],\\\"name\\\":\\\"00003 用户商品价格为$20\\\"," +
+                "\\\"datetimeType\\\":false,\\\"semVerType\\\":false}],\\\"name\\\":\\\"\\\"," +
                 "\\\"serve\\\":{\\\"select\\\":1},\\\"notEmptyConditions\\\":true}]," +
                 "\\\"disabledServe\\\":{\\\"select\\\":1},\\\"defaultServe\\\":{\\\"select\\\":1}," +
                 "\\\"variations\\\":[{\\\"value\\\":\\\"10\\\",\\\"name\\\":\\\"$10\\\"," +
-                "\\\"description\\\":\\\"商品价格为10美元\\\"},{\\\"value\\\":\\\"20\\\",\\\"name\\\":\\\"$20\\\"," +
-                "\\\"description\\\":\\\"商品价格为20美元\\\"}]}', 0, ${user_id}, ${user_id}, now(), now())",
+                "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\",\\\"name\\\":\\\"$20\\\"," +
+                "\\\"description\\\":\\\"\\\"}]}', 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
@@ -193,16 +193,16 @@ public class GuestService {
                 "'feature_toggle04', '', '{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\",\\\"objects\\\":[\\\"00001\\\"," +
                 "\\\"00002\\\"],\\\"segmentType\\\":false,\\\"numberType\\\":false,\\\"datetimeType\\\":false," +
-                "\\\"semVerType\\\":false}],\\\"name\\\":\\\"00001, 00002 用户商品价格为$10\\\"," +
+                "\\\"semVerType\\\":false}],\\\"name\\\":\\\"\\\"," +
                 "\\\"serve\\\":{\\\"select\\\":0},\\\"notEmptyConditions\\\":true}," +
                 "{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\",\\\"subject\\\":\\\"userId\\\"," +
                 "\\\"predicate\\\":\\\"is one of\\\",\\\"objects\\\":[\\\"00003\\\"],\\\"segmentType\\\":false," +
                 "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"00003 用户商品价格为$20\\\",\\\"serve\\\":{\\\"select\\\":1}," +
+                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":1}," +
                 "\\\"notEmptyConditions\\\":true}],\\\"disabledServe\\\":{\\\"select\\\":1}," +
                 "\\\"defaultServe\\\":{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"10\\\"," +
-                "\\\"name\\\":\\\"$10\\\",\\\"description\\\":\\\"商品价格为10美元\\\"},{\\\"value\\\":\\\"20\\\"," +
-                "\\\"name\\\":\\\"$20\\\",\\\"description\\\":\\\"商品价格为20美元\\\"}]}', 0, 1, 0, now(), " +
+                "\\\"name\\\":\\\"$10\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\"," +
+                "\\\"name\\\":\\\"$20\\\",\\\"description\\\":\\\"\\\"}]}', 0, 1, 0, now(), " +
                 "${user_id}, now(), ${user_id})"
     };
 

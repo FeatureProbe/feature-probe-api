@@ -24,6 +24,7 @@ import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,7 @@ public class EnvironmentService {
     private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_env_limiter";
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value="all_sdk_key_map", allEntries=true)
     public EnvironmentResponse create(String projectKey, EnvironmentCreateRequest createRequest) {
         validateLimit(projectKey);
         Project project = projectRepository.findByKey(projectKey).get();

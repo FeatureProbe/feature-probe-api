@@ -46,5 +46,7 @@ app:
         - /api/server/toggles
         - /api/server/sdk_keys
         - /api/server/events
+        - /api/v3/api-docs.yaml
+        - /api/actuator/health
       guest-disabled: true
       guest-default-password: Guest_12345

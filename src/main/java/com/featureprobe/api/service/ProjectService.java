@@ -20,6 +20,7 @@ import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
@@ -43,6 +44,7 @@ public class ProjectService {
     private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_project_limiter";
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value="all_sdk_key_map", allEntries=true)
     public ProjectResponse create(ProjectCreateRequest createRequest) {
         validateLimit();
         return ProjectMapper.INSTANCE.entityToResponse(createProject(createRequest));
