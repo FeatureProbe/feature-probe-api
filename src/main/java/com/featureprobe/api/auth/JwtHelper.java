@@ -3,13 +3,14 @@ package com.featureprobe.api.auth;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.featureprobe.api.dto.UserOrganize;
+import com.featureprobe.api.dto.OrganizationMember;
 import com.featureprobe.api.entity.Member;
-import com.featureprobe.api.entity.Organize;
+import com.featureprobe.api.entity.Organization;
 import com.featureprobe.api.mapper.JsonMapper;
-import com.featureprobe.api.service.OrganizeService;
+import com.featureprobe.api.service.OrganizationService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -30,11 +31,12 @@ public class JwtHelper {
     private static final String ACCOUNT_KEY = "account";
     private static final String USER_ID_KEY = "userId";
     private static final String ROLE_KEY = "role";
-    private static final String ORGANIZE = "organizes";
+    private static final String ORGANIZATIONS = "organizations";
+    public static final String AUTHORITIES_CLAIM_NAME = "roles";
 
     private final RSAPrivateKey privateKey;
     private final RSAPublicKey publicKey;
-    private final OrganizeService organizeService;
+    private final OrganizationService organizationService;
 
     public String createJwtForMember(Member member) {
         Calendar calendar = Calendar.getInstance();
@@ -44,14 +46,19 @@ public class JwtHelper {
         jwtBuilder.withClaim(ACCOUNT_KEY, member.getAccount());
         jwtBuilder.withClaim(USER_ID_KEY, member.getId());
         jwtBuilder.withClaim(ROLE_KEY, member.getRole().name());
-        List<UserOrganize> organizes = new ArrayList<>();
-        for(Organize organize: member.getOrganizes()) {
-            UserOrganize userOrganize = organizeService.queryUserOrganize(organize.getId(), member.getId());
-            organizes.add(new UserOrganize(organize.getId(), organize.getName(), userOrganize.getRole()));
+        List<OrganizationMember> organizations = new ArrayList<>();
+        for(Organization organization : member.getOrganizations()) {
+            OrganizationMember organizationMember = organizationService.queryOrganizationMember(organization.getId(),
+                    member.getId());
+            organizations.add(new OrganizationMember(organization.getId(), organization.getName(),
+                    organizationMember.getRole()));
         }
-        Map<Long, UserOrganize> userOrganizeMap = organizes.stream().collect(Collectors
-                .toMap(UserOrganize::getOrganizeId, Function.identity()));
-        jwtBuilder.withClaim(ORGANIZE, JsonMapper.toJSONString(userOrganizeMap));
+        Map<Long, OrganizationMember> organizationMemberMap = organizations.stream().collect(Collectors
+                .toMap(OrganizationMember::getOrganizationId, Function.identity()));
+        jwtBuilder.withClaim(ORGANIZATIONS, JsonMapper.toJSONString(organizationMemberMap));
+        if (CollectionUtils.isNotEmpty(organizations)) {
+            jwtBuilder.withClaim(AUTHORITIES_CLAIM_NAME, organizations.get(0).getRoleName());
+        }
         return jwtBuilder
                 .withNotBefore(new Date())
                 .withExpiresAt(calendar.getTime())

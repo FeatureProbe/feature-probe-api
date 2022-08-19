@@ -1,6 +1,6 @@
 package com.featureprobe.api.base.enums;
 
-public enum OrganizeRoleEnum {
+public enum OrganizationRoleEnum {
 
     OWNER,WRITER
 }

@@ -24,23 +24,23 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(name = "organize")
+@Table(name = "organization")
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @DynamicInsert
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
 @EqualsAndHashCode
-public class Organize extends AbstractAuditEntity {
+public class Organization extends AbstractAuditEntity {
 
     private String name;
 
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
 
-    @ManyToMany(mappedBy = "organizes")
+    @ManyToMany(mappedBy = "organizations")
     private List<Member> members = new ArrayList<>();
 
-    public Organize (String name) {
+    public Organization(String name) {
         this.name = name;
     }
 }

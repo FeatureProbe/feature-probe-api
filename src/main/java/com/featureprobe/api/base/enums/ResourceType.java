@@ -7,7 +7,7 @@ import java.util.Arrays;
 public enum ResourceType {
     PROJECT("projectKey"), TOGGLE("toggleKey"), ENVIRONMENT("environmentKey"),
     MEMBER("account"),SEGMENT("segment"),DICTIONARY("dictionary"),
-    ORGANIZE_USER("organize_user");
+    ORGANIZATION_MEMBER("organization_member");
 
     private String paramName;
 

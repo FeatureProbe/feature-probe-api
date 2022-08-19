@@ -2,7 +2,7 @@ package com.featureprobe.api.entity;
 
 
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
-import com.featureprobe.api.base.enums.OrganizeRoleEnum;
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,17 +17,17 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @Data
 @Entity
-@Table(name = "organize_user")
+@Table(name = "organization_member")
 @DynamicInsert
-public class OrganizeUser extends AbstractAuditEntity {
+public class OrganizationMember extends AbstractAuditEntity {
 
-    @Column(name = "organize_id")
-    private Long organizeId;
+    @Column(name = "organization_id")
+    private Long organizationId;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "member_id")
+    private Long memberId;
 
     @Enumerated(EnumType.STRING)
-    private OrganizeRoleEnum role;
+    private OrganizationRoleEnum role;
 
 }

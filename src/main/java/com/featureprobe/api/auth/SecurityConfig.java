@@ -1,8 +1,10 @@
 package com.featureprobe.api.auth;
 
 import com.featureprobe.api.base.config.AppConfig;
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
+import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -26,9 +29,9 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    public static final String AUTHORITIES_CLAIM_NAME = "roles";
 
     private LoginFailureHandler loginFailureHandler;
 
@@ -80,15 +83,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.headers().frameOptions().disable();
         http.csrf().disable();
         http
-            .formLogin()
+                .formLogin()
                 .loginProcessingUrl("/login")
                 .and()
-            .authorizeRequests()
-                .antMatchers( "/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
+                .authorizeRequests()
+                .antMatchers("/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
+                .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
+                        OrganizationRoleEnum.WRITER.name())
                 .anyRequest().authenticated()
                 .and()
-            .exceptionHandling()
+                .exceptionHandling()
                 .accessDeniedHandler(((httpServletRequest, httpServletResponse, e) ->
                         httpServletResponse.setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .authenticationEntryPoint(authenticationEntryPoint());
@@ -102,7 +107,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Override
-    protected AuthenticationManager authenticationManager() throws Exception {
+    protected AuthenticationManager authenticationManager() {
         ProviderManager authenticationManager = new ProviderManager(Arrays.asList(userPasswordAuthenticationProvider,
                 guestAuthenticationProvider));
         return authenticationManager;
@@ -111,10 +116,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected JwtAuthenticationConverter authenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
         authoritiesConverter.setAuthorityPrefix("");
-        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+        authoritiesConverter.setAuthoritiesClaimName(JwtHelper.AUTHORITIES_CLAIM_NAME);
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
         return converter;
     }
-
 }

@@ -40,8 +40,6 @@ class SegmentServiceSpec extends Specification{
 
     SegmentService segmentService
 
-    SegmentIncludeDeletedService segmentIncludeDeletedService
-
     EntityManager entityManager
 
     def projectKey
@@ -55,9 +53,8 @@ class SegmentServiceSpec extends Specification{
         targetingRepository = Mock(TargetingRepository)
         toggleRepository = Mock(ToggleRepository)
         environmentRepository = Mock(EnvironmentRepository)
-        segmentIncludeDeletedService = new SegmentIncludeDeletedService(segmentRepository, entityManager)
         segmentService = new SegmentService(segmentRepository, targetingSegmentRepository, targetingRepository,
-                toggleRepository, environmentRepository, segmentIncludeDeletedService, entityManager)
+                toggleRepository, environmentRepository, entityManager)
 
         projectKey = "feature_probe"
         segmentKey = "test_segment_key"
@@ -118,7 +115,7 @@ class SegmentServiceSpec extends Specification{
 
     def "check segment key" () {
         when:
-        segmentIncludeDeletedService.validateExistsIncludeDeleted(projectKey, ValidateTypeEnum.KEY, segmentKey)
+        segmentService.validateExists(projectKey, ValidateTypeEnum.KEY, segmentKey)
         then:
         1 * segmentRepository.existsByProjectKeyAndKey(projectKey, segmentKey) >> true
         then:
@@ -127,7 +124,7 @@ class SegmentServiceSpec extends Specification{
 
     def "check segment name" () {
         when:
-        segmentIncludeDeletedService.validateExistsIncludeDeleted(projectKey, ValidateTypeEnum.NAME, segmentName)
+        segmentService.validateExists(projectKey, ValidateTypeEnum.NAME, segmentName)
         then:
         1 * segmentRepository.existsByProjectKeyAndName(projectKey, segmentName) >> true
         then:

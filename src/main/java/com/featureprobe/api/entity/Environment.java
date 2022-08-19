@@ -37,8 +37,8 @@ import java.io.Serializable;
 @Table(name = "environment")
 @DynamicInsert
 @EntityListeners(TenantEntityListener.class)
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "string")})
-@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
+@Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
 @FilterDef(name = "archivedFilter", parameters = {@ParamDef(name = "archived", type = "boolean")})
@@ -64,18 +64,18 @@ public class Environment extends AbstractAuditEntity implements TenantSupport, S
 
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumnsOrFormulas(value = {
-            @JoinColumnOrFormula(column=@JoinColumn(name ="organize_id", referencedColumnName ="organize_id")),
+            @JoinColumnOrFormula(column=@JoinColumn(name ="organization_id", referencedColumnName ="organization_id")),
             @JoinColumnOrFormula(column=@JoinColumn(name ="project_key", referencedColumnName ="key"))})
     private Project project;
 
+
     @Override
-    public Long getOrganizeId() {
-        return project.getOrganizeId();
+    public Long getOrganizationId() {
+        return project.getOrganizationId();
     }
 
     @Override
-    public void setOrganizeId(Long organizeId) {
-        project.setOrganizeId(organizeId);
+    public void setOrganizationId(Long organizationId) {
+        project.setOrganizationId(organizationId);
     }
-
 }

@@ -17,6 +17,7 @@ import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.service.aspect.ExcludeTenant;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
@@ -45,7 +46,7 @@ public class ServerService {
     @PersistenceContext
     public EntityManager entityManager;
 
-
+    @Cacheable(value="all_sdk_key_map")
     public SdkKeyResponse queryAllSdkKeys() {
         SdkKeyResponse sdkKeyResponse = new SdkKeyResponse();
         List<Environment> environments = environmentRepository.findAll();
@@ -70,14 +71,14 @@ public class ServerService {
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
-        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
-                environment.getOrganizeId());
-        List<Toggle> toggles = toggleRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
-                environment.getOrganizeId());
-        Map<String, Targeting> targetingByKey = targetingRepository.findAllByProjectKeyAndEnvironmentKeyAndOrganizeId(
-                environment.getProject().getKey(),
-                environment.getKey(), environment.getOrganizeId()).stream().
-                collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
+        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizationId(
+                environment.getProject().getKey(), environment.getOrganizationId());
+        List<Toggle> toggles = toggleRepository.findAllByProjectKeyAndOrganizationId(environment.getProject().getKey(),
+                environment.getOrganizationId());
+        Map<String, Targeting> targetingByKey = targetingRepository
+                .findAllByProjectKeyAndEnvironmentKeyAndOrganizationId(environment.getProject().getKey(),
+                        environment.getKey(), environment.getOrganizationId()).stream()
+                .collect(Collectors.toMap(Targeting::getToggleKey, Function.identity()));
         return toggles.stream().map(toggle -> {
             Targeting targeting = targetingByKey.get(toggle.getKey());
             try {
@@ -104,8 +105,8 @@ public class ServerService {
         if (Objects.isNull(environment)) {
             return Collections.emptyList();
         }
-        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizeId(environment.getProject().getKey(),
-                environment.getOrganizeId());
+        List<Segment> segments = segmentRepository.findAllByProjectKeyAndOrganizationId(
+                environment.getProject().getKey(), environment.getOrganizationId());
         return segments.stream().map(segment -> {
             try {
                 return new ServerSegmentBuilder().builder()

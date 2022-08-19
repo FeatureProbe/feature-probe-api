@@ -37,8 +37,8 @@ import java.util.Set;
 @DynamicInsert
 @ToString(callSuper = true)
 @EntityListeners(TenantEntityListener.class)
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizeId", type = "long")})
-@Filter(name = "tenantFilter", condition = "organize_id = :organizeId")
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
+@Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
 @FilterDef(name = "archivedFilter", parameters = {@ParamDef(name = "archived", type = "boolean")})
@@ -74,8 +74,8 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
 
-    @Column(name = "organize_id")
-    private Long organizeId;
+    @Column(name = "organization_id")
+    private Long organizationId;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "toggle_tag", joinColumns = {@JoinColumn(name = "toggle_key", referencedColumnName = "key")},

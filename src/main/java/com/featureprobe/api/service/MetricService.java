@@ -1,5 +1,6 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.auth.tenant.TenantContext;
 import com.featureprobe.api.base.constants.MetricType;
 import com.featureprobe.api.dto.AccessStatusResponse;
 import com.featureprobe.api.dto.MetricResponse;
@@ -29,7 +30,6 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
@@ -151,7 +151,8 @@ public class MetricService {
             boolean cacheFlag = i != pointCount;
             LocalDateTime pointEndTime = pointStartTime.plusHours(pointIntervalCount);
             QueryAccessEventPointTask task = new QueryAccessEventPointTask(serverSdkKey, toggleKey, cacheFlag,
-                    targeting, pointNameFormat,  pointStartTime, pointEndTime, accessEventPoints, counter, i);
+                    targeting, pointNameFormat,  pointStartTime, pointEndTime, accessEventPoints, counter, i,
+                    Long.parseLong(TenantContext.getCurrentTenant()));
             taskExecutor.submit(task);
             pointStartTime = pointEndTime;
         }
@@ -175,8 +176,8 @@ public class MetricService {
     }
 
     private Long queryLastTargetingVersion(Targeting targeting, LocalDateTime pointStartTime,
-                                           LocalDateTime pointEndTime) {
-        Specification<TargetingVersion> spec = buildVersionQuerySpec(targeting, pointStartTime, pointEndTime);
+                                           LocalDateTime pointEndTime, Long tenantId) {
+        Specification<TargetingVersion> spec = buildVersionQuerySpec(targeting, pointStartTime, pointEndTime, tenantId);
         List<TargetingVersion> targetingVersions = targetingVersionRepository.findAll(spec);
         if (CollectionUtils.isNotEmpty(targetingVersions)) {
             return targetingVersions.get(0).getVersion();
@@ -185,14 +186,15 @@ public class MetricService {
     }
 
     private Specification<TargetingVersion> buildVersionQuerySpec(Targeting targeting, LocalDateTime pointStartTime,
-                                                                  LocalDateTime pointEndTime) {
+                                                                  LocalDateTime pointEndTime, Long tenantId) {
         return (root, query, cb) -> {
             Predicate p0 = cb.equal(root.get("projectKey"), targeting.getProjectKey());
             Predicate p1 = cb.equal(root.get("environmentKey"), targeting.getEnvironmentKey());
             Predicate p2 = cb.equal(root.get("toggleKey"), targeting.getToggleKey());
-            Predicate p3 = cb.greaterThanOrEqualTo(root.get("createdTime"), toDate(pointStartTime));
-            Predicate p4 = cb.lessThanOrEqualTo(root.get("createdTime"), toDate(pointEndTime));
-            query.where(cb.and(p0, p1, p2, p3, p4)).orderBy(cb.desc(root.get("version")));
+            Predicate p3 = cb.equal(root.get("organizationId"), tenantId);
+            Predicate p4 = cb.greaterThanOrEqualTo(root.get("createdTime"), toDate(pointStartTime));
+            Predicate p5 = cb.lessThanOrEqualTo(root.get("createdTime"), toDate(pointEndTime));
+            query.where(cb.and(p0, p1, p2, p3, p4, p5)).orderBy(cb.desc(root.get("version")));
             return query.getRestriction();
         };
     }
@@ -254,7 +256,6 @@ public class MetricService {
     private LocalDateTime getQueryStartDateTime(int queryLastHours) {
         return getQueryStartDateTime(LocalDateTime.now(), queryLastHours);
     }
-
 
     protected List<VariationAccessCounter> summaryAccessEvents(List<AccessEventPoint> accessEventPoints) {
 
@@ -344,7 +345,6 @@ public class MetricService {
 
         String serverSdkKey;
         String toggleKey;
-        MetricType metricType;
         boolean cacheFlag;
         Targeting targeting;
         String pointNameFormat;
@@ -353,6 +353,7 @@ public class MetricService {
         List<AccessEventPoint> accessEventPoints;
         CountDownLatch counter;
         Integer sorted;
+        Long tenantId;
 
         public QueryAccessEventPointTask(String serverSdkKey,
                                          String toggleKey,
@@ -363,7 +364,8 @@ public class MetricService {
                                          LocalDateTime pointEndTime,
                                          List<AccessEventPoint> accessEventPoints,
                                          CountDownLatch counter,
-                                         Integer sorted) {
+                                         Integer sorted,
+                                         Long tenantId) {
             this.serverSdkKey = serverSdkKey;
             this.toggleKey = toggleKey;
             this.cacheFlag = cacheFlag;
@@ -374,6 +376,7 @@ public class MetricService {
             this.accessEventPoints = accessEventPoints;
             this.counter = counter;
             this.sorted = sorted;
+            this.tenantId = tenantId;
         }
 
         @Override
@@ -399,7 +402,8 @@ public class MetricService {
                 }
                 String pointName = String.format("%s",
                         pointEndTime.format(DateTimeFormatter.ofPattern(pointNameFormat)));
-                Long lastTargetingVersion = queryLastTargetingVersion(targeting, pointStartTime, pointEndTime);
+                Long lastTargetingVersion = queryLastTargetingVersion(targeting, pointStartTime,
+                        pointEndTime, tenantId);
                 accessEventPoints.add(new AccessEventPoint(pointName, accessEvents, lastTargetingVersion, sorted));
             }catch (Exception e) {
                 log.error("Query AccessEventPoint Task Exception.", e);

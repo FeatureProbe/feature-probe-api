@@ -32,9 +32,10 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
                 (UserPasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         Member member = token.getPrincipal();
         String jwt = jwtHelper.createJwtForMember(member);
-        Long organizeId = CollectionUtils.isEmpty(member.getOrganizes()) ? null : member.getOrganizes().get(0).getId();
+        Long organizationId = CollectionUtils.isEmpty(member.getOrganizations()) ? null : member.getOrganizations()
+                .get(0).getId();
         response.getWriter().write(JsonMapper.toJSONString(new CertificationUserResponse(token.getAccount(),
-                        member.getRole().name(), organizeId, jwt)));
+                        member.getRole().name(), organizationId, jwt)));
     }
 
 }

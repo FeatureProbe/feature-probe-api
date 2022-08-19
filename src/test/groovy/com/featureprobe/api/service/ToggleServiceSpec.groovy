@@ -42,8 +42,6 @@ class ToggleServiceSpec extends Specification {
 
     ToggleService toggleService
 
-    ToggleIncludeDeletedService toggleIncludeDeletedService
-
     ToggleRepository toggleRepository
 
     TagRepository tagRepository
@@ -83,10 +81,9 @@ class ToggleServiceSpec extends Specification {
         variationHistoryRepository = Mock(VariationHistoryRepository)
         featureProbe = new FeatureProbe("_")
         entityManager = Mock(SessionImpl)
-        toggleIncludeDeletedService = new ToggleIncludeDeletedService(toggleRepository, entityManager)
         toggleService = new ToggleService(toggleRepository, tagRepository, targetingRepository,
                 environmentRepository, eventRepository, targetingVersionRepository,
-                variationHistoryRepository, toggleIncludeDeletedService, featureProbe, entityManager)
+                variationHistoryRepository, featureProbe, entityManager)
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
@@ -195,7 +192,7 @@ class ToggleServiceSpec extends Specification {
 
     def "check toggle key" () {
         when:
-        toggleIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.KEY, toggleKey)
+        toggleService.validateExists(projectKey, ValidateTypeEnum.KEY, toggleKey)
         then:
         toggleRepository.existsByProjectKeyAndKey(projectKey, toggleKey) >> true
         then:
@@ -204,7 +201,7 @@ class ToggleServiceSpec extends Specification {
 
     def "check toggle name" () {
         when:
-        toggleIncludeDeletedService.validateExists(projectKey, ValidateTypeEnum.NAME, toggleName)
+        toggleService.validateExists(projectKey, ValidateTypeEnum.NAME, toggleName)
         then:
         1 * toggleRepository.existsByProjectKeyAndName(projectKey, toggleName) >> true
         then:

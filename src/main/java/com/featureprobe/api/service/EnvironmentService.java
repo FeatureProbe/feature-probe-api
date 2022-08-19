@@ -2,12 +2,13 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.ValidateTypeEnum;
+import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ResourceOverflowException;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
 import com.featureprobe.api.dto.EnvironmentResponse;
 import com.featureprobe.api.dto.EnvironmentUpdateRequest;
-import com.featureprobe.api.dto.SdkKeyResponse;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Project;
 import com.featureprobe.api.entity.Targeting;
@@ -23,6 +24,7 @@ import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,8 +45,6 @@ public class EnvironmentService {
 
     private TargetingRepository targetingRepository;
 
-    private EnvironmentIncludeDeletedService environmentIncludeDeletedService;
-
     private FeatureProbe featureProbe;
 
     @PersistenceContext
@@ -53,11 +53,12 @@ public class EnvironmentService {
     private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_env_limiter";
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value="all_sdk_key_map", allEntries=true)
     public EnvironmentResponse create(String projectKey, EnvironmentCreateRequest createRequest) {
         validateLimit(projectKey);
         Project project = projectRepository.findByKey(projectKey).get();
-        environmentIncludeDeletedService.validateKeyIncludeDeleted(projectKey, createRequest.getKey());
-        environmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, createRequest.getName());
+        validateKey(projectKey, createRequest.getKey());
+        validateName(projectKey, createRequest.getName());
         Environment environment = EnvironmentMapper.INSTANCE.requestToEntity(createRequest);
         environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
         environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
@@ -71,7 +72,7 @@ public class EnvironmentService {
                                       EnvironmentUpdateRequest updateRequest) {
         Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
         if (!StringUtils.equals(environment.getName(), updateRequest.getName())) {
-            environmentIncludeDeletedService.validateNameIncludeDeleted(projectKey, updateRequest.getName());
+            validateName(projectKey, updateRequest.getName());
         }
         EnvironmentMapper.INSTANCE.mapEntity(updateRequest, environment);
         if (updateRequest.isResetServerSdk()) {
@@ -118,4 +119,28 @@ public class EnvironmentService {
         return targeting;
     }
 
+    public void validateExists(String projectKey, ValidateTypeEnum type, String value) {
+        switch (type) {
+            case KEY:
+                validateKey(projectKey, value);
+                break;
+            case NAME:
+                validateName(projectKey, value);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void validateKey(String projectKey, String key) {
+        if (environmentRepository.existsByProjectKeyAndKey(projectKey, key)) {
+            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+        }
+    }
+
+    private void validateName(String projectKey, String name) {
+        if (environmentRepository.existsByProjectKeyAndName(projectKey, name)) {
+            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
+        }
+    }
 }
