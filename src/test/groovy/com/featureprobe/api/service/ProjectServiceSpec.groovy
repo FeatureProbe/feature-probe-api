@@ -7,6 +7,7 @@ import com.featureprobe.api.dto.ProjectQueryRequest
 import com.featureprobe.api.dto.ProjectUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
+import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.ProjectRepository
 import com.featureprobe.sdk.server.FeatureProbe
 import org.hibernate.internal.SessionImpl
@@ -23,6 +24,8 @@ class ProjectServiceSpec extends Specification {
     ProjectService projectService
 
     ProjectRepository projectRepository
+
+    EnvironmentRepository environmentRepository
 
     ProjectQueryRequest queryRequest
 
@@ -43,9 +46,10 @@ class ProjectServiceSpec extends Specification {
         projectKey = "test_project"
         keyword = "feature"
         projectRepository = Mock(ProjectRepository)
+        environmentRepository = Mock(EnvironmentRepository)
         entityManager = Mock(SessionImpl)
         featureProbe = new FeatureProbe("_")
-        projectService = new ProjectService(projectRepository, featureProbe, entityManager)
+        projectService = new ProjectService(projectRepository, environmentRepository, featureProbe, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
         projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)

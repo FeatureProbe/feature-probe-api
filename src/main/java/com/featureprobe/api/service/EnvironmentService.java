@@ -2,11 +2,11 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ResourceOverflowException;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
+import com.featureprobe.api.dto.EnvironmentQueryRequest;
 import com.featureprobe.api.dto.EnvironmentResponse;
 import com.featureprobe.api.dto.EnvironmentUpdateRequest;
 import com.featureprobe.api.entity.Environment;
@@ -19,6 +19,7 @@ import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.ProjectRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.ToggleRepository;
+import com.featureprobe.api.service.aspect.Archived;
 import com.featureprobe.api.util.SdkKeyGenerateUtil;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
@@ -27,7 +28,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.List;
@@ -57,8 +57,6 @@ public class EnvironmentService {
     public EnvironmentResponse create(String projectKey, EnvironmentCreateRequest createRequest) {
         validateLimit(projectKey);
         Project project = projectRepository.findByKey(projectKey).get();
-        validateKey(projectKey, createRequest.getKey());
-        validateName(projectKey, createRequest.getName());
         Environment environment = EnvironmentMapper.INSTANCE.requestToEntity(createRequest);
         environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
         environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
@@ -67,12 +65,16 @@ public class EnvironmentService {
         return EnvironmentMapper.INSTANCE.entityToResponse(environmentRepository.save(environment));
     }
 
+    @Archived
     @Transactional(rollbackFor = Exception.class)
     public EnvironmentResponse update(String projectKey, String environmentKey,
                                       EnvironmentUpdateRequest updateRequest) {
-        Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
+        boolean archived = updateRequest.getArchived() == null  ? false : !updateRequest.getArchived();
+        Environment environment = environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey,
+                        environmentKey, archived).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.ENVIRONMENT, environmentKey));
         if (!StringUtils.equals(environment.getName(), updateRequest.getName())) {
-            validateName(projectKey, updateRequest.getName());
+            validateEnvironmentByName(projectKey, updateRequest.getName());
         }
         EnvironmentMapper.INSTANCE.mapEntity(updateRequest, environment);
         if (updateRequest.isResetServerSdk()) {
@@ -88,6 +90,14 @@ public class EnvironmentService {
         Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, environmentKey));
         return EnvironmentMapper.INSTANCE.entityToResponse(environment);
+    }
+
+    @Archived
+    public List<EnvironmentResponse> list(String projectKey, EnvironmentQueryRequest queryRequest) {
+        List<Environment> environments = environmentRepository
+                .findAllByProjectKeyAndArchived(projectKey, queryRequest.isArchived());
+        return environments.stream().map(environment -> EnvironmentMapper.INSTANCE.entityToResponse(environment))
+                .collect(Collectors.toList());
     }
 
     private void validateLimit(String projectKey) {
@@ -119,26 +129,7 @@ public class EnvironmentService {
         return targeting;
     }
 
-    public void validateExists(String projectKey, ValidateTypeEnum type, String value) {
-        switch (type) {
-            case KEY:
-                validateKey(projectKey, value);
-                break;
-            case NAME:
-                validateName(projectKey, value);
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void validateKey(String projectKey, String key) {
-        if (environmentRepository.existsByProjectKeyAndKey(projectKey, key)) {
-            throw new ResourceConflictException(ResourceType.ENVIRONMENT);
-        }
-    }
-
-    private void validateName(String projectKey, String name) {
+    private void validateEnvironmentByName(String projectKey, String name) {
         if (environmentRepository.existsByProjectKeyAndName(projectKey, name)) {
             throw new ResourceConflictException(ResourceType.ENVIRONMENT);
         }

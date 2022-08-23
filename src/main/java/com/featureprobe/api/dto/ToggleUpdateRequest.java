@@ -13,11 +13,13 @@ public class ToggleUpdateRequest {
 
     private String desc;
 
-    private String[] tags;
+    private List<String> tags;
 
     private Boolean clientAvailability;
 
     private List<Variation> variations;
 
     private Integer disabledServe;
+
+    private Boolean archived;
 }

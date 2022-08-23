@@ -155,8 +155,6 @@ class ToggleServiceSpec extends Specification {
 
         then:
         response
-        1 * toggleRepository.existsByProjectKeyAndKey(projectKey, toggleKey) >> false
-        1 * toggleRepository.existsByProjectKeyAndName(projectKey, "toggle1") >> false
         1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "test"), new Environment(key: "online")]
         1 * toggleRepository.save(_ as Toggle) >> { it -> savedToggle = it[0] }
         1 * targetingRepository.saveAll(_ as List<Targeting>) >> { it -> savedTargetingList = it[0] }
@@ -177,7 +175,7 @@ class ToggleServiceSpec extends Specification {
 
         then:
         response
-        1 * toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey) >> Optional.of(new Toggle(projectKey: projectKey,
+        1 * toggleRepository.findByProjectKeyAndKeyAndArchived(projectKey, toggleKey, false) >> Optional.of(new Toggle(projectKey: projectKey,
                 key: toggleKey, name: "toggle1", desc: "init"))
         1 * toggleRepository.existsByProjectKeyAndName(projectKey, "toggle2") >> false
         1 * toggleRepository.save(_ as Toggle) >> { it -> updatedToggle = it[0] }
@@ -188,24 +186,6 @@ class ToggleServiceSpec extends Specification {
             "toggle2" == name
             1 == tags.size()
         }
-    }
-
-    def "check toggle key" () {
-        when:
-        toggleService.validateExists(projectKey, ValidateTypeEnum.KEY, toggleKey)
-        then:
-        toggleRepository.existsByProjectKeyAndKey(projectKey, toggleKey) >> true
-        then:
-        thrown ResourceConflictException
-    }
-
-    def "check toggle name" () {
-        when:
-        toggleService.validateExists(projectKey, ValidateTypeEnum.NAME, toggleName)
-        then:
-        1 * toggleRepository.existsByProjectKeyAndName(projectKey, toggleName) >> true
-        then:
-        thrown ResourceConflictException
     }
 
     private setAuthContext(String account, String role) {

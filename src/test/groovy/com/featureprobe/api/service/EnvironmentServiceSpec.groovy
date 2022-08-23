@@ -77,8 +77,6 @@ class EnvironmentServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 new Optional<>(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> false
-        1 * environmentRepository.existsByProjectKeyAndName(projectKey, environmentName) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
         1 * toggleRepository.findAllByProjectKey(projectKey) >> [new Toggle(name: toggleName,
@@ -93,23 +91,11 @@ class EnvironmentServiceSpec extends Specification {
     }
 
 
-    def "Create environment key exist"() {
-        when:
-        def ret = environmentService.create(projectKey, createRequest)
-        then:
-        1 * projectRepository.findByKey(projectKey) >>
-                Optional.of(new Project(name: projectName, key: projectKey))
-        1 * environmentRepository.existsByProjectKeyAndName(projectKey, createRequest.getName()) >> true
-        then:
-        thrown ResourceConflictException
-    }
-
-
     def "Update environment"() {
         when:
         def ret = environmentService.update(projectKey, environmentKey, updateRequest)
         then:
-        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
+        1 * environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey, environmentKey, false) >>
                 Optional.of(new Environment(name: environmentName, key: environmentKey))
         1 * environmentRepository.existsByProjectKeyAndName(projectKey, updateRequest.name) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
@@ -131,24 +117,6 @@ class EnvironmentServiceSpec extends Specification {
         environmentKey == environment.key
         "server-123" == environment.serverSdkKey
         "client-123" == environment.clientSdkKey
-    }
-
-    def "check environment key" () {
-        when:
-        environmentService.validateExists(projectKey, ValidateTypeEnum.KEY, environmentKey)
-        then:
-        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, environmentKey) >> true
-        then:
-        thrown ResourceConflictException
-    }
-
-    def "check environment name" () {
-        when:
-        environmentService.validateExists(projectKey, ValidateTypeEnum.NAME, environmentName)
-        then:
-        1 * environmentRepository.existsByProjectKeyAndName(projectKey, environmentName) >> true
-        then:
-        thrown ResourceConflictException
     }
 
     private setAuthContext(String account, String role) {

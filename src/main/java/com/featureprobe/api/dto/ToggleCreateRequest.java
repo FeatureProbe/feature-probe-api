@@ -20,7 +20,7 @@ public class ToggleCreateRequest {
 
     private String desc;
 
-    private String[] tags;
+    private List<String> tags;
 
     @NotNull
     private Boolean clientAvailability;

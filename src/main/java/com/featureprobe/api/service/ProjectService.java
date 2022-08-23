@@ -13,6 +13,7 @@ import com.featureprobe.api.dto.ProjectUpdateRequest;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Project;
 import com.featureprobe.api.mapper.ProjectMapper;
+import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.ProjectRepository;
 import com.featureprobe.api.util.SdkKeyGenerateUtil;
 import com.featureprobe.sdk.server.FPUser;
@@ -36,6 +37,8 @@ public class ProjectService {
 
     private ProjectRepository projectRepository;
 
+    private EnvironmentRepository environmentRepository;
+
     private FeatureProbe featureProbe;
 
     @PersistenceContext
@@ -52,12 +55,23 @@ public class ProjectService {
 
     @Transactional(rollbackFor = Exception.class)
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
-        Project project = projectRepository.findByKey(projectKey).get();
+        Project project = projectRepository.findByKey(projectKey)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
+        if (updateRequest.getArchived() != null && updateRequest.getArchived()) {
+            archiveAllEnvironments(project.getEnvironments());
+        }
         if (!StringUtils.equals(project.getName(), updateRequest.getName())) {
             validateName(updateRequest.getName());
         }
         ProjectMapper.INSTANCE.mapEntity(updateRequest, project);
         return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
+    }
+
+    private void archiveAllEnvironments(List<Environment> environments) {
+        for(Environment environment : environments) {
+            environment.setArchived(true);
+        }
+        environmentRepository.saveAll(environments);
     }
 
     private void validateLimit() {

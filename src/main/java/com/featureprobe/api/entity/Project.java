@@ -12,7 +12,12 @@ import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.JoinColumnOrFormula;
+import org.hibernate.annotations.JoinColumnsOrFormulas;
+import org.hibernate.annotations.JoinFormula;
 import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.Where;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -53,11 +58,12 @@ public class Project extends AbstractAuditEntity implements TenantSupport, Seria
 
     @Column(columnDefinition = "TINYINT")
     private boolean archived;
-    
+
     @Column(name = "organization_id")
     private Long organizationId;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.PERSIST)
+    @Where(clause="archived = 0")
     private List<Environment> environments;
 
 }
