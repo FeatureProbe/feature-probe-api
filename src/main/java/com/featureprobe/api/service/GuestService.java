@@ -44,7 +44,7 @@ public class GuestService {
     private static final String[] toggleSql= {"INSERT INTO `toggle` (`organization_id`, `name`, `key`, " +
             "`description`, `return_type`, `disabled_serve`, `variations`, `project_key`, `archived`, " +
             "`client_availability`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-            "VALUES (${organization_id}, 'feature toggle01', 'feature_toggle01', '', 'boolean', 0, " +
+            "VALUES (${organization_id}, 'Campaign  Enable', 'campaign_enable', '', 'boolean', 0, " +
             "'[{\\\"value\\\":\\\"false\\\", \\\"name\\\":\\\"disabled\\\"," +
             "\\\"description\\\":\\\"\\\"},{\\\"value\\\":" +
             "\\\"true\\\",\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]', " +
@@ -52,7 +52,7 @@ public class GuestService {
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, " +
-                "`modified_time`) VALUES (${organization_id}, 'feature_toggle01', 'online', '${project_key}', " +
+                "`modified_time`) VALUES (${organization_id}, 'campaign_enable', 'online', '${project_key}', " +
                 "1, 1, '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
                 "{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
                 "\\\"disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\"," +
@@ -61,16 +61,16 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle01', 'online', 1, 'true', 1, 'enabled')",
+                "'campaign_enable', 'online', 1, 'true', 1, 'enabled')",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle01', 'online', 1, 'false', 0, 'disabled')",
+                "'campaign_enable', 'online', 1, 'false', 0, 'disabled')",
 
         "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
                 "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'feature_toggle01', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
+                "'campaign_enable', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
                 "\\\"defaultServe\\\":{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
                 "\\\"name\\\":\\\"disabled\\\",\\\"description\\\":\\\"\\\"}," +
                 "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"" +
@@ -79,15 +79,15 @@ public class GuestService {
 
         "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
                 "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
-                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'feature toggle02', " +
-                "'feature_toggle02', '', 'boolean', 0, '[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"" +
+                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'Campaign  Allow List', " +
+                "'campaign_allow_list', '', 'boolean', 0, '[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"" +
                 "disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":" +
                 "\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]', '${project_key}', " +
                 "0, 1, 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organization_id}, 'feature_toggle02', 'online', '${project_key}', 1, 0, " +
+                "VALUES (${organization_id}, 'campaign_allow_list', 'online', '${project_key}', 1, 0, " +
                 "'{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
@@ -100,16 +100,16 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle02', 'online', 1, 'true', 1, 'enabled')",
+                "'campaign_allow_list', 'online', 1, 'true', 1, 'enabled')",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle02', 'online', 1, 'false', 0, 'disabled')",
+                "'campaign_allow_list', 'online', 1, 'false', 0, 'disabled')",
 
         "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
                 "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'feature_toggle02', '', '{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
+                "'campaign_allow_list', '', '{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
                 "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
@@ -122,14 +122,15 @@ public class GuestService {
 
         "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
                 "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
-                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'feature toggle03', " +
-                "'feature_toggle03', '', 'boolean', 0, '[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"disabled\\\"," +
+                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, " +
+                "'Campaign  Percentage Rollout', 'campaign_percentage_rollout', '', 'boolean', 0, " +
+                "'[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"disabled\\\"," +
                 "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"enabled\\\"," +
                 "\\\"description\\\":\\\"\\\"}]', '${project_key}', 0, 1, 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organization_id}, 'feature_toggle03', 'online', '${project_key}', 1, 0, " +
+                "VALUES (${organization_id}, 'campaign_percentage_rollout', 'online', '${project_key}', 1, 0, " +
                 "'{\\\"rules\\\":[], \\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
                 "{\\\"split\\\":[6000,4000]}, \\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
                 "\\\"disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"true\\\"," +
@@ -138,16 +139,16 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle03', 'online', 1, 'true', 1, 'enabled')",
+                "'campaign_percentage_rollout', 'online', 1, 'true', 1, 'enabled')",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle03', 'online', 1, 'false', 0, 'disabled')",
+                "'campaign_percentage_rollout', 'online', 1, 'false', 0, 'disabled')",
 
         "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
                 "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'feature_toggle03', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
+                "'campaign_percentage_rollout', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
                 "\\\"defaultServe\\\":{\\\"split\\\":[8000,2000]},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
                 "\\\"name\\\":\\\"disabled\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\"" +
                 ":\\\"true\\\",\\\"name\\\":\\\"enabled\\\",\\\"description\\\":\\\"\\\"}]}', 0, " +
@@ -155,15 +156,15 @@ public class GuestService {
 
         "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
                 "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
-                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'feature toggle04', " +
-                "'feature_toggle04', '', 'number', 1, '[{\\\"value\\\":\\\"10\\\",\\\"name\\\":\\\"$10\\\"," +
+                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'Promotion Campaign', " +
+                "'promotion_campaign', '', 'number', 1, '[{\\\"value\\\":\\\"10\\\",\\\"name\\\":\\\"$10\\\"," +
                 "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\",\\\"name\\\":\\\"$20\\\"," +
                 "\\\"description\\\":\\\"\\\"}]', '${project_key}', 0, 1, 0, ${user_id}, " +
                 "${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organization_id}, 'feature_toggle04', 'online', '${project_key}', 1, 0, " +
+                "VALUES (${organization_id}, 'promotion_campaign', 'online', '${project_key}', 1, 0, " +
                 "'{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
                 "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
@@ -181,16 +182,16 @@ public class GuestService {
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'feature_toggle04', 'online', 1, '20', 1, '$20')",
+                "'promotion_campaign', 'online', 1, '20', 1, '$20')",
 
         "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
                 "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, " +
-                "'${project_key}', 'feature_toggle04', 'online', 1, '10', 0, '$10')",
+                "'${project_key}', 'promotion_campaign', 'online', 1, '10', 0, '$10')",
 
         "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
                 "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
                 "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'feature_toggle04', '', '{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
+                "'promotion_campaign', '', '{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
                 "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\",\\\"objects\\\":[\\\"00001\\\"," +
                 "\\\"00002\\\"],\\\"segmentType\\\":false,\\\"numberType\\\":false,\\\"datetimeType\\\":false," +
                 "\\\"semVerType\\\":false}],\\\"name\\\":\\\"\\\"," +
