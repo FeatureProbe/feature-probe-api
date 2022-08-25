@@ -52,8 +52,10 @@ public class EnvironmentService {
 
     private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_env_limiter";
 
+    public static final String ALL_SDK_KEYS_CACHE_KEY = ServerService.ALL_SDK_KEYS_CACHE_KEY;
+
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(value="all_sdk_key_map", allEntries=true)
+    @CacheEvict(cacheNames="all_sdk_key_map", key = "#root.target.ALL_SDK_KEYS_CACHE_KEY")
     public EnvironmentResponse create(String projectKey, EnvironmentCreateRequest createRequest) {
         validateLimit(projectKey);
         Project project = projectRepository.findByKey(projectKey).get();
@@ -67,6 +69,7 @@ public class EnvironmentService {
 
     @Archived
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames="all_sdk_key_map", key = "#root.target.ALL_SDK_KEYS_CACHE_KEY")
     public EnvironmentResponse update(String projectKey, String environmentKey,
                                       EnvironmentUpdateRequest updateRequest) {
         boolean archived = updateRequest.getArchived() == null  ? false : !updateRequest.getArchived();

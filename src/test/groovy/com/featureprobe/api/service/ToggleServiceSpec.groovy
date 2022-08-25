@@ -123,7 +123,7 @@ class ToggleServiceSpec extends Specification {
         def page = toggleService.query(projectKey, toggleSearchRequest)
 
         then:
-        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
+        1 * environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey, environmentKey, false) >>
                 Optional.of(new Environment(key: environmentKey, serverSdkKey: "1234", clientSdkKey: "5678"))
         1 * targetingRepository.findAllByProjectKeyAndEnvironmentKeyAndDisabled(projectKey, environmentKey,
                 false) >> [new Targeting(toggleKey: toggleKey)]

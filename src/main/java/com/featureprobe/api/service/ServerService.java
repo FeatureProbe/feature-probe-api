@@ -46,7 +46,9 @@ public class ServerService {
     @PersistenceContext
     public EntityManager entityManager;
 
-    @Cacheable(value="all_sdk_key_map")
+    public static final String ALL_SDK_KEYS_CACHE_KEY = "all_sdk_key_map";
+
+    @Cacheable(cacheNames="all_sdk_key_map", key = "#root.target.ALL_SDK_KEYS_CACHE_KEY")
     public SdkKeyResponse queryAllSdkKeys() {
         SdkKeyResponse sdkKeyResponse = new SdkKeyResponse();
         List<Environment> environments = environmentRepository.findAll();

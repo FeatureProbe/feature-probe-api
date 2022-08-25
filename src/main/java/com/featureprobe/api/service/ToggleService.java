@@ -219,7 +219,7 @@ public class ToggleService {
         Page<Toggle> togglePage;
         if (StringUtils.isNotBlank(searchRequest.getEnvironmentKey())) {
             Environment environment = environmentRepository
-                    .findByProjectKeyAndKey(projectKey, searchRequest.getEnvironmentKey())
+                    .findByProjectKeyAndKeyAndArchived(projectKey, searchRequest.getEnvironmentKey(), false)
                     .orElseThrow(() ->
                             new ResourceNotFoundException(ResourceType.ENVIRONMENT, searchRequest.getEnvironmentKey()));
             Set<String> toggleKeys = new TreeSet<>();
@@ -393,8 +393,10 @@ public class ToggleService {
         return null;
     }
 
+    @Archived
     public ToggleResponse queryByKey(String projectKey, String toggleKey) {
-        Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
+        Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
