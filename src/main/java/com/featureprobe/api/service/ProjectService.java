@@ -43,14 +43,17 @@ public class ProjectService {
 
     private static final String LIMITER_TOGGLE_KEY = "FeatureProbe_project_limiter";
 
+    public static final String ALL_SDK_KEYS_CACHE_KEY = ServerService.ALL_SDK_KEYS_CACHE_KEY;
+
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(value="all_sdk_key_map", allEntries=true)
+    @CacheEvict(cacheNames="all_sdk_key_map", key = "#root.target.ALL_SDK_KEYS_CACHE_KEY")
     public ProjectResponse create(ProjectCreateRequest createRequest) {
         validateLimit();
         return ProjectMapper.INSTANCE.entityToResponse(createProject(createRequest));
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames="all_sdk_key_map", key = "#root.target.ALL_SDK_KEYS_CACHE_KEY")
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
         Project project = projectRepository.findByKey(projectKey).get();
         if (!StringUtils.equals(project.getName(), updateRequest.getName())) {
