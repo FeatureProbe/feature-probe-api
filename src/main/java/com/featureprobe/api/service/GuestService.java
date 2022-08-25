@@ -165,8 +165,8 @@ public class GuestService {
                 "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'Promotion Campaign', " +
                 "'promotion_campaign', '', 'number', 1, '[{\\\"value\\\":\\\"10\\\",\\\"name\\\":" +
                 "\\\"Promotion price（优惠价 ）\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\"," +
-                "\\\"name\\\":\\\"Normal price（原价）\\\",\\\"description\\\":\\\"\\\"}]', '${project_key}', 0, 1, 0, ${user_id}, " +
-                "${user_id}, now(), now())",
+                "\\\"name\\\":\\\"Normal price（原价）\\\",\\\"description\\\":\\\"\\\"}]', '${project_key}', " +
+                "0, 1, 0, ${user_id}, ${user_id}, now(), now())",
 
         "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
                 "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
@@ -208,9 +208,9 @@ public class GuestService {
                 "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":1}," +
                 "\\\"notEmptyConditions\\\":true}],\\\"disabledServe\\\":{\\\"select\\\":1}," +
                 "\\\"defaultServe\\\":{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"10\\\"," +
-                "\\\"name\\\":\\\"Promotion price（优惠价 ）\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\"," +
-                "\\\"name\\\":\\\"Normal price（原价）\\\",\\\"description\\\":\\\"\\\"}]}', 0, 1, 0, now(), " +
-                "${user_id}, now(), ${user_id})"
+                "\\\"name\\\":\\\"Promotion price（优惠价 ）\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":" +
+                "\\\"20\\\",\\\"name\\\":\\\"Normal price（原价）\\\",\\\"description\\\":\\\"\\\"}]}', 0, 1, 0, " +
+                "now(), ${user_id}, now(), ${user_id})"
     };
 
 
