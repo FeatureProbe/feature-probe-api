@@ -9,6 +9,8 @@ import com.featureprobe.api.entity.Organization;
 import com.featureprobe.api.repository.MemberRepository;
 import com.featureprobe.api.service.aspect.ExcludeTenant;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -17,12 +19,20 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ResourceUtils;
+
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @ExcludeTenant
 @AllArgsConstructor
 @Service
@@ -41,178 +51,7 @@ public class GuestService {
 
     private static final String GUEST_INIT_PROJECT_KEY = "My_Project";
 
-    private static final String[] toggleSql= {"INSERT INTO `toggle` (`organization_id`, `name`, `key`, " +
-            "`description`, `return_type`, `disabled_serve`, `variations`, `project_key`, `archived`, " +
-            "`client_availability`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-            "VALUES (${organization_id}, 'Campaign  Enable', 'campaign_enable', '', 'boolean', 0, " +
-            "'[{\\\"value\\\":\\\"false\\\", \\\"name\\\":\\\"Hide（隐藏）\\\",\\\"description\\\":" +
-            "\\\"Hide campaign  page（隐藏活动页面）\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":" +
-            "\\\"Show（展示）\\\",\\\"description\\\":\\\"Show campaign  page （展示活动页面）\\\"}]', " +
-            "'${project_key}', 0, 1, 0, ${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
-                "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, " +
-                "`modified_time`) VALUES (${organization_id}, 'campaign_enable', 'online', '${project_key}', " +
-                "1, 1, '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
-                "{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
-                "\\\"Hide（隐藏）\\\",\\\"description\\\":\\\"Hide campaign  page（隐藏活动页面）\\\"}," +
-                "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"Show（展示）\\\",\\\"description\\\":" +
-                "\\\"Show campaign  page （展示活动页面）\\\"}]}', 0, " +
-                "${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'campaign_enable', 'online', 1, 'true', 1, 'Show（展示）')",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'campaign_enable', 'online', 1, 'false', 0, 'Hide（隐藏）')",
-
-        "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
-                "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
-                "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'campaign_enable', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
-                "\\\"defaultServe\\\":{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
-                "\\\"name\\\":\\\"Hide（隐藏）\\\",\\\"description\\\":\\\"Hide campaign  page（隐藏活动页面）\\\"}," +
-                "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"Show（展示）\\\",\\\"description\\\":" +
-                "\\\"Show campaign  page （展示活动页面）\\\"}]}', 1, 1, 0, now(), ${user_id}, now(), ${user_id})",
-
-
-        "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
-                "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
-                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'Campaign  Allow List', " +
-                "'campaign_allow_list', '', 'boolean', 0, '[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
-                "\\\"Hide（隐藏）\\\",\\\"description\\\":\\\"Hide campaign  page（隐藏活动页面）\\\"}," +
-                "{\\\"value\\\":\\\"true\\\"," +
-                "\\\"name\\\":\\\"Show（展示）\\\",\\\"description\\\":\\\"Show campaign  page （展示活动页面）\\\"}]'," +
-                " '${project_key}', 0, 1, 0, ${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
-                "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organization_id}, 'campaign_allow_list', 'online', '${project_key}', 1, 0, " +
-                "'{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
-                "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
-                "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
-                "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":1},\\\"notEmptyConditions\\\":true}]," +
-                "\\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":{\\\"select\\\":0}," +
-                "\\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"Hide（隐藏）\\\"," +
-                "\\\"description\\\":\\\"Hide campaign  page（隐藏活动页面）\\\"},{\\\"value\\\":\\\"true\\\"," +
-                "\\\"name\\\":\\\"Show（展示）\\\",\\\"description\\\":\\\"Show campaign  page （展示活动页面）\\\"}]}', " +
-                "0, ${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'campaign_allow_list', 'online', 1, 'true', 1, 'Show（展示）')",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'campaign_allow_list', 'online', 1, 'false', 0, 'Hide（隐藏）')",
-
-        "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
-                "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
-                "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'campaign_allow_list', '', '{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
-                "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
-                "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
-                "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":1}," +
-                "\\\"notEmptyConditions\\\":true}],\\\"disabledServe\\\":{\\\"select\\\":0}," +
-                "\\\"defaultServe\\\":{\\\"select\\\":0},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
-                "\\\"name\\\":\\\"Hide（隐藏）\\\",\\\"description\\\":\\\"Hide campaign  page（隐藏活动页面）\\\"}," +
-                "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"Show（展示）\\\",\\\"description\\\":" +
-                "\\\"Show campaign  page （展示活动页面）\\\"}]}', 0, 1, 0,  now(), ${user_id}, " +
-                "now(), ${user_id})",
-
-        "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
-                "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
-                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, " +
-                "'Campaign  Percentage Rollout', 'campaign_percentage_rollout', '', 'boolean', 0, " +
-                "'[{\\\"value\\\":\\\"false\\\",\\\"name\\\":\\\"Hide（隐藏）\\\",\\\"description\\\":" +
-                "\\\"Hide campaign  page（隐藏活动页面）\\\"},{\\\"value\\\":\\\"true\\\",\\\"name\\\":" +
-                "\\\"Show（展示）\\\",\\\"description\\\":\\\"Show campaign  page （展示活动页面）\\\"}]', " +
-                "'${project_key}', 0, 1, 0, ${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
-                "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organization_id}, 'campaign_percentage_rollout', 'online', '${project_key}', 1, 0, " +
-                "'{\\\"rules\\\":[], \\\"disabledServe\\\":{\\\"select\\\":0},\\\"defaultServe\\\":" +
-                "{\\\"split\\\":[6000,4000]}, \\\"variations\\\":[{\\\"value\\\":\\\"false\\\",\\\"name\\\":" +
-                "\\\"Hide（隐藏）\\\",\\\"description\\\":\\\"Hide campaign  page（隐藏活动页面）\\\"}," +
-                "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"Show（展示）\\\",\\\"description\\\":" +
-                "\\\"Show campaign  page （展示活动页面）\\\"}]}', 0, ${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'campaign_percentage_rollout', 'online', 1, 'true', 1, 'Show（展示）')",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'campaign_percentage_rollout', 'online', 1, 'false', 0, 'Hide（隐藏）')",
-
-        "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
-                "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
-                "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'campaign_percentage_rollout', '', '{\\\"rules\\\":[],\\\"disabledServe\\\":{\\\"select\\\":0}," +
-                "\\\"defaultServe\\\":{\\\"split\\\":[8000,2000]},\\\"variations\\\":[{\\\"value\\\":\\\"false\\\"," +
-                "\\\"name\\\":\\\"Hide（隐藏）\\\",\\\"description\\\":\\\"Hide campaign  page（隐藏活动页面）\\\"}," +
-                "{\\\"value\\\":\\\"true\\\",\\\"name\\\":\\\"Show（展示）\\\",\\\"description\\\":" +
-                "\\\"Show campaign  page （展示活动页面）\\\"}]}', 0, " +
-                "1, 0, now(), ${user_id}, now(), ${user_id})",
-
-        "INSERT INTO `toggle` (`organization_id`, `name`, `key`, `description`, `return_type`, `disabled_serve`, " +
-                "`variations`, `project_key`, `archived`, `client_availability`, `deleted`, `modified_by`, " +
-                "`created_by`, `created_time`, `modified_time`) VALUES (${organization_id}, 'Promotion Campaign', " +
-                "'promotion_campaign', '', 'number', 1, '[{\\\"value\\\":\\\"10\\\",\\\"name\\\":" +
-                "\\\"Promotion price（优惠价 ）\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\"," +
-                "\\\"name\\\":\\\"Normal price（原价）\\\",\\\"description\\\":\\\"\\\"}]', '${project_key}', " +
-                "0, 1, 0, ${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `targeting` (`organization_id`, `toggle_key`, `environment_key`, `project_key`, `version`, " +
-                "`disabled`, `content`, `deleted`, `modified_by`, `created_by`, `created_time`, `modified_time`) " +
-                "VALUES (${organization_id}, 'promotion_campaign', 'online', '${project_key}', 1, 0, " +
-                "'{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
-                "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
-                "\\\"objects\\\":[\\\"00001\\\",\\\"00002\\\"],\\\"segmentType\\\":false," +
-                "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":0}," +
-                "\\\"notEmptyConditions\\\":true},{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
-                "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\"," +
-                "\\\"objects\\\":[\\\"00003\\\"],\\\"segmentType\\\":false,\\\"numberType\\\":false," +
-                "\\\"datetimeType\\\":false,\\\"semVerType\\\":false}],\\\"name\\\":\\\"\\\"," +
-                "\\\"serve\\\":{\\\"select\\\":1},\\\"notEmptyConditions\\\":true}]," +
-                "\\\"disabledServe\\\":{\\\"select\\\":1},\\\"defaultServe\\\":{\\\"select\\\":1}," +
-                "\\\"variations\\\":[{\\\"value\\\":\\\"10\\\",\\\"name\\\":\\\"Promotion price（优惠价 ）\\\"," +
-                "\\\"description\\\":\\\"\\\"},{\\\"value\\\":\\\"20\\\",\\\"name\\\":\\\"Normal price（原价）\\\"," +
-                "\\\"description\\\":\\\"\\\"}]}', 0, ${user_id}, ${user_id}, now(), now())",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, '${project_key}', " +
-                "'promotion_campaign', 'online', 1, '20', 1, 'Normal price（原价）')",
-
-        "INSERT INTO `variation_history` (`organization_id`, `project_key`, `toggle_key`, `environment_key`, " +
-                "`toggle_version`, `value`, `value_index`, `name`) VALUES (${organization_id}, " +
-                "'${project_key}', 'promotion_campaign', 'online', 1, '10', 0, 'romotion price（优惠价 ）')",
-
-        "INSERT INTO `targeting_version` (`organization_id`, `project_key`, `environment_key`, `toggle_key`, " +
-                "`comment`, `content`, `disabled`, `version`, `deleted`, `modified_time`, `created_by`, " +
-                "`created_time`, `modified_by`) VALUES (${organization_id}, '${project_key}', 'online', " +
-                "'promotion_campaign', '', '{\\\"rules\\\":[{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\"," +
-                "\\\"subject\\\":\\\"userId\\\",\\\"predicate\\\":\\\"is one of\\\",\\\"objects\\\":[\\\"00001\\\"," +
-                "\\\"00002\\\"],\\\"segmentType\\\":false,\\\"numberType\\\":false,\\\"datetimeType\\\":false," +
-                "\\\"semVerType\\\":false}],\\\"name\\\":\\\"\\\"," +
-                "\\\"serve\\\":{\\\"select\\\":0},\\\"notEmptyConditions\\\":true}," +
-                "{\\\"conditions\\\":[{\\\"type\\\":\\\"string\\\",\\\"subject\\\":\\\"userId\\\"," +
-                "\\\"predicate\\\":\\\"is one of\\\",\\\"objects\\\":[\\\"00003\\\"],\\\"segmentType\\\":false," +
-                "\\\"numberType\\\":false,\\\"datetimeType\\\":false,\\\"semVerType\\\":false}]," +
-                "\\\"name\\\":\\\"\\\",\\\"serve\\\":{\\\"select\\\":1}," +
-                "\\\"notEmptyConditions\\\":true}],\\\"disabledServe\\\":{\\\"select\\\":1}," +
-                "\\\"defaultServe\\\":{\\\"select\\\":1},\\\"variations\\\":[{\\\"value\\\":\\\"10\\\"," +
-                "\\\"name\\\":\\\"Promotion price（优惠价 ）\\\",\\\"description\\\":\\\"\\\"},{\\\"value\\\":" +
-                "\\\"20\\\",\\\"name\\\":\\\"Normal price（原价）\\\",\\\"description\\\":\\\"\\\"}]}', 0, 1, 0, " +
-                "now(), ${user_id}, now(), ${user_id})"
-    };
-
+    private static final String DEMO_INIT_DATA_FILE_PATH = "classpath:db/demo_init_data.sql";
 
     @Transactional(rollbackFor = Exception.class)
     public Member initGuest(String account) {
@@ -242,13 +81,23 @@ public class GuestService {
     }
 
     private void initToggles(Long tenantId, Long userId, String account) {
-        for(String str : toggleSql) {
-            String sql = str.replace("${organization_id}", String.valueOf(tenantId))
-                    .replace("${project_key}", GUEST_INIT_PROJECT_KEY)
-                    .replace("${user_id}", String.valueOf(userId));
-            Query query = entityManager.createNativeQuery(sql);
-            query.executeUpdate();
+        try {
+            File file = ResourceUtils.getFile(DEMO_INIT_DATA_FILE_PATH);
+            BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+            String sql;
+            while (StringUtils.isNotBlank((sql = br.readLine()))) {
+                sql = sql.replace("${organization_id}", String.valueOf(tenantId))
+                        .replace("${project_key}", GUEST_INIT_PROJECT_KEY)
+                        .replace("${user_id}", String.valueOf(userId));
+                executeSQL(sql);
+            }
+        } catch (IOException e) {
+            log.error("Demo init toggles error.", e);
         }
     }
 
+    private void executeSQL(String sql) {
+        Query query = entityManager.createNativeQuery(sql);
+        query.executeUpdate();
+    }
 }
