@@ -12,7 +12,12 @@ import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.JoinColumnOrFormula;
+import org.hibernate.annotations.JoinColumnsOrFormulas;
+import org.hibernate.annotations.JoinFormula;
 import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.Where;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -37,6 +42,8 @@ import java.util.List;
 @Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
+@FilterDef(name = "archivedFilter", parameters = {@ParamDef(name = "archived", type = "boolean")})
+@Filter(name = "archivedFilter", condition = "archived = :archived")
 public class Project extends AbstractAuditEntity implements TenantSupport, Serializable {
 
     @Column(name = "[key]")
@@ -49,10 +56,14 @@ public class Project extends AbstractAuditEntity implements TenantSupport, Seria
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
 
+    @Column(columnDefinition = "TINYINT")
+    private boolean archived;
+
     @Column(name = "organization_id")
     private Long organizationId;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.PERSIST)
+    @Where(clause="archived = 0")
     private List<Environment> environments;
 
 }

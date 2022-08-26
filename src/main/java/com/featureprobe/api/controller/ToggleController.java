@@ -14,6 +14,7 @@ import com.featureprobe.api.dto.ToggleItemResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
+import com.featureprobe.api.service.IncludeArchivedToggleService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import com.featureprobe.api.service.ToggleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +45,8 @@ public class ToggleController {
 
     private ToggleService toggleService;
 
+    private IncludeArchivedToggleService includeArchivedToggleService;
+
     @GetMapping
     @GetApiResponse
     @Operation(summary = "List toggles", description = "Get a list of all toggles in the project.")
@@ -59,6 +62,8 @@ public class ToggleController {
     public ToggleResponse create(
             @PathVariable(name = "projectKey") String projectKey,
             @RequestBody @Validated ToggleCreateRequest toggleCreateRequest) {
+        includeArchivedToggleService.validateIncludeArchivedToggleByKey(projectKey, toggleCreateRequest.getKey());
+        includeArchivedToggleService.validateIncludeArchivedToggleByName(projectKey, toggleCreateRequest.getName());
         return toggleService.create(projectKey, toggleCreateRequest);
     }
 
@@ -85,7 +90,7 @@ public class ToggleController {
     public BaseResponse checkKey(@PathVariable("projectKey") String projectKey,
                                  @RequestParam ValidateTypeEnum type,
                                  @RequestParam String value){
-        toggleService.validateExists(projectKey, type, value);
+        includeArchivedToggleService.validateIncludeArchivedToggle(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

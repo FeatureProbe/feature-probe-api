@@ -9,7 +9,6 @@ import java.util.List;
 @Data
 public class ToggleSearchRequest extends PaginationRequest {
 
-    @NotBlank
     private String environmentKey;
 
     private VisitFilter visitFilter;
@@ -19,5 +18,7 @@ public class ToggleSearchRequest extends PaginationRequest {
     private List<String> tags;
 
     private String keyword;
+
+    private boolean archived;
 
 }

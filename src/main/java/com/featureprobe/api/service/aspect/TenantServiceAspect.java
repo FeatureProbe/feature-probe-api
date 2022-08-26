@@ -43,6 +43,10 @@ public class TenantServiceAspect {
                     session.enableFilter("deletedFilter").setParameter("deleted", false)
                             .validate();
                 }
+                Archived archivedAnnotation = getMethodAnnotation(pjp, Archived.class);
+                if (Objects.isNull(archivedAnnotation)) {
+                    session.enableFilter("archivedFilter").setParameter("archived", false).validate();
+                }
             }
         }
     }
@@ -58,6 +62,7 @@ public class TenantServiceAspect {
                 Session session = entityManager.unwrap(Session.class);
                 session.disableFilter("tenantFilter");
                 session.disableFilter("deletedFilter");
+                session.disableFilter("archivedFilter");
             }
         }
     }

@@ -4,7 +4,6 @@ import com.featureprobe.api.base.config.AppConfig;
 import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
-import com.featureprobe.api.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;

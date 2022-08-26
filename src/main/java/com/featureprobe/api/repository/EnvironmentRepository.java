@@ -13,6 +13,8 @@ public interface EnvironmentRepository extends JpaRepository<Environment, Long> 
 
     List<Environment> findAllByProjectKey(String projectKey);
 
+    List<Environment> findAllByProjectKeyAndArchived(String projectKey, Boolean archived);
+
     long countByProjectKey(String projectKey);
 
     Optional<Environment> findByServerSdkKey(String serverSdkKey);
@@ -25,4 +27,5 @@ public interface EnvironmentRepository extends JpaRepository<Environment, Long> 
 
     Optional<Environment> findByProjectKeyAndKey(String projectKey, String key);
 
+    Optional<Environment> findByProjectKeyAndKeyAndArchived(String projectKey, String key, Boolean archived);
 }

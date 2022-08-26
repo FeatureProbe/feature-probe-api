@@ -16,5 +16,5 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     Tag findByProjectKeyAndName(String projectKey, String name);
 
-    Set<Tag> findByProjectKeyAndNameIn(String key, String[] tagNames);
+    Set<Tag> findByProjectKeyAndNameIn(String key, List<String> tagNames);
 }

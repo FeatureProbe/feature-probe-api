@@ -14,6 +14,7 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.JoinColumnOrFormula;
 import org.hibernate.annotations.JoinColumnsOrFormulas;
+import org.hibernate.annotations.JoinFormula;
 import org.hibernate.annotations.ParamDef;
 
 import javax.persistence.CascadeType;
@@ -41,6 +42,8 @@ import java.io.Serializable;
 @Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
 @FilterDef(name = "deletedFilter", parameters = {@ParamDef(name = "deleted", type = "boolean")})
 @Filter(name = "deletedFilter", condition = "deleted = :deleted")
+@FilterDef(name = "archivedFilter", parameters = {@ParamDef(name = "archived", type = "boolean")})
+@Filter(name = "archivedFilter", condition = "archived = :archived")
 public class Environment extends AbstractAuditEntity implements TenantSupport, Serializable {
 
     private String name;
@@ -56,6 +59,9 @@ public class Environment extends AbstractAuditEntity implements TenantSupport, S
 
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
+
+    @Column(columnDefinition = "TINYINT")
+    private boolean archived;
 
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumnsOrFormulas(value = {

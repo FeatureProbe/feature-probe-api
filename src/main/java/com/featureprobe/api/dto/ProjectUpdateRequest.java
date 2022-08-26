@@ -8,4 +8,6 @@ public class ProjectUpdateRequest {
     private String name;
 
     private String description;
+
+    private Boolean archived;
 }

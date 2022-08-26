@@ -2,7 +2,6 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.enums.VisitFilter;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
@@ -30,11 +29,13 @@ import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
-import com.featureprobe.api.service.aspect.IncludeDeleted;
+import com.featureprobe.api.service.aspect.Archived;
+import com.featureprobe.api.util.PageRequestUtil;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -43,7 +44,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -95,7 +95,6 @@ public class ToggleService {
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
-
     private void validateLimit(String projectKey) {
         long total = toggleRepository.countByProjectKey(projectKey);
         FPUser user = new FPUser(String.valueOf(TokenHelper.getUserId()));
@@ -107,8 +106,6 @@ public class ToggleService {
     }
 
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        validateKey(projectKey, createRequest.getKey());
-        validateName(projectKey, createRequest.getName());
         Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
         toggle.setProjectKey(projectKey);
         setToggleTagRefs(toggle, createRequest.getTags());
@@ -183,30 +180,21 @@ public class ToggleService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Archived
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
-        Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
-        if(!StringUtils.equals(toggle.getName(), updateRequest.getName())) {
+        boolean archived = updateRequest.getArchived() == null ? false : !updateRequest.getArchived();
+        Toggle toggle = toggleRepository.findByProjectKeyAndKeyAndArchived(projectKey, toggleKey, archived)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
+        if(StringUtils.isNotBlank(updateRequest.getName()) &&
+                !StringUtils.equals(toggle.getName(), updateRequest.getName())) {
             validateName(projectKey, updateRequest.getName());
         }
         ToggleMapper.INSTANCE.mapEntity(updateRequest, toggle);
-        setToggleTagRefs(toggle, updateRequest.getTags());
-
-        toggleRepository.save(toggle);
-
-        return ToggleMapper.INSTANCE.entityToResponse(toggle);
-    }
-
-    public void validateExists(String projectKey, ValidateTypeEnum type, String  value) {
-        switch (type) {
-            case KEY:
-                validateKey(projectKey, value);
-                break;
-            case NAME:
-                validateName(projectKey, value);
-                break;
-            default:
-                break;
+        if (CollectionUtils.isNotEmpty(updateRequest.getTags())) {
+            setToggleTagRefs(toggle, updateRequest.getTags());
         }
+        toggleRepository.save(toggle);
+        return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
     private void validateKey(String projectKey, String key) {
@@ -221,38 +209,45 @@ public class ToggleService {
         }
     }
 
-    private void setToggleTagRefs(Toggle toggle, String[] tagNames) {
+    private void setToggleTagRefs(Toggle toggle, List<String> tagNames) {
         Set<Tag> tags = tagRepository.findByProjectKeyAndNameIn(toggle.getProjectKey(), tagNames);
         toggle.setTags(tags);
     }
 
+    @Archived
     public Page<ToggleItemResponse> query(String projectKey, ToggleSearchRequest searchRequest) {
-        Environment environment = environmentRepository
-                .findByProjectKeyAndKey(projectKey, searchRequest.getEnvironmentKey())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(ResourceType.ENVIRONMENT, searchRequest.getEnvironmentKey()));
-        Set<String> toggleKeys = new TreeSet<>();
-        boolean isPrecondition = false;
-        if (Objects.nonNull(searchRequest.getDisabled())) {
-            isPrecondition = true;
-            Set<String> keys = queryToggleKeysByDisabled(projectKey, searchRequest.getEnvironmentKey(),
-                    searchRequest.getDisabled());
-            retainAllKeys(toggleKeys, keys);
+        Page<Toggle> togglePage;
+        if (StringUtils.isNotBlank(searchRequest.getEnvironmentKey())) {
+            Environment environment = environmentRepository
+                    .findByProjectKeyAndKeyAndArchived(projectKey, searchRequest.getEnvironmentKey(), false)
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(ResourceType.ENVIRONMENT, searchRequest.getEnvironmentKey()));
+            Set<String> toggleKeys = new TreeSet<>();
+            boolean isPrecondition = false;
+            if (Objects.nonNull(searchRequest.getDisabled())) {
+                isPrecondition = true;
+                Set<String> keys = queryToggleKeysByDisabled(projectKey, searchRequest.getEnvironmentKey(),
+                        searchRequest.getDisabled());
+                retainAllKeys(toggleKeys, keys);
+            }
+            if (!CollectionUtils.isEmpty(searchRequest.getTags())) {
+                isPrecondition = true;
+                Set<String> keys = queryToggleKeysByTags(searchRequest.getTags());
+                retainAllKeys(toggleKeys, keys);
+            }
+            if (Objects.nonNull(searchRequest.getVisitFilter())) {
+                isPrecondition = true;
+                Set<String> keys = queryToggleKeysByVisited(searchRequest.getVisitFilter(), projectKey, environment);
+                retainAllKeys(toggleKeys, keys);
+            }
+            togglePage = compoundQuery(projectKey, searchRequest, toggleKeys, isPrecondition);
+            return togglePage.map(item ->
+                    entityToItemResponse(item, projectKey, searchRequest.getEnvironmentKey()));
+        } else {
+            togglePage = toggleRepository.findAllByProjectKeyAndArchived(projectKey, false,
+                    PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "createdTime"));
+            return togglePage.map(item -> ToggleMapper.INSTANCE.entityToItemResponse(item));
         }
-        if (!CollectionUtils.isEmpty(searchRequest.getTags())) {
-            isPrecondition = true;
-            Set<String> keys = queryToggleKeysByTags(searchRequest.getTags());
-            retainAllKeys(toggleKeys, keys);
-        }
-        if (Objects.nonNull(searchRequest.getVisitFilter())) {
-            isPrecondition = true;
-            Set<String> keys = queryToggleKeysByVisited(searchRequest.getVisitFilter(), projectKey, environment);
-            retainAllKeys(toggleKeys, keys);
-        }
-        Page<Toggle> togglePage = compoundQuery(projectKey, searchRequest, toggleKeys, isPrecondition);
-        Page<ToggleItemResponse> toggleItemPage = togglePage.map(item ->
-                entityToItemResponse(item, projectKey, searchRequest.getEnvironmentKey()));
-        return toggleItemPage;
     }
 
     private Page<Toggle> compoundQuery(String projectKey, ToggleSearchRequest searchRequest, Set<String> toggleKeys,
@@ -265,7 +260,12 @@ public class ToggleService {
                 Predicate p3 = cb.like(root.get("desc"), "%" + searchRequest.getKeyword() + "%");
                 Predicate p4 = root.get("key").in(toggleKeys);
                 Predicate p5 = cb.equal(root.get("projectKey"), projectKey);
-                Predicate p6 = cb.equal(root.get("archived"), 0);
+                Predicate p6;
+                if (searchRequest.isArchived()) {
+                    p6 = cb.equal(root.get("archived"), 1);
+                } else {
+                    p6 = cb.equal(root.get("archived"), 0);
+                }
                 if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
                     if (isPrecondition) {
                         return query.where(cb.or(p1, p2, p3), cb.and(p4, p5, p6)).getRestriction();
@@ -306,8 +306,6 @@ public class ToggleService {
         });
         return toggleKeys;
     }
-
-
 
     private Set<String> queryToggleKeysByVisited(VisitFilter visitFilter, String projectKey, Environment environment) {
         switch (visitFilter) {
@@ -395,8 +393,10 @@ public class ToggleService {
         return null;
     }
 
+    @Archived
     public ToggleResponse queryByKey(String projectKey, String toggleKey) {
-        Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).get();
+        Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
