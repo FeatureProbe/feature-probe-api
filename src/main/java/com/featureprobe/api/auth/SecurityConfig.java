@@ -90,8 +90,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll()
                 .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
                         OrganizationRoleEnum.WRITER.name())
-                .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
-                        OrganizationRoleEnum.WRITER.name())
                 .anyRequest().authenticated()
                 .and()
                 .exceptionHandling()
