@@ -24,10 +24,10 @@ public class IncludeArchivedToggleService {
     public void validateIncludeArchivedToggle(String projectKey, ValidateTypeEnum type, String value) {
         switch (type) {
             case KEY:
-                validateIncludeArchivedToggleByName(projectKey, value);
+                validateIncludeArchivedToggleByKey(projectKey, value);
                 break;
             case NAME:
-                validateIncludeArchivedToggleByKey(projectKey, value);
+                validateIncludeArchivedToggleByName(projectKey, value);
                 break;
             default:
                 break;

@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -91,8 +90,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll()
                 .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
                         OrganizationRoleEnum.WRITER.name())
-                .antMatchers(HttpMethod.PATCH, "/projects/**/environments/*")
-                .hasAnyAuthority(OrganizationRoleEnum.OWNER.name())
                 .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
                         OrganizationRoleEnum.WRITER.name())
                 .anyRequest().authenticated()

@@ -24,10 +24,10 @@ public class IncludeArchivedEnvironmentService {
     public void validateIncludeArchivedEnvironment(String projectKey, ValidateTypeEnum type, String value) {
         switch (type) {
             case KEY:
-                validateIncludeArchivedEnvironmentByName(projectKey, value);
+                validateIncludeArchivedEnvironmentByKey(projectKey, value);
                 break;
             case NAME:
-                validateIncludeArchivedEnvironmentByKey(projectKey, value);
+                validateIncludeArchivedEnvironmentByName(projectKey, value);
                 break;
             default:
                 break;
