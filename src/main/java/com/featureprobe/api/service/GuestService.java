@@ -11,6 +11,7 @@ import com.featureprobe.api.service.aspect.ExcludeTenant;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,8 +26,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -51,7 +50,7 @@ public class GuestService {
 
     private static final String GUEST_INIT_PROJECT_KEY = "My_Project";
 
-    private static final String DEMO_INIT_DATA_FILE_PATH = "classpath:db/demo_init_data.sql";
+    private static final String DEMO_INIT_DATA_FILE_PATH = "db/demo_init_data.sql";
 
     @Transactional(rollbackFor = Exception.class)
     public Member initGuest(String account) {
@@ -70,7 +69,7 @@ public class GuestService {
                 .build())));
         Organization organization = savedMember.getOrganizations().get(0);
         initProjectEnvironment(String.valueOf(organization.getId()), GUEST_INIT_PROJECT_KEY);
-        initToggles(organization.getId(), savedMember.getId(), account);
+        initToggles(organization.getId(), savedMember.getId());
         return savedMember;
     }
 
@@ -80,10 +79,10 @@ public class GuestService {
                 projectName, ""));
     }
 
-    private void initToggles(Long tenantId, Long userId, String account) {
+    private void initToggles(Long tenantId, Long userId) {
         try {
-            File file = ResourceUtils.getFile(DEMO_INIT_DATA_FILE_PATH);
-            BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+            ClassPathResource classPathResource = new ClassPathResource(DEMO_INIT_DATA_FILE_PATH);
+            BufferedReader br = new BufferedReader(new InputStreamReader(classPathResource.getInputStream()));
             String sql;
             while (StringUtils.isNotBlank((sql = br.readLine()))) {
                 sql = sql.replace("${organization_id}", String.valueOf(tenantId))
