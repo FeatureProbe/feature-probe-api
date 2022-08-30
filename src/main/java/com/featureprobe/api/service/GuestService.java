@@ -53,7 +53,7 @@ public class GuestService {
     private static final String DEMO_INIT_DATA_FILE_PATH = "db/demo_init_data.sql";
 
     @Transactional(rollbackFor = Exception.class)
-    public Member initGuest(String account) {
+    public Member initGuest(String account, String source) {
         Member createdMember = new Member();
         createdMember.setAccount(account);
         createdMember.setPassword(passwordEncoder.encode(appConfig.getGuestDefaultPassword()));
@@ -61,6 +61,7 @@ public class GuestService {
         List<Organization> organizations = new ArrayList<>(1);
         organizations.add(new Organization(account));
         createdMember.setOrganizations(organizations);
+        createdMember.setSource(source);
         Member savedMember = memberRepository.save(createdMember);
         SecurityContextHolder.setContext(new SecurityContextImpl(new JwtAuthenticationToken(Jwt.withTokenValue("_")
                 .claim("userId", savedMember.getId()).claim("account", savedMember.getAccount())

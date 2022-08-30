@@ -12,6 +12,8 @@ public class MemberCreateRequest {
     @NotNull
     private List<String> accounts;
 
+    private String source;
+
     @NotBlank
     private String password;
 

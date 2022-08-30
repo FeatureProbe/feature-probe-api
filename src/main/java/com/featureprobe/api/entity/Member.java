@@ -53,6 +53,8 @@ public class Member extends AbstractAuditEntity implements AuthenticatedPrincipa
     @Column(columnDefinition = "TINYINT")
     private Boolean deleted;
 
+    private String source;
+
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinTable(name = "organization_member", joinColumns = @JoinColumn(name = "member_id"),
             inverseJoinColumns = @JoinColumn(name = "organization_id"))

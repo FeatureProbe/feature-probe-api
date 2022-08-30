@@ -60,6 +60,8 @@ public class MemberService {
     @PersistenceContext
     public EntityManager entityManager;
 
+    private static final String API_CREATE_MEMBER_SOURCE = "INTERNAL";
+
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Transactional(rollbackFor = Exception.class)
@@ -104,12 +106,14 @@ public class MemberService {
         return createRequest.getAccounts()
                 .stream()
                 .filter(account -> memberIncludeDeletedService.validateAccountIncludeDeleted(account))
-                .map(account -> newMember(account, createRequest.getPassword())).collect(Collectors.toList());
+                .map(account -> newMember(account, createRequest.getSource(), createRequest.getPassword()))
+                .collect(Collectors.toList());
     }
 
-    private Member newMember(String account, String password) {
+    private Member newMember(String account, String source, String password) {
         Member member = new Member();
         member.setAccount(account);
+        member.setSource(source);
         member.setRole(RoleEnum.MEMBER);
         member.setPassword(new BCryptPasswordEncoder().encode(password));
         Organization organization = organizationRepository.findById(TenantContext.getCurrentOrganization()
