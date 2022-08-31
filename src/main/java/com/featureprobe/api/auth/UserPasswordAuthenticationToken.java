@@ -10,13 +10,16 @@ public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken
 
     private String account;
 
+    private String source;
+
     private String password;
 
     private Member principal;
 
-    public UserPasswordAuthenticationToken(String account, String password) {
+    public UserPasswordAuthenticationToken(String account, String source, String password) {
         super(null);
         this.account = account;
+        this.source = source;
         this.password = password;
         super.setAuthenticated(false);
     }
@@ -46,10 +49,13 @@ public class UserPasswordAuthenticationToken extends AbstractAuthenticationToken
         return account;
     }
 
+    public String getSource() {
+        return source;
+    }
+
     public String getPassword() {
         return password;
     }
-
 
     public String getRole() {
         if (principal == null) {

@@ -50,7 +50,7 @@ class GuestServiceSpec extends Specification{
         given:
         Query query = Mock(NativeQueryImplementor)
         when:
-        def guest = guestService.initGuest("Admin")
+        def guest = guestService.initGuest("Admin", "test")
         then:
         1 * memberRepository.save(_) >> new Member(id: 1, account: "Admin", role: RoleEnum.ADMIN, organizations: [new Organization(id: 1)])
         1 * projectRepository.count() >> 2

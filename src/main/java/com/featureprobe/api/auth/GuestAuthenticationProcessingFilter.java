@@ -22,6 +22,8 @@ public class GuestAuthenticationProcessingFilter extends AbstractAuthenticationP
 
     private static final String GUEST_LOGIN_ACCOUNT_PARAM = "account";
 
+    private static final String ACCOUNT_SOURCE = "source";
+
     protected GuestAuthenticationProcessingFilter() {
         super(GUEST_LOGIN_PATH);
     }
@@ -34,7 +36,8 @@ public class GuestAuthenticationProcessingFilter extends AbstractAuthenticationP
         String body = IOUtils.toString(is, StandardCharsets.UTF_8);
         Map<String, String> authParam = mapper.readValue(body, Map.class);
         String account = authParam.get(GUEST_LOGIN_ACCOUNT_PARAM);
-        return getAuthenticationManager().authenticate(new GuestAuthenticationToken(account, ""));
+        String source = authParam.get(ACCOUNT_SOURCE);
+        return getAuthenticationManager().authenticate(new GuestAuthenticationToken(account, source, ""));
     }
 
 }
