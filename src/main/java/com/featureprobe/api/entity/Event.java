@@ -50,6 +50,12 @@ public class Event implements Serializable {
     @Column(name = "project_key")
     private String projectKey;
 
+    @Column(name = "sdk_type")
+    private String sdkType;
+
+    @Column(name = "sdk_version")
+    private String sdkVersion;
+
     @Column(name = "toggle_version")
     private Long toggleVersion;
 

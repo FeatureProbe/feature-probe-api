@@ -25,7 +25,7 @@ class EventServiceSpec extends Specification {
         def savedEvents
 
         when:
-        this.eventService.create("server-key-test", [new EventCreateRequest(access: new AccessSummary(
+        this.eventService.create("server-key-test", "java/1.0.0", [new EventCreateRequest(access: new AccessSummary(
                 startTime: 10010101010,
                 endTime: 202020202020,
                 counters: [

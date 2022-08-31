@@ -12,6 +12,7 @@ import com.featureprobe.api.repository.EventRepository;
 import com.featureprobe.api.service.aspect.ExcludeTenant;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -31,7 +32,7 @@ public class EventService {
     private EnvironmentRepository environmentRepository;
 
 
-    public void create(String serverSdkKey, List<EventCreateRequest> requests) {
+    public void create(String serverSdkKey, String userAgent, List<EventCreateRequest> requests) {
         Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, serverSdkKey));
 
@@ -44,7 +45,7 @@ public class EventService {
                     .entrySet()
                     .stream()
                     .flatMap(entry -> createEventEntities(entry).stream())
-                    .map(event -> wrapEvent(event, environment, request))
+                    .map(event -> wrapEvent(event, userAgent, environment, request))
                     .collect(Collectors.toList());
 
             if (!events.isEmpty()) {
@@ -74,7 +75,7 @@ public class EventService {
         return event;
     }
 
-    private Event wrapEvent(Event event, Environment environment, EventCreateRequest request) {
+    private Event wrapEvent(Event event, String userAgent, Environment environment, EventCreateRequest request) {
         if (request.getAccess() == null) {
             return event;
         }
@@ -82,8 +83,27 @@ public class EventService {
         event.setProjectKey(environment.getProject().getKey());
         event.setEnvironmentKey(environment.getKey());
         event.setType("access");
+        event.setSdkType(getSdkType(userAgent));
+        event.setSdkVersion(getSdkVersion(userAgent));
         event.setStartDate(new Date(request.getAccess().getStartTime()));
         event.setEndDate(new Date(request.getAccess().getEndTime()));
         return event;
     }
+
+    private String getSdkType(String userAgent) {
+        if (StringUtils.isNotBlank(userAgent) && userAgent.contains("/")) {
+            return userAgent.split("/")[0];
+        }
+        log.error("[Event] SDK user-agent format error. {} ", userAgent);
+        return "";
+    }
+
+    private String getSdkVersion(String userAgent) {
+        if (StringUtils.isNotBlank(userAgent) && userAgent.contains("/")) {
+            return userAgent.split("/")[1];
+        }
+        log.error("[Event] SDK user-agent format error. {} ", userAgent);
+        return "";
+    }
+
 }
