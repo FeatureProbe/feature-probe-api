@@ -31,16 +31,14 @@ public class OperationLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "res_param")
+    @Column(name = "res_param", columnDefinition = "TEXT")
     private String response;
 
-    @Column(name = "req_param")
+    @Column(name = "req_param", columnDefinition = "TEXT")
     private String request;
 
-    @Column(columnDefinition = "TEXT")
     private String type;
 
-    @Column(columnDefinition = "TEXT")
     private String account;
 
     @Temporal(TemporalType.TIMESTAMP)
