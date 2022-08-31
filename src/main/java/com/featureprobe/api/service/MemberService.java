@@ -98,6 +98,11 @@ public class MemberService {
     public MemberResponse delete(String account) {
         verifyAdminPrivileges();
         Member member = findMemberByAccount(account);
+        OrganizationMember organizationMember = organizationMemberRepository
+                .findByOrganizationIdAndMemberId(Long.parseLong(TenantContext.getCurrentTenant()), member.getId())
+                .orElseThrow(()  -> new ResourceNotFoundException(ResourceType.ORGANIZATION_MEMBER,
+                        account + "_" + TenantContext.getCurrentTenant()));
+        organizationMemberRepository.delete(organizationMember);
         member.setDeleted(true);
         return MemberMapper.INSTANCE.entityToResponse(memberRepository.save(member));
     }

@@ -126,13 +126,16 @@ class MemberServiceSpec extends Specification {
     def "delete a member"() {
         given:
         setAuthContext("Admin", "ADMIN")
-
+        TenantContext.setCurrentTenant("1")
         when:
         def response = memberService.delete("root")
 
         then:
         1 * memberRepository.findByAccount("root") >>
-                Optional.of(new Member(account: "root", password: "root", role: "MEMBER"))
+                Optional.of(new Member(id: 1, account: "root", password: "root", role: "MEMBER"))
+        1 * organizationMemberRepository.findByOrganizationIdAndMemberId(1 , 1) >>
+                Optional.of(new OrganizationMember())
+        1 * organizationMemberRepository.delete(_)
         1 * memberRepository.save(_) >> new Member(account: "root", password: "root", role: "MEMBER")
         with(response) {
             "root" == account

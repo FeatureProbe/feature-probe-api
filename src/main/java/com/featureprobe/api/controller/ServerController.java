@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,8 +54,13 @@ public class ServerController {
     public void createEvent(
             @RequestBody @Validated List<EventCreateRequest> batchRequest,
             @Parameter(description = "sdk key")
-            @RequestHeader(value = "Authorization") String sdkKey) {
-        eventService.create(serverService.getSdkServerKey(sdkKey), batchRequest);
+            @RequestHeader(value = "Authorization") String sdkKey,
+            @RequestHeader(value = "user-agent", required = false) String userAgent,
+            @RequestHeader(value = "UA", required = false) String javascriptUserAgent) {
+        if(StringUtils.isNotBlank(javascriptUserAgent)) {
+            userAgent = javascriptUserAgent;
+        }
+        eventService.create(serverService.getSdkServerKey(sdkKey), userAgent, batchRequest);
     }
 
 }
