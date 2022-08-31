@@ -37,8 +37,10 @@ public class OperationLog {
     @Column(name = "req_param")
     private String request;
 
+    @Column(columnDefinition = "TEXT")
     private String type;
 
+    @Column(columnDefinition = "TEXT")
     private String account;
 
     @Temporal(TemporalType.TIMESTAMP)
