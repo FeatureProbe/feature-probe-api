@@ -1,5 +1,6 @@
 package com.featureprobe.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
 import com.featureprobe.sdk.server.model.PredicateType;
@@ -26,18 +27,22 @@ public class ConditionValue {
         return condition;
     }
 
+    @JsonIgnore
     public boolean isSegmentType() {
         return StringUtils.equals(ConditionType.SEGMENT.toValue(), type);
     }
 
+    @JsonIgnore
     public boolean isNumberType() {
         return StringUtils.equals(ConditionType.NUMBER.toValue(), type);
     }
 
+    @JsonIgnore
     public boolean isDatetimeType() {
         return StringUtils.equals(ConditionType.DATETIME.toValue(), type);
     }
 
+    @JsonIgnore
     public boolean isSemVerType() {
         return StringUtils.equals(ConditionType.SEMVER.toValue(), type);
     }

@@ -2,6 +2,8 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
+import com.featureprobe.api.dto.ApprovalSettings
+import com.featureprobe.api.dto.PreferenceCreateRequest
 import com.featureprobe.api.dto.ProjectCreateRequest
 import com.featureprobe.api.dto.ProjectQueryRequest
 import com.featureprobe.api.dto.ProjectUpdateRequest
@@ -52,7 +54,7 @@ class ProjectServiceSpec extends Specification {
         projectService = new ProjectService(projectRepository, environmentRepository, featureProbe, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
-        projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)
+        projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey, archived: true)
         setAuthContext("Admin", "ADMIN")
     }
 
@@ -87,7 +89,8 @@ class ProjectServiceSpec extends Specification {
         def ret = projectService.update(projectKey, projectUpdateRequest)
         then:
         1 * projectRepository.findByKey(projectKey) >>
-                Optional.of(new Project(name: projectName, key: projectKey))
+                Optional.of(new Project(name: projectName, key: projectKey, environments: [new Environment()]))
+        1 * environmentRepository.saveAll(_)
         1 * projectRepository.existsByName(projectUpdateRequest.name) >> false
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey)
         with(ret) {
@@ -112,6 +115,47 @@ class ProjectServiceSpec extends Specification {
         1 * projectRepository.existsByName(projectName) >> true
         then:
         thrown ResourceConflictException
+    }
+
+    def "validate projecte by name&key not exists"() {
+        when:
+        projectService.validateExists(ValidateTypeEnum.NAME, "name")
+        projectService.validateExists(ValidateTypeEnum.KEY, "key")
+        then:
+        projectRepository.existsByName("name") >> false
+        projectRepository.existsByKey("key") >> false
+    }
+
+    def "validate projecte by name is exists"() {
+        when:
+        projectService.validateExists(ValidateTypeEnum.NAME, "name")
+        then:
+        projectRepository.existsByName("name") >> true
+        thrown ResourceConflictException
+    }
+
+    def "validate projecte by keu is exists"() {
+        when:
+        projectService.validateExists(ValidateTypeEnum.KEY, "key")
+        then:
+        projectRepository.existsByKey("key") >> true
+        thrown ResourceConflictException
+    }
+
+    def "create preference"() {
+        when:
+        projectService.createPreference(projectKey, new PreferenceCreateRequest(approvalSettings: [new ApprovalSettings(environmentKey: "dev", enable: true, reviewers: ["Admin"])]))
+        then:
+        1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "dev")]
+        1 * environmentRepository.saveAll(_)
+    }
+
+    def "query approval settings list"(){
+        when:
+        def list = projectService.approvalSettingsList(projectKey)
+        then:
+        1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "dev", enableApproval: true, reviewers: "[\"Admin\"]")]
+        1 == list.size()
     }
 
     private setAuthContext(String account, String role) {

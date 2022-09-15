@@ -63,6 +63,11 @@ public class Environment extends AbstractAuditEntity implements TenantSupport, S
     @Column(columnDefinition = "TINYINT")
     private boolean archived;
 
+    @Column(name = "enable_approval", columnDefinition = "TINYINT")
+    private boolean enableApproval;
+
+    private String reviewers;
+
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumnsOrFormulas(value = {
             @JoinColumnOrFormula(column=@JoinColumn(name ="organization_id", referencedColumnName ="organization_id")),

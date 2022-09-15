@@ -6,12 +6,15 @@ import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ResourceOverflowException;
+import com.featureprobe.api.dto.ApprovalSettings;
+import com.featureprobe.api.dto.PreferenceCreateRequest;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
 import com.featureprobe.api.dto.ProjectResponse;
 import com.featureprobe.api.dto.ProjectUpdateRequest;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Project;
+import com.featureprobe.api.mapper.EnvironmentMapper;
 import com.featureprobe.api.mapper.ProjectMapper;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.ProjectRepository;
@@ -20,6 +23,7 @@ import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -68,6 +74,24 @@ public class ProjectService {
         }
         ProjectMapper.INSTANCE.mapEntity(updateRequest, project);
         return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void createPreference(String projectKey, PreferenceCreateRequest createRequest) {
+        Map<String, ApprovalSettings> approvalSettingsMap = createRequest.getApprovalSettings().stream()
+                .collect(Collectors.toMap(ApprovalSettings::getEnvironmentKey, Function.identity()));
+        if (CollectionUtils.isNotEmpty(createRequest.getApprovalSettings())) {
+            List<Environment> environments = environmentRepository.findAllByProjectKey(projectKey);
+            environments.stream().forEach(environment -> EnvironmentMapper.INSTANCE
+                    .mapEntity(approvalSettingsMap.get(environment.getKey()), environment));
+            environmentRepository.saveAll(environments);
+        }
+    }
+
+    public List<ApprovalSettings> approvalSettingsList(String projectKey) {
+        List<Environment> environments = environmentRepository.findAllByProjectKey(projectKey);
+        return environments.stream().map(environment ->
+                EnvironmentMapper.INSTANCE.entityToApprovalSettings(environment)).collect(Collectors.toList());
     }
 
     private void archiveAllEnvironments(List<Environment> environments) {

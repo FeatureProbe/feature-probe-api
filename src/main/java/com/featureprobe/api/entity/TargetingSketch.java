@@ -2,11 +2,13 @@ package com.featureprobe.api.entity;
 
 import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
+import com.featureprobe.api.base.enums.SketchStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Filter;
@@ -15,21 +17,31 @@ import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Table;
+import java.io.Serializable;
 
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Builder
 @Entity
-@Table(name = "targeting_version")
+@Table(name = "targeting_sketch")
 @DynamicInsert
-@ToString(callSuper = true)
 @EntityListeners(TenantEntityListener.class)
+@ToString(callSuper = true)
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
 @Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
-public class TargetingVersion extends AbstractAuditEntity implements TenantSupport {
+public class TargetingSketch extends AbstractAuditEntity implements TenantSupport, Serializable {
+
+    @Column(name = "approval_id")
+    private Long approvalId;
+
+    @Column(name = "organization_id")
+    private Long organizationId;
 
     @Column(name = "project_key")
     private String projectKey;
@@ -40,20 +52,18 @@ public class TargetingVersion extends AbstractAuditEntity implements TenantSuppo
     @Column(name = "toggle_key")
     private String toggleKey;
 
-    private String comment;
+    @Column(name = "old_version")
+    private Long oldVersion;
 
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    private String comment;
+
     @Column(columnDefinition = "TINYINT")
     private Boolean disabled;
 
-    @Column(name = "organization_id")
-    private Long organizationId;
-
-    private Long version;
-
-    @Column(name = "approval_id")
-    private Long approvalId;
+    @Enumerated(EnumType.STRING)
+    private SketchStatusEnum status;
 
 }

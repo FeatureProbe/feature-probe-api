@@ -3,6 +3,7 @@ package com.featureprobe.api.service
 import com.featureprobe.api.auth.tenant.TenantContext
 import com.featureprobe.api.base.constants.MetricType
 import com.featureprobe.api.base.enums.OrganizationRoleEnum
+import com.featureprobe.api.dto.AccessStatusResponse
 import com.featureprobe.api.dto.MetricResponse
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Event
@@ -166,7 +167,6 @@ class MetricServiceSpec extends Specification {
         true       | 49
     }
 
-
     def "test `getPointIntervalCount`"() {
         expect:
         intervalCount == metricService.getPointIntervalCount(lastHours)
@@ -216,6 +216,15 @@ class MetricServiceSpec extends Specification {
         with(events.find { it.value == 'false' }) {
             4 == it.count
         }
+    }
+
+    def "query access status"(){
+        when:
+        def isAccess = metricService.isAccess("projectKey", "dev", "toggleKey")
+        then:
+        1 * environmentRepository.findByProjectKeyAndKey("projectKey", "dev") >> Optional.of(new Environment(serverSdkKey: "123"))
+        1 * eventRepository.existsBySdkKeyAndToggleKey("123", "toggleKey") >> true
+        true == isAccess.getIsAccess()
     }
 
     private setAuthContext(String account, String role) {

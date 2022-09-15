@@ -27,7 +27,7 @@ public class DictionaryController {
     @PostMapping("/{key}")
     public DictionaryResponse save(@PathVariable("key") String key,
                                    @RequestBody String value) {
-        return dictionaryService.save(key, value);
+        return dictionaryService.create(key, value);
     }
 
 }

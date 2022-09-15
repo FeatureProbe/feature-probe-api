@@ -24,4 +24,10 @@ public class ToggleItemResponse {
     private Date modifiedTime;
 
     private String modifiedBy;
+
+    private boolean locked;
+
+    private String lockedBy;
+
+    private Date lockedTime;
 }

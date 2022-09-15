@@ -1,5 +1,6 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.dto.SdkKeyResponse
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
 import com.featureprobe.api.entity.Segment
@@ -56,6 +57,14 @@ class ServerServiceSpec extends Specification {
         segmentRules = "[{\"conditions\":[{\"type\":\"string\",\"subject\":\"userId\",\"predicate\":\"is one of\"," +
                 "\"objects\":[\"zhangsan\",\"wangwu\",\"lishi\",\"miss\"]},{\"type\":\"string\",\"subject\":\"userId\"," +
                 "\"predicate\":\"is one of\",\"objects\":[\"huahau\",\"kaka\",\"dada\"]}],\"name\":\"\"}]"
+    }
+
+    def "query all sdkKeys"(){
+        when:
+        def keys = serverService.queryAllSdkKeys()
+        then:
+        1 * environmentRepository.findAll() >> [new Environment(clientSdkKey: "client-123", serverSdkKey: "server-123")]
+        1 == keys.clientKeyToServerKey.size()
     }
 
     def "test get sdk server key"() {

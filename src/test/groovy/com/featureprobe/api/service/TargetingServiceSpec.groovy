@@ -1,20 +1,35 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.auth.tenant.TenantContext
+import com.featureprobe.api.base.enums.ApprovalStatusEnum
+import com.featureprobe.api.base.enums.OrganizationRoleEnum
+import com.featureprobe.api.base.enums.SketchStatusEnum
 import com.featureprobe.api.base.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.TargetingRequest
 import com.featureprobe.api.dto.TargetingVersionRequest
+import com.featureprobe.api.dto.UpdateApprovalStatusRequest
+import com.featureprobe.api.entity.ApprovalRecord
+import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Targeting
+import com.featureprobe.api.entity.TargetingSketch
 import com.featureprobe.api.entity.TargetingVersion
 import com.featureprobe.api.mapper.JsonMapper
 import com.featureprobe.api.model.TargetingContent
+import com.featureprobe.api.repository.ApprovalRecordRepository
+import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.SegmentRepository
 import com.featureprobe.api.repository.TargetingRepository
 import com.featureprobe.api.repository.TargetingSegmentRepository
+import com.featureprobe.api.repository.TargetingSketchRepository
 import com.featureprobe.api.repository.TargetingVersionRepository
 import com.featureprobe.api.repository.VariationHistoryRepository
 import org.hibernate.internal.SessionImpl
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -30,6 +45,9 @@ class TargetingServiceSpec extends Specification {
     TargetingSegmentRepository targetingSegmentRepository
     TargetingVersionRepository targetingVersionRepository
     VariationHistoryRepository variationHistoryRepository
+    EnvironmentRepository environmentRepository
+    ApprovalRecordRepository approvalRecordRepository
+    TargetingSketchRepository targetingSketchRepository
     EntityManager entityManager
 
     def projectKey
@@ -39,6 +57,8 @@ class TargetingServiceSpec extends Specification {
     def numberErrorContent
     def datetimeErrorContent
     def semVerErrorContent
+    ApprovalRecord approvalRecord
+    TargetingSketch targetingSketch
 
     def setup() {
         targetingRepository = Mock(TargetingRepository)
@@ -46,9 +66,13 @@ class TargetingServiceSpec extends Specification {
         targetingSegmentRepository = Mock(TargetingSegmentRepository)
         targetingVersionRepository = Mock(TargetingVersionRepository)
         variationHistoryRepository = Mock(VariationHistoryRepository)
+        environmentRepository = Mock(EnvironmentRepository)
+        approvalRecordRepository = Mock(ApprovalRecordRepository)
+        targetingSketchRepository = Mock(TargetingSketchRepository)
         entityManager = Mock(SessionImpl)
         targetingService = new TargetingService(targetingRepository, segmentRepository,
-                targetingSegmentRepository, targetingVersionRepository, variationHistoryRepository, entityManager)
+                targetingSegmentRepository, targetingVersionRepository, variationHistoryRepository,
+                environmentRepository, approvalRecordRepository, targetingSketchRepository, entityManager)
 
         projectKey = "feature_probe"
         environmentKey = "test"
@@ -92,6 +116,11 @@ class TargetingServiceSpec extends Specification {
                 "\"disabledServe\":{\"select\":1},\"defaultServe\":{\"select\":1},\"variations\":[{\"value\":\"red\"," +
                 "\"name\":\"Red Button\",\"description\":\"Set button color to Red\"},{\"value\":\"blue\"," +
                 "\"name\":\"Blue Button\",\"description\":\"Set button color to Blue\"}]}"
+        approvalRecord = new ApprovalRecord(id: 1, organizationId: -1, projectKey: "projectKey",
+                environmentKey: "environmentKey", toggleKey: "toggleKey", submitBy: "Admin", approvedBy: "Test", reviewers: "[\"Admin\"]", status: ApprovalStatusEnum.PENDING, title: "title")
+        targetingSketch = new TargetingSketch(approvalId: 1, organizationId: -1, projectKey: "projectKey",
+                environmentKey: "environmentKey", toggleKey: "toggleKey", oldVersion: 1, content: content, comment: "test", disabled: true, status: SketchStatusEnum.PENDING)
+        TenantContext.setCurrentOrganization(new com.featureprobe.api.dto.OrganizationMember(1, "organization", OrganizationRoleEnum.OWNER))
     }
 
     def "update targeting"() {
@@ -107,6 +136,7 @@ class TargetingServiceSpec extends Specification {
 
         then:
         segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >> Optional.of(new Environment(enableApproval: false))
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
                 Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
                         content: "", disabled: true, version: 1))
@@ -119,6 +149,31 @@ class TargetingServiceSpec extends Specification {
         1 * targetingVersionRepository.save(_)
         1 * variationHistoryRepository.saveAll(_)
 
+        with(ret) {
+            content == it.content
+            false == it.disabled
+        }
+    }
+
+    def "update targeting & enable approval"() {
+        given:
+        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingContent targetingContent = JsonMapper.toObject(content, TargetingContent.class);
+        targetingRequest.setContent(targetingContent)
+        targetingRequest.setDisabled(false)
+        setAuthContext("Admin", "ADMIN")
+
+        when:
+        def ret = targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+
+        then:
+        segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >> Optional.of(new Environment(enableApproval: true, reviewers: "[\"Admin\"]"))
+        targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey,
+                toggleKey) >> Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
+                content: content, disabled: false))
+        1 * approvalRecordRepository.save(_) >> approvalRecord
+        1 * targetingSketchRepository.save(_)
         with(ret) {
             content == it.content
             false == it.disabled
@@ -175,15 +230,33 @@ class TargetingServiceSpec extends Specification {
         when:
         def ret = targetingService.queryByKey(projectKey, environmentKey, toggleKey)
         then:
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >> Optional.of(new Environment(enableApproval: false))
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
                 Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
                         content: content, disabled: false))
+        1 * approvalRecordRepository.findAll(_, _) >> new PageImpl([new ApprovalRecord(status: ApprovalStatusEnum.PASS, reviewers: "[\"Admin\"]")], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.findAll(_, _) >> new PageImpl([new TargetingSketch(content: content, disabled: false, oldVersion: 1)], Pageable.ofSize(1), 1)
         with(ret) {
             content == it.content
             false == it.disabled
         }
     }
 
+    def "query targeting by key & enable approval"() {
+        when:
+        def ret = targetingService.queryByKey(projectKey, environmentKey, toggleKey)
+        then:
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >> Optional.of(new Environment(enableApproval: true, reviewers: "[\"Admin\"]"))
+        1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
+                Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
+                        content: content, disabled: false))
+        1 * approvalRecordRepository.findAll(_, _) >> new PageImpl([approvalRecord], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.findAll(_, _) >> new PageImpl([targetingSketch], Pageable.ofSize(1), 1)
+        with(ret) {
+            content == it.content
+            true == it.disabled
+        }
+    }
 
     def "query targeting version"() {
         when:
@@ -223,6 +296,66 @@ class TargetingServiceSpec extends Specification {
         2 == afterVersion.total
         1 == afterVersion.versions.size()
 
+    }
+
+    def "update approval status to PASS"() {
+        given:
+        setAuthContext("Admin", "ADMIN")
+        when:
+        targetingService.updateApprovalStatus(projectKey, environmentKey, toggleKey, new UpdateApprovalStatusRequest(status: ApprovalStatusEnum.PASS, comment: "Pass"))
+        then:
+        1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * approvalRecordRepository.saveAndFlush(_)
+    }
+
+    def "update approval status to REVOKE"() {
+        given:
+        setAuthContext("Admin", "ADMIN")
+        when:
+        targetingService.updateApprovalStatus(projectKey, environmentKey, toggleKey, new UpdateApprovalStatusRequest(status: ApprovalStatusEnum.REVOKE, comment: "Pass"))
+        then:
+        1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.save(_)
+        1 * approvalRecordRepository.saveAndFlush(_)
+    }
+
+    def "update approval status to JUMP"() {
+        given:
+        setAuthContext("Admin", "ADMIN")
+        when:
+        targetingService.updateApprovalStatus(projectKey, environmentKey, toggleKey, new UpdateApprovalStatusRequest(status: ApprovalStatusEnum.JUMP, comment: "Pass"))
+        then:
+        2 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
+        2 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.save(_)
+        1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey,
+                toggleKey) >> Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: true, version: 1))
+        1 * targetingRepository.saveAndFlush(_) >> new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: false, version: 2)
+        1 * targetingSegmentRepository.deleteByTargetingId(1)
+        1 * targetingSegmentRepository.saveAll(_)
+        1 * targetingVersionRepository.save(_)
+        1 * variationHistoryRepository.saveAll(_)
+        1 * approvalRecordRepository.saveAndFlush(_)
+    }
+
+    def "cancel targeting sketch"() {
+        when:
+        targetingService.cancelSketch(projectKey, environmentKey, toggleKey)
+        then:
+        1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * targetingSketchRepository.save(_)
+    }
+
+
+    private setAuthContext(String account, String role) {
+        SecurityContextHolder.setContext(new SecurityContextImpl(
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
     }
 
 }

@@ -2,19 +2,23 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.SketchStatusEnum;
 import com.featureprobe.api.base.enums.VisitFilter;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ResourceOverflowException;
+import com.featureprobe.api.dto.PaginationRequest;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
+import com.featureprobe.api.entity.ApprovalRecord;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
 import com.featureprobe.api.entity.Tag;
 import com.featureprobe.api.entity.Targeting;
+import com.featureprobe.api.entity.TargetingSketch;
 import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.entity.Toggle;
 import com.featureprobe.api.entity.VariationHistory;
@@ -22,10 +26,12 @@ import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.mapper.ToggleMapper;
 import com.featureprobe.api.model.TargetingContent;
 import com.featureprobe.api.model.Variation;
+import com.featureprobe.api.repository.ApprovalRecordRepository;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
 import com.featureprobe.api.repository.TagRepository;
 import com.featureprobe.api.repository.TargetingRepository;
+import com.featureprobe.api.repository.TargetingSketchRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
@@ -56,6 +62,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -79,6 +86,8 @@ public class ToggleService {
     private TargetingVersionRepository targetingVersionRepository;
 
     private VariationHistoryRepository variationHistoryRepository;
+
+    private TargetingSketchRepository targetingSketchRepository;
 
     private FeatureProbe featureProbe;
 
@@ -175,7 +184,6 @@ public class ToggleService {
         targeting.setContent(TargetingContent.newDefault(toggle).toJson());
         targeting.setToggleKey(toggle.getKey());
         targeting.setEnvironmentKey(environment.getKey());
-
         return targeting;
     }
 
@@ -215,7 +223,7 @@ public class ToggleService {
     }
 
     @Archived
-    public Page<ToggleItemResponse> query(String projectKey, ToggleSearchRequest searchRequest) {
+    public Page<ToggleItemResponse> list(String projectKey, ToggleSearchRequest searchRequest) {
         Page<Toggle> togglePage;
         if (StringUtils.isNotBlank(searchRequest.getEnvironmentKey())) {
             Environment environment = environmentRepository
@@ -370,7 +378,35 @@ public class ToggleService {
                 environmentKey, toggle.getKey()).get();
         toggleItem.setDisabled(targeting.getDisabled());
         toggleItem.setVisitedTime(queryToggleVisited(projectKey, environmentKey, toggle.getKey()));
+        Optional<TargetingSketch> targetingSketchOptional = queryNewestTargetingSketch(projectKey, environmentKey,
+                toggle.getKey());
+        if (targetingSketchOptional.isPresent()) {
+            toggleItem.setLocked(locked(targetingSketchOptional.get()));
+            toggleItem.setLockedBy(targetingSketchOptional.get().getCreatedBy().getAccount());
+            toggleItem.setLockedTime(targetingSketchOptional.get().getCreatedTime());
+        }
         return toggleItem;
+    }
+
+    private boolean locked(TargetingSketch targetingSketch) {
+        return targetingSketch.getStatus() == SketchStatusEnum.PENDING;
+    }
+
+    private Optional<TargetingSketch> queryNewestTargetingSketch(String projectKey, String environmentKey,
+                                                                 String toggleKey) {
+        Specification<TargetingSketch> spec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("projectKey"), projectKey);
+            Predicate p2 = cb.equal(root.get("environmentKey"), environmentKey);
+            Predicate p3 = cb.equal(root.get("toggleKey"), toggleKey);
+            return query.where(p1, p2, p3).getRestriction();
+        };
+        Pageable pageable = PageRequestUtil.toPageable(new PaginationRequest(), Sort.Direction.DESC,
+                "createdTime");
+        Page<TargetingSketch> targetingSketches = targetingSketchRepository.findAll(spec, pageable);
+        if (org.springframework.util.CollectionUtils.isEmpty(targetingSketches.getContent())) {
+            return Optional.empty();
+        }
+        return Optional.of(targetingSketches.getContent().get(0));
     }
 
     private Date queryToggleVisited(String projectKey, String environmentKey, String toggleKey) {

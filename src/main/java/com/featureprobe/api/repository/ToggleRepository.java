@@ -28,4 +28,6 @@ public interface ToggleRepository extends JpaRepository<Toggle, Long>, JpaSpecif
 
     boolean existsByProjectKeyAndName(String projectKey, String key);
 
+    List<Toggle> findByNameLike(String name);
+
 }

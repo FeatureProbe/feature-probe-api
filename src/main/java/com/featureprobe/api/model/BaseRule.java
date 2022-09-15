@@ -1,5 +1,6 @@
 package com.featureprobe.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -10,6 +11,7 @@ public class BaseRule {
 
     private List<ConditionValue> conditions;
 
+    @JsonIgnore
     public boolean isNotEmptyConditions() {
         return CollectionUtils.isNotEmpty(conditions);
     }

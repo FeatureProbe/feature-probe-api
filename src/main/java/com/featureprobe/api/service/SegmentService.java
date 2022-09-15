@@ -169,24 +169,4 @@ public class SegmentService {
         }
     }
 
-    public Page<SegmentResponse> findAllByKeyword(String projectKey, String keyword, Pageable pageable) {
-        Specification<Segment> spec = buildQueryKeywordSpec(projectKey, keyword);
-        Page<Segment> segments = segmentRepository.findAll(spec, pageable);
-        return segments.map(segment -> SegmentMapper.INSTANCE.entityToResponse(segment));
-    }
-
-    private Specification<Segment> buildQueryKeywordSpec(String projectKey, String keyword) {
-        return (root, query, cb) -> {
-            Predicate p3 = cb.equal(root.get("projectKey"), projectKey);
-            if (StringUtils.isNotBlank(keyword)) {
-                Predicate p0 = cb.like(root.get("name"), "%" + keyword + "%");
-                Predicate p1 = cb.like(root.get("key"), "%" + keyword + "%");
-                Predicate p2 = cb.like(root.get("description"), "%" + keyword + "%");
-                query.where(cb.or(p0, p1, p2), cb.and(p3));
-            } else {
-                query.where(p3);
-            }
-            return query.getRestriction();
-        };
-    }
 }
