@@ -53,7 +53,7 @@ public class ToggleController {
     public Page<ToggleItemResponse> list(
             @PathVariable(name = "projectKey") String projectKey,
             @Validated ToggleSearchRequest filter) {
-        return toggleService.query(projectKey, filter);
+        return toggleService.list(projectKey, filter);
     }
 
     @CreateApiResponse

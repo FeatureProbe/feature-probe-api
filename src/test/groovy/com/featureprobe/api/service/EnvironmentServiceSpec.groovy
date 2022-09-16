@@ -3,6 +3,8 @@ package com.featureprobe.api.service
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.exception.ResourceConflictException
 import com.featureprobe.api.dto.EnvironmentCreateRequest
+import com.featureprobe.api.dto.EnvironmentQueryRequest
+import com.featureprobe.api.dto.EnvironmentResponse
 import com.featureprobe.api.dto.EnvironmentUpdateRequest
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
@@ -40,6 +42,8 @@ class EnvironmentServiceSpec extends Specification {
     FeatureProbe featureProbe
     EntityManager entityManager
 
+    IncludeArchivedEnvironmentService includeArchivedEnvironmentService
+
     def projectName
     def projectKey
     def environmentName
@@ -66,8 +70,9 @@ class EnvironmentServiceSpec extends Specification {
         entityManager = Mock(SessionImpl)
         environmentService = new EnvironmentService(environmentRepository, projectRepository,
                 toggleRepository, targetingRepository, featureProbe, entityManager)
+        includeArchivedEnvironmentService = new IncludeArchivedEnvironmentService(environmentRepository, entityManager)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
-        updateRequest = new EnvironmentUpdateRequest(name: "env_test_update")
+        updateRequest = new EnvironmentUpdateRequest(name: "env_test_update", resetServerSdk: true, resetClientSdk: true)
         setAuthContext("Admin", "ADMIN")
     }
 
@@ -117,6 +122,44 @@ class EnvironmentServiceSpec extends Specification {
         environmentKey == environment.key
         "server-123" == environment.serverSdkKey
         "client-123" == environment.clientSdkKey
+    }
+
+    def "validate include archived environment by key"(){
+        when:
+        includeArchivedEnvironmentService.validateIncludeArchivedEnvironment(projectKey, ValidateTypeEnum.KEY, "environmentKey")
+        then:
+        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, "environmentKey") >> false
+    }
+
+    def "validate include archived environment by key is conflict"(){
+        when:
+        includeArchivedEnvironmentService.validateIncludeArchivedEnvironment(projectKey, ValidateTypeEnum.KEY, "environmentKey")
+        then:
+        1 * environmentRepository.existsByProjectKeyAndKey(projectKey, "environmentKey") >> true
+        thrown(ResourceConflictException)
+    }
+
+    def "validate include archived environment by name"(){
+        when:
+        includeArchivedEnvironmentService.validateIncludeArchivedEnvironment(projectKey, ValidateTypeEnum.NAME, "environmentName")
+        then:
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, "environmentName") >> false
+    }
+
+    def "validate include archived environment by name is conflict"(){
+        when:
+        includeArchivedEnvironmentService.validateIncludeArchivedEnvironment(projectKey, ValidateTypeEnum.NAME, "environmentName")
+        then:
+        1 * environmentRepository.existsByProjectKeyAndName(projectKey, "environmentName") >> true
+        thrown(ResourceConflictException)
+    }
+
+    def "environment list is archived"(){
+        when:
+        def list = environmentService.list(projectKey, new EnvironmentQueryRequest(archived: true))
+        then:
+        1 * environmentRepository.findAllByProjectKeyAndArchived(projectKey, true) >> [new Environment()]
+        1 == list.size()
     }
 
     private setAuthContext(String account, String role) {

@@ -7,7 +7,9 @@ import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.enums.ResponseCodeEnum;
 import com.featureprobe.api.base.enums.ValidateTypeEnum;
+import com.featureprobe.api.dto.ApprovalSettings;
 import com.featureprobe.api.dto.BaseResponse;
+import com.featureprobe.api.dto.PreferenceCreateRequest;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dto.ProjectQueryRequest;
 import com.featureprobe.api.dto.ProjectResponse;
@@ -81,5 +83,19 @@ public class ProjectController {
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 
-    
+    @PostMapping("/{projectKey}")
+    @CreateApiResponse
+    @Operation(summary = "Save project setting", description = "Update a project settings.")
+    public BaseResponse preference(@PathVariable("projectKey") String projectKey,
+                                      @RequestBody @Validated PreferenceCreateRequest createRequest) {
+        projectService.createPreference(projectKey, createRequest);
+        return new BaseResponse(ResponseCodeEnum.SUCCESS);
+    }
+
+    @GetMapping("/{projectKey}/approvalSettings")
+    @CreateApiResponse
+    @Operation(summary = "Query project settings", description = "Query a project settings.")
+    public List<ApprovalSettings> approvalSettingsList(@PathVariable("projectKey") String projectKey) {
+        return projectService.approvalSettingsList(projectKey);
+    }
 }

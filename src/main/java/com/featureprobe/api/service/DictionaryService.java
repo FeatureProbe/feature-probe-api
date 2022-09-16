@@ -24,7 +24,7 @@ public class DictionaryService {
     private DictionaryRepository dictionaryRepository;
 
 
-    public DictionaryResponse save(String key, String value) {
+    public DictionaryResponse create(String key, String value) {
         Optional<Dictionary> dictionaryOptional = dictionaryRepository
                 .findByAccountAndKey(TokenHelper.getAccount(), key);
         if(dictionaryOptional.isPresent()) {

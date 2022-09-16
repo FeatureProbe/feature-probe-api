@@ -1,5 +1,6 @@
 package com.featureprobe.api.dto;
 
+import com.featureprobe.api.base.enums.ApprovalStatusEnum;
 import com.featureprobe.api.model.TargetingContent;
 import lombok.Data;
 
@@ -25,4 +26,12 @@ public class TargetingVersionResponse {
     private Date createdTime;
 
     private String createdBy;
+
+    private ApprovalStatusEnum approvalStatus;
+
+    private String approvalBy;
+
+    private Date approvalTime;
+
+    private String approvalComment;
 }

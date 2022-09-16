@@ -198,6 +198,30 @@ class MemberServiceSpec extends Specification {
         thrown(ResourceNotFoundException)
     }
 
+    def " member validate pass"() {
+        when:
+        def validate = memberIncludeDeletedService.validateAccountIncludeDeleted("Admin")
+        then:
+        1 * memberRepository.existsByAccount("Admin") >> false
+        true == validate
+    }
+
+    def " member validate conflict"() {
+        when:
+        def validate = memberIncludeDeletedService.validateAccountIncludeDeleted("Admin")
+        then:
+        1 * memberRepository.existsByAccount("Admin") >> true
+        thrown(ResourceConflictException)
+    }
+
+    def "query include deleted service"() {
+        when:
+        def member = memberIncludeDeletedService.queryMemberByAccountIncludeDeleted("Admin")
+        then:
+        1 * memberRepository.findByAccount("Admin") >> Optional.of(new Member())
+        true == member.isPresent()
+    }
+
     private setAuthContext(String account, String role) {
         SecurityContextHolder.setContext(new SecurityContextImpl(
                 new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")

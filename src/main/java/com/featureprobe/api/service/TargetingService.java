@@ -1,16 +1,26 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.enums.ApprovalStatusEnum;
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.SketchStatusEnum;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.dto.AfterTargetingVersionResponse;
+import com.featureprobe.api.dto.PaginationRequest;
+import com.featureprobe.api.dto.TargetingDiffResponse;
 import com.featureprobe.api.dto.TargetingRequest;
 import com.featureprobe.api.dto.TargetingResponse;
 import com.featureprobe.api.dto.TargetingVersionRequest;
 import com.featureprobe.api.dto.TargetingVersionResponse;
+import com.featureprobe.api.dto.UpdateApprovalStatusRequest;
+import com.featureprobe.api.entity.ApprovalRecord;
+import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.TargetingSegment;
+import com.featureprobe.api.entity.TargetingSketch;
 import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.entity.VariationHistory;
+import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.mapper.TargetingMapper;
 import com.featureprobe.api.mapper.TargetingVersionMapper;
 import com.featureprobe.api.model.BaseRule;
@@ -18,23 +28,31 @@ import com.featureprobe.api.model.ConditionValue;
 import com.featureprobe.api.model.TargetingContent;
 import com.featureprobe.api.model.ToggleRule;
 import com.featureprobe.api.model.Variation;
+import com.featureprobe.api.repository.ApprovalRecordRepository;
+import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.SegmentRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingSegmentRepository;
+import com.featureprobe.api.repository.TargetingSketchRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
 import com.featureprobe.api.util.PageRequestUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.criteria.Predicate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -63,50 +81,104 @@ public class TargetingService {
 
     private VariationHistoryRepository variationHistoryRepository;
 
+    private EnvironmentRepository environmentRepository;
+
+    private ApprovalRecordRepository approvalRecordRepository;
+
+    private TargetingSketchRepository targetingSketchRepository;
+
     @PersistenceContext
     public EntityManager entityManager;
 
     @Transactional(rollbackFor = Exception.class)
-    public TargetingResponse update(String projectKey, String environmentKey,
-                                    String toggleKey, TargetingRequest targetingRequest) {
+    public TargetingResponse update(String projectKey, String environmentKey, String toggleKey,
+                                    TargetingRequest targetingRequest) {
         validateTargetingContent(projectKey, targetingRequest.getContent());
-        Targeting existedTargeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
-                environmentKey, toggleKey).get();
-        long oldVersion = existedTargeting.getVersion();
-        Targeting updatedTargeting = updateTargeting(existedTargeting, targetingRequest);
-        if (updatedTargeting.getVersion() > oldVersion) {
-            saveTargetingSegmentRefs(projectKey, updatedTargeting, targetingRequest.getContent());
-            saveTargetingVersion(buildTargetingVersion(updatedTargeting, targetingRequest.getComment()));
-            saveVariationHistory(updatedTargeting, targetingRequest.getContent());
+        Environment environment = selectEnvironment(projectKey, environmentKey);
+        if (environment.isEnableApproval()) {
+            List<String> reviews = JsonMapper.toListObject(environment.getReviewers(), String.class);
+            targetingRequest.setReviewers(reviews);
+            return submitApproval(projectKey, environmentKey, toggleKey, targetingRequest);
         }
-        return TargetingMapper.INSTANCE.entityToResponse(updatedTargeting);
+        return publishTargeting(projectKey, environmentKey, toggleKey, targetingRequest, null);
     }
 
-    private Targeting updateTargeting(Targeting currentTargeting, TargetingRequest updateTargetingRequest) {
-        TargetingMapper.INSTANCE.mapEntity(updateTargetingRequest, currentTargeting);
-        return targetingRepository.saveAndFlush(currentTargeting);
+    public TargetingResponse publishSketch(String projectKey, String environmentKey, String toggleKey) {
+        Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
+                environmentKey, toggleKey);
+        Optional<TargetingSketch> targetingSketchOptional = queryNewestTargetingSketch(projectKey, environmentKey,
+                toggleKey);
+        if (approvalRecordOptional.isPresent() && targetingSketchOptional.isPresent() &&
+            publishableStatus(approvalRecordOptional.get())) {
+            TargetingSketch sketch = targetingSketchOptional.get();
+            sketch.setStatus(SketchStatusEnum.RELEASE);
+            targetingSketchRepository.save(sketch);
+            TargetingRequest targetingRequest = new TargetingRequest(JsonMapper.toObject(sketch.getContent(),
+                    TargetingContent.class), sketch.getComment(), sketch.getDisabled(), null);
+            return publishTargeting(projectKey, environmentKey, toggleKey, targetingRequest,
+                    approvalRecordOptional.get().getId());
+        }
+        return null;
     }
 
-    private TargetingVersion buildTargetingVersion(Targeting targeting, String comment) {
-        TargetingVersion targetingVersion = new TargetingVersion();
-        targetingVersion.setProjectKey(targeting.getProjectKey());
-        targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
-        targetingVersion.setToggleKey(targeting.getToggleKey());
-        targetingVersion.setContent(targeting.getContent());
-        targetingVersion.setDisabled(targeting.getDisabled());
-        targetingVersion.setVersion(targeting.getVersion());
-        targetingVersion.setComment(comment);
-        return targetingVersion;
+    public void cancelSketch(String projectKey, String environmentKey, String toggleKey) {
+        Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
+                environmentKey, toggleKey);
+        Optional<TargetingSketch> targetingSketchOptional = queryNewestTargetingSketch(projectKey, environmentKey,
+                toggleKey);
+        if (approvalRecordOptional.isPresent() && targetingSketchOptional.isPresent()) {
+            TargetingSketch sketch = targetingSketchOptional.get();
+            sketch.setStatus(SketchStatusEnum.CANCEL);
+            targetingSketchRepository.save(sketch);
+        }
     }
 
-    private void saveTargetingVersion(TargetingVersion targetingVersion) {
-        targetingVersionRepository.save(targetingVersion);
+    public void updateApprovalStatus(String projectKey, String environmentKey, String toggleKey,
+                                               UpdateApprovalStatusRequest updateRequest) {
+        Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
+                environmentKey, toggleKey);
+        Optional<TargetingSketch> targetingSketchOptional = queryNewestTargetingSketch(projectKey, environmentKey,
+                toggleKey);
+        if (approvalRecordOptional.isPresent() && targetingSketchOptional.isPresent() &&
+                checkStateMachine(approvalRecordOptional.get(), updateRequest.getStatus())) {
+            if (updateRequest.getStatus() == ApprovalStatusEnum.REVOKE) {
+                TargetingSketch sketch = targetingSketchOptional.get();
+                sketch.setStatus(SketchStatusEnum.REVOKE);
+                targetingSketchRepository.save(sketch);
+            }
+            ApprovalRecord approvalRecord = approvalRecordOptional.get();
+            approvalRecord.setStatus(updateRequest.getStatus());
+            approvalRecord.setComment(updateRequest.getComment());
+            approvalRecord.setApprovedBy(TokenHelper.getAccount());
+            approvalRecordRepository.saveAndFlush(approvalRecord);
+            if (updateRequest.getStatus() == ApprovalStatusEnum.JUMP) {
+                publishSketch(projectKey, environmentKey, toggleKey);
+            }
+            return;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    private boolean checkStateMachine(ApprovalRecord approvalRecord, ApprovalStatusEnum status) {
+        switch (status) {
+            case PASS:
+            case REJECT:
+                return approvalRecord.getStatus() == ApprovalStatusEnum.PENDING &&
+                        JsonMapper.toListObject(approvalRecord.getReviewers(), String.class)
+                                .contains(TokenHelper.getAccount());
+            case REVOKE:
+            case JUMP:
+                return approvalRecord.getStatus() == ApprovalStatusEnum.PENDING &&
+                        StringUtils.equals(approvalRecord.getSubmitBy(), TokenHelper.getAccount());
+            default:
+                return false;
+        }
     }
 
     public Page<TargetingVersionResponse> queryVersions(String projectKey, String environmentKey, String toggleKey,
                                                         TargetingVersionRequest targetingVersionRequest) {
-        Page<TargetingVersion> targetingVersions ;
-        if(Objects.isNull(targetingVersionRequest.getVersion())) {
+        Page<TargetingVersion> targetingVersions;
+        if (Objects.isNull(targetingVersionRequest.getVersion())) {
             targetingVersions = targetingVersionRepository
                     .findAllByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey,
                             PageRequestUtil.toCreatedTimeDescSortPageable(targetingVersionRequest));
@@ -116,8 +188,7 @@ public class TargetingService {
                             projectKey, environmentKey, toggleKey, targetingVersionRequest.getVersion(),
                             PageRequestUtil.toCreatedTimeDescSortPageable(targetingVersionRequest));
         }
-        return targetingVersions.map(targetingVersion ->
-                TargetingVersionMapper.INSTANCE.entityToResponse(targetingVersion));
+        return targetingVersions.map(targetingVersion -> translateTargetingVersionResponse(targetingVersion));
     }
 
     public AfterTargetingVersionResponse queryAfterVersion(String projectKey, String environmentKey, String toggleKey,
@@ -126,16 +197,157 @@ public class TargetingService {
                 .findAllByProjectKeyAndEnvironmentKeyAndToggleKeyAndVersionGreaterThanEqualOrderByVersionDesc(
                         projectKey, environmentKey, toggleKey, version);
         List<TargetingVersionResponse> versions = targetingVersions.stream().map(targetingVersion ->
-                TargetingVersionMapper.INSTANCE.entityToResponse(targetingVersion)).collect(Collectors.toList());
+                translateTargetingVersionResponse(targetingVersion)).collect(Collectors.toList());
         long total = targetingVersionRepository.countByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
                 environmentKey, toggleKey);
         return new AfterTargetingVersionResponse(total, versions);
     }
 
+    private TargetingVersionResponse translateTargetingVersionResponse(TargetingVersion targetingVersion) {
+        TargetingVersionResponse targetingVersionResponse = TargetingVersionMapper.INSTANCE
+                .entityToResponse(targetingVersion);
+        if(Objects.nonNull(targetingVersion.getApprovalId())) {
+            Optional<ApprovalRecord> approvalRecord = approvalRecordRepository
+                    .findById(targetingVersion.getApprovalId());
+            targetingVersionResponse.setApprovalStatus(approvalRecord.get().getStatus());
+            targetingVersionResponse.setApprovalTime(approvalRecord.get().getModifiedTime());
+            targetingVersionResponse.setApprovalBy(approvalRecord.get().getApprovedBy());
+            targetingVersionResponse.setApprovalComment(approvalRecord.get().getComment());
+        }
+        return targetingVersionResponse;
+    }
+
+    public TargetingDiffResponse diff(String projectKey, String environmentKey, String toggleKey) {
+        TargetingDiffResponse diffResponse = new TargetingDiffResponse();
+        Optional<TargetingSketch> targetingSketch = queryNewestTargetingSketch(projectKey, environmentKey, toggleKey);
+        Optional<Targeting> targeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
+                environmentKey, toggleKey);
+        if (targetingSketch.isPresent() && targeting.isPresent()) {
+            diffResponse.setCurrentDisabled(targetingSketch.get().getDisabled());
+            diffResponse.setCurrentContent(JsonMapper.toObject(targetingSketch.get().getContent(),
+                    TargetingContent.class));
+            diffResponse.setOldDisabled(targeting.get().getDisabled());
+            diffResponse.setOldContent(JsonMapper.toObject(targeting.get().getContent(), TargetingContent.class));
+        }
+        return diffResponse;
+    }
+
+    public TargetingResponse queryByKey(String projectKey, String environmentKey, String toggleKey) {
+        Environment environment = selectEnvironment(projectKey, environmentKey);
+        Targeting targeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
+                environmentKey, toggleKey).get();
+        TargetingResponse targetingResponse = TargetingMapper.INSTANCE.entityToResponse(targeting);
+        Optional<ApprovalRecord> newestApprovalRecord = queryNewestApprovalRecord(projectKey, environmentKey,
+                toggleKey);
+        Optional<TargetingSketch> targetingSketch = queryNewestTargetingSketch(projectKey, environmentKey, toggleKey);
+        if (newestApprovalRecord.isPresent() && targetingSketch.isPresent() && locked(targetingSketch.get())) {
+            targetingResponse.setContent(JsonMapper.toObject(targetingSketch.get().getContent(),
+                    TargetingContent.class));
+            targetingResponse.setDisabled(targetingSketch.get().getDisabled());
+            targetingResponse.setVersion(targetingSketch.get().getOldVersion() + 1);
+            targetingResponse.setStatus(newestApprovalRecord.get().getStatus().name());
+            targetingResponse.setReviewers(JsonMapper.toListObject(newestApprovalRecord.get().getReviewers(),
+                    String.class));
+            targetingResponse.setSubmitBy(newestApprovalRecord.get().getSubmitBy());
+            targetingResponse.setApprovalBy(newestApprovalRecord.get().getApprovedBy());
+            targetingResponse.setApprovalComment(newestApprovalRecord.get().getComment());
+            targetingResponse.setLocked(true);
+            targetingResponse.setLockedTime(newestApprovalRecord.get().getCreatedTime());
+        } else {
+            targetingResponse.setStatus(SketchStatusEnum.RELEASE.name());
+            if (environment.isEnableApproval()) {
+                targetingResponse.setReviewers(JsonMapper.toListObject(environment.getReviewers(), String.class));
+            }
+        }
+        targetingResponse.setEnableApproval(environment.isEnableApproval());
+        return targetingResponse;
+    }
+
+    private boolean locked(TargetingSketch targetingSketch) {
+        return targetingSketch.getStatus() == SketchStatusEnum.PENDING;
+    }
+
+    private boolean publishableStatus(ApprovalRecord approvalRecord) {
+        return approvalRecord.getStatus() == ApprovalStatusEnum.JUMP ||
+                approvalRecord.getStatus() == ApprovalStatusEnum.PASS;
+    }
+
+    private TargetingResponse submitApproval(String projectKey, String environmentKey, String toggleKey,
+                                             TargetingRequest targetingRequest) {
+        Targeting targeting = selectTargeting(projectKey, environmentKey, toggleKey);
+        ApprovalRecord approvalRecord = approvalRecordRepository.save(buildApprovalRecord(projectKey, environmentKey,
+                toggleKey, targetingRequest));
+        targetingSketchRepository.save(buildTargetingSketch(projectKey, environmentKey, toggleKey,
+                approvalRecord.getId(), targeting.getVersion(), targetingRequest));
+        return TargetingMapper.INSTANCE.entityToResponse(targeting);
+    }
+
+    private TargetingResponse publishTargeting(String projectKey, String environmentKey, String toggleKey,
+                                               TargetingRequest targetingRequest, Long approvalId) {
+        Targeting existedTargeting = selectTargeting(projectKey, environmentKey, toggleKey);
+        long oldVersion = existedTargeting.getVersion();
+        Targeting updatedTargeting = updateTargeting(existedTargeting, targetingRequest);
+        if (updatedTargeting.getVersion() > oldVersion) {
+            saveTargetingSegmentRefs(projectKey, updatedTargeting, targetingRequest.getContent());
+            saveTargetingVersion(buildTargetingVersion(updatedTargeting, targetingRequest.getComment(), approvalId));
+            saveVariationHistory(updatedTargeting, targetingRequest.getContent());
+        }
+        return TargetingMapper.INSTANCE.entityToResponse(updatedTargeting);
+    }
+
+    private ApprovalRecord buildApprovalRecord(String projectKey, String environmentKey, String toggleKey,
+                                               TargetingRequest targetingRequest) {
+        ApprovalRecord approvalRecord = new ApprovalRecord();
+        approvalRecord.setProjectKey(projectKey);
+        approvalRecord.setEnvironmentKey(environmentKey);
+        approvalRecord.setToggleKey(toggleKey);
+        approvalRecord.setTitle(targetingRequest.getComment());
+        approvalRecord.setSubmitBy(TokenHelper.getAccount());
+        approvalRecord.setReviewers(JsonMapper.toJSONString(targetingRequest.getReviewers()));
+        approvalRecord.setStatus(ApprovalStatusEnum.PENDING);
+        return approvalRecord;
+    }
+
+    private TargetingSketch buildTargetingSketch(String projectKey, String environmentKey, String toggleKey,
+                                                 Long approvalId, Long oldVersion,
+                                                 TargetingRequest targetingRequest) {
+        TargetingSketch sketch = new TargetingSketch();
+        sketch.setApprovalId(approvalId);
+        sketch.setProjectKey(projectKey);
+        sketch.setEnvironmentKey(environmentKey);
+        sketch.setToggleKey(toggleKey);
+        sketch.setOldVersion(oldVersion);
+        sketch.setContent(JsonMapper.toJSONString(targetingRequest.getContent()));
+        sketch.setComment(targetingRequest.getComment());
+        sketch.setDisabled(targetingRequest.getDisabled());
+        sketch.setStatus(SketchStatusEnum.PENDING);
+        return sketch;
+    }
+
+    private Targeting updateTargeting(Targeting currentTargeting, TargetingRequest updateTargetingRequest) {
+        TargetingMapper.INSTANCE.mapEntity(updateTargetingRequest, currentTargeting);
+        return targetingRepository.saveAndFlush(currentTargeting);
+    }
+
+    private TargetingVersion buildTargetingVersion(Targeting targeting, String comment, Long approvalId) {
+        TargetingVersion targetingVersion = new TargetingVersion();
+        targetingVersion.setProjectKey(targeting.getProjectKey());
+        targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
+        targetingVersion.setToggleKey(targeting.getToggleKey());
+        targetingVersion.setContent(targeting.getContent());
+        targetingVersion.setDisabled(targeting.getDisabled());
+        targetingVersion.setVersion(targeting.getVersion());
+        targetingVersion.setComment(comment);
+        targetingVersion.setApprovalId(approvalId);
+        return targetingVersion;
+    }
+
+    private void saveTargetingVersion(TargetingVersion targetingVersion) {
+        targetingVersionRepository.save(targetingVersion);
+    }
 
     private void saveTargetingSegmentRefs(String projectKey, Targeting targeting, TargetingContent targetingContent) {
         targetingSegmentRepository.deleteByTargetingId(targeting.getId());
-
         List<TargetingSegment> targetingSegmentList = getTargetingSegments(projectKey, targeting, targetingContent);
         if (!CollectionUtils.isEmpty(targetingSegmentList)) {
             targetingSegmentRepository.saveAll(targetingSegmentList);
@@ -157,7 +369,6 @@ public class TargetingService {
     private void saveVariationHistory(Targeting targeting,
                                       TargetingContent targetingContent) {
         List<Variation> variations = targetingContent.getVariations();
-
         List<VariationHistory> variationHistories = IntStream.range(0, targetingContent
                         .getVariations().size())
                 .mapToObj(index -> convertVariationToEntity(targeting, index,
@@ -178,10 +389,38 @@ public class TargetingService {
         return variationHistory;
     }
 
-    public TargetingResponse queryByKey(String projectKey, String environmentKey, String toggleKey) {
-        Targeting targeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
-                environmentKey, toggleKey).get();
-        return TargetingMapper.INSTANCE.entityToResponse(targeting);
+    private Optional<ApprovalRecord> queryNewestApprovalRecord(String projectKey, String environmentKey,
+                                                               String toggleKey) {
+        Specification<ApprovalRecord> spec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("projectKey"), projectKey);
+            Predicate p2 = cb.equal(root.get("environmentKey"), environmentKey);
+            Predicate p3 = cb.equal(root.get("toggleKey"), toggleKey);
+            return query.where(p1, p2, p3).getRestriction();
+        };
+        Pageable pageable = PageRequestUtil.toPageable(new PaginationRequest(), Sort.Direction.DESC,
+                "createdTime");
+        Page<ApprovalRecord> approvalRecords = approvalRecordRepository.findAll(spec, pageable);
+        if (CollectionUtils.isEmpty(approvalRecords.getContent())) {
+            return Optional.empty();
+        }
+        return Optional.of(approvalRecords.getContent().get(0));
+    }
+
+    private Optional<TargetingSketch> queryNewestTargetingSketch(String projectKey, String environmentKey,
+                                                                 String toggleKey) {
+        Specification<TargetingSketch> spec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("projectKey"), projectKey);
+            Predicate p2 = cb.equal(root.get("environmentKey"), environmentKey);
+            Predicate p3 = cb.equal(root.get("toggleKey"), toggleKey);
+            return query.where(p1, p2, p3).getRestriction();
+        };
+        Pageable pageable = PageRequestUtil.toPageable(new PaginationRequest(), Sort.Direction.DESC,
+                "createdTime");
+        Page<TargetingSketch> targetingSketches = targetingSketchRepository.findAll(spec, pageable);
+        if (CollectionUtils.isEmpty(targetingSketches.getContent())) {
+            return Optional.empty();
+        }
+        return Optional.of(targetingSketches.getContent().get(0));
     }
 
     private void validateTargetingContent(String projectKey, TargetingContent content) {
@@ -237,4 +476,14 @@ public class TargetingService {
                 }));
     }
 
+    private Environment selectEnvironment(String projectKey, String environmentKey) {
+        return environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.ENVIRONMENT, projectKey + "-" + environmentKey));
+    }
+
+    private Targeting selectTargeting(String projectKey, String environmentKey, String toggleKey) {
+        return targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey,
+                toggleKey).orElseThrow(() -> new ResourceNotFoundException(ResourceType.TARGETING,
+                projectKey + "-" + environmentKey + "-" + toggleKey));
+    }
 }

@@ -197,5 +197,30 @@ class SegmentServiceSpec extends Specification{
         1 == segments.size()
     }
 
+    def "validate exists"(){
+        when:
+        segmentService.validateExists(projectKey, ValidateTypeEnum.KEY, "key")
+        segmentService.validateExists(projectKey, ValidateTypeEnum.NAME, "name")
+        then:
+        1 * segmentRepository.existsByProjectKeyAndKey(projectKey, "key") >> false
+        1 * segmentRepository.existsByProjectKeyAndName(projectKey, "name") >> false
+    }
+
+    def "validate exists by key is conflict"(){
+        when:
+        segmentService.validateExists(projectKey, ValidateTypeEnum.KEY, "key")
+        then:
+        1 * segmentRepository.existsByProjectKeyAndKey(projectKey, "key") >> true
+        thrown(ResourceConflictException)
+    }
+
+    def "validate exists by name is conflict"(){
+        when:
+        segmentService.validateExists(projectKey, ValidateTypeEnum.NAME, "name")
+        then:
+        1 * segmentRepository.existsByProjectKeyAndName(projectKey, "name") >> true
+        thrown(ResourceConflictException)
+    }
+
 }
 

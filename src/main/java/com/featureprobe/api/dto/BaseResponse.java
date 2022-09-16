@@ -13,7 +13,6 @@ public class BaseResponse {
     private String message;
 
     public BaseResponse(ResponseCodeEnum responseCode) {
-        this.code = responseCode.code();
         this.message = responseCode.message();
     }
 
