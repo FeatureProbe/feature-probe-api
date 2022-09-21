@@ -2,7 +2,6 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.exception.ForbiddenException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.dto.DictionaryResponse;
 import com.featureprobe.api.entity.Dictionary;
@@ -10,10 +9,7 @@ import com.featureprobe.api.mapper.DictionaryMapper;
 import com.featureprobe.api.repository.DictionaryRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
-import java.util.Objects;
 import java.util.Optional;
 
 @AllArgsConstructor

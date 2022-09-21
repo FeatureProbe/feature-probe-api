@@ -35,8 +35,9 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -56,7 +57,11 @@ public class ApprovalRecordService {
         Specification<ApprovalRecord> spec = buildListSpec(queryRequest);
         Pageable pageable = PageRequestUtil.toPageable(queryRequest, Sort.Direction.DESC, "createdTime");
         Page<ApprovalRecord> approvalRecords = approvalRecordRepository.findAll(spec, pageable);
-        Page<ApprovalRecordResponse> res = approvalRecords.map(approvalRecord -> translateResponse(approvalRecord));
+        Set<Long> approvalIds = approvalRecords.getContent().stream().map(ApprovalRecord::getId)
+                .collect(Collectors.toSet());
+        Map<Long, TargetingSketch> targetingSketchMap = queryTargetingSketchMap(approvalIds);
+        Page<ApprovalRecordResponse> res = approvalRecords.map(approvalRecord ->
+                translateResponse(approvalRecord, targetingSketchMap));
         List<ApprovalRecordResponse> sortedRes = res.getContent().stream()
                 .sorted(Comparator.comparing(ApprovalRecordResponse::isLocked).reversed()).collect(Collectors.toList());
         return new PageImpl<>(sortedRes, pageable, res.getTotalElements());
@@ -95,25 +100,32 @@ public class ApprovalRecordService {
         };
     }
 
+    private Map<Long, TargetingSketch> queryTargetingSketchMap(Set<Long> approvalIds) {
+        List<TargetingSketch> targetingSketches = targetingSketchRepository.findByApprovalIdIn(approvalIds);
+        return targetingSketches.stream()
+                .collect(Collectors.toMap(TargetingSketch::getApprovalId, Function.identity()));
+    }
 
-    private ApprovalRecordResponse translateResponse(ApprovalRecord approvalRecord) {
+    private ApprovalRecordResponse translateResponse(ApprovalRecord approvalRecord,
+                                                     Map<Long, TargetingSketch> targetingSketchMap) {
         ApprovalRecordResponse approvalRecordResponse = ApprovalRecordMapper.INSTANCE.entityToResponse(approvalRecord);
         approvalRecordResponse.setProjectName(selectApprovalRecordProject(approvalRecord).getName());
         approvalRecordResponse.setEnvironmentName(selectApprovalRecordEnvironment(approvalRecord).getName());
         approvalRecordResponse.setToggleName(selectApprovalRecordToggle(approvalRecord).getName());
         approvalRecordResponse.setReviewers(JsonMapper.toListObject(approvalRecord.getReviewers(), String.class));
         approvalRecordResponse.setComment(approvalRecord.getComment());
-        Optional<TargetingSketch> targetingSketch = targetingSketchRepository.findByApprovalId(approvalRecord.getId());
-        if (locked(targetingSketch.get())) {
+        TargetingSketch sketch = targetingSketchMap.get(approvalRecord.getId());
+        if (locked(sketch)) {
             approvalRecordResponse.setLocked(true);
-            approvalRecordResponse.setLockedTime(targetingSketch.get().getCreatedTime());
+            approvalRecordResponse.setLockedTime(sketch.getCreatedTime());
         }
-        if (SketchStatusEnum.CANCEL == targetingSketch.get().getStatus()) {
+        if (SketchStatusEnum.CANCEL == sketch.getStatus()) {
             approvalRecordResponse.setCanceled(true);
-            approvalRecordResponse.setCancelReason(targetingSketch.get().getComment());
+            approvalRecordResponse.setCancelReason(sketch.getComment());
         }
         return approvalRecordResponse;
     }
+
 
     private boolean locked(TargetingSketch targetingSketch) {
         return targetingSketch.getStatus() == SketchStatusEnum.PENDING;
