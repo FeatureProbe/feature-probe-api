@@ -77,4 +77,8 @@ public class Event implements Serializable {
     @CreatedDate
     private Date createdTime;
 
+    public String uniqueKey() {
+        return projectKey + "&" + environmentKey + "&" + toggleKey;
+    }
+
 }

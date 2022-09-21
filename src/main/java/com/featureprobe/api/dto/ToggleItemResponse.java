@@ -1,5 +1,6 @@
 package com.featureprobe.api.dto;
 
+import com.featureprobe.api.base.enums.ToggleReleaseStatusEnum;
 import lombok.Data;
 import java.util.Date;
 import java.util.Set;
@@ -30,4 +31,6 @@ public class ToggleItemResponse {
     private String lockedBy;
 
     private Date lockedTime;
+
+    private ToggleReleaseStatusEnum releaseStatus;
 }

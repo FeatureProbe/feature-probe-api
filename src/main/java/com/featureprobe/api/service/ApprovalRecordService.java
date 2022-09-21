@@ -1,7 +1,6 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
-import com.featureprobe.api.base.enums.ApprovalStatusEnum;
 import com.featureprobe.api.base.enums.ApprovalTypeEnum;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.SketchStatusEnum;
@@ -22,6 +21,7 @@ import com.featureprobe.api.repository.TargetingSketchRepository;
 import com.featureprobe.api.repository.ToggleRepository;
 import com.featureprobe.api.util.PageRequestUtil;
 import lombok.AllArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -29,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
@@ -63,35 +64,22 @@ public class ApprovalRecordService {
 
     private Specification<ApprovalRecord> buildListSpec(ApprovalRecordQueryRequest queryRequest) {
         return (root, query, cb) -> {
-            Predicate p2 = cb.equal(root.get("submitBy"), TokenHelper.getAccount());
-            Predicate p3 = cb.like(root.get("reviewers"), "%\"" + TokenHelper.getAccount() + "\"%");
+            Predicate p1 = cb.equal(root.get("submitBy"), TokenHelper.getAccount());
+            Predicate p2 = cb.like(root.get("reviewers"), "%\"" + TokenHelper.getAccount() + "\"%");
             Predicate statusPredicate;
-            if (isTargetingSketchStatus(queryRequest.getStatus())) {
-                List<TargetingSketch> targetingSketches = targetingSketchRepository
-                        .findAllByStatus(SketchStatusEnum.forValue(queryRequest.getStatus()));
-                Set<Long> approvalIds = targetingSketches.stream()
-                        .map(TargetingSketch::getApprovalId).collect(Collectors.toSet());
-                Predicate p4 = root.get("id").in(approvalIds);
-                Predicate p5 = cb.equal(root.get("status"), ApprovalStatusEnum.PASS);
-                if(StringUtils.equals(SketchStatusEnum.CANCEL.name(), queryRequest.getStatus())) {
-                    if (queryRequest.getType() == ApprovalTypeEnum.APPLY) {
-                        statusPredicate = cb.and(p2, p4, p5);
-                    } else {
-                        statusPredicate = cb.and(p3, p4, p5);
-                    }
+            if (queryRequest.getType() == ApprovalTypeEnum.APPLY) {
+                if (CollectionUtils.isNotEmpty(queryRequest.getStatus())) {
+                    Predicate p3 = root.get("status").in(queryRequest.getStatus());
+                    statusPredicate = cb.and(p1, p3);
                 } else {
-                    if (queryRequest.getType() == ApprovalTypeEnum.APPLY) {
-                        statusPredicate = cb.and(p2, p4);
-                    } else {
-                        statusPredicate = cb.and(p3, p4);
-                    }
+                    statusPredicate = cb.and(p1);
                 }
             } else {
-                Predicate p1 = cb.equal(root.get("status"), ApprovalStatusEnum.forValue(queryRequest.getStatus()));
-                if (queryRequest.getType() == ApprovalTypeEnum.APPLY) {
-                    statusPredicate = cb.and(p1, p2);
+                if (CollectionUtils.isNotEmpty(queryRequest.getStatus())) {
+                    Predicate p3 = root.get("status").in(queryRequest.getStatus());
+                    statusPredicate = cb.and(p2, p3);
                 } else {
-                    statusPredicate = cb.and(p1, p3);
+                    statusPredicate = cb.and(p2);
                 }
             }
             if (StringUtils.isNotBlank(queryRequest.getKeyword())) {
@@ -107,11 +95,6 @@ public class ApprovalRecordService {
         };
     }
 
-    private boolean isTargetingSketchStatus(String status) {
-        return StringUtils.equals(status, SketchStatusEnum.RELEASE.name()) ||
-                StringUtils.equals(status, SketchStatusEnum.CANCEL.name());
-    }
-
 
     private ApprovalRecordResponse translateResponse(ApprovalRecord approvalRecord) {
         ApprovalRecordResponse approvalRecordResponse = ApprovalRecordMapper.INSTANCE.entityToResponse(approvalRecord);
@@ -120,15 +103,14 @@ public class ApprovalRecordService {
         approvalRecordResponse.setToggleName(selectApprovalRecordToggle(approvalRecord).getName());
         approvalRecordResponse.setReviewers(JsonMapper.toListObject(approvalRecord.getReviewers(), String.class));
         approvalRecordResponse.setComment(approvalRecord.getComment());
-        approvalRecordResponse.setApprovalTime(approvalRecord.getModifiedTime());
         Optional<TargetingSketch> targetingSketch = targetingSketchRepository.findByApprovalId(approvalRecord.getId());
-        approvalRecordResponse.setSketchTime(targetingSketch.get().getModifiedTime());
-        if(ApprovalStatusEnum.REJECT == approvalRecord.getStatus()) {
-            approvalRecordResponse.setCancelTime(targetingSketch.get().getModifiedTime());
-        }
         if (locked(targetingSketch.get())) {
             approvalRecordResponse.setLocked(true);
             approvalRecordResponse.setLockedTime(targetingSketch.get().getCreatedTime());
+        }
+        if (SketchStatusEnum.CANCEL == targetingSketch.get().getStatus()) {
+            approvalRecordResponse.setCanceled(true);
+            approvalRecordResponse.setCancelReason(targetingSketch.get().getComment());
         }
         return approvalRecordResponse;
     }

@@ -2,6 +2,7 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.tenant.TenantContext;
 import com.featureprobe.api.base.constants.MetricType;
+import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
 import com.featureprobe.api.dto.AccessStatusResponse;
 import com.featureprobe.api.dto.MetricResponse;
 import com.featureprobe.api.entity.Environment;
@@ -22,6 +23,7 @@ import com.featureprobe.api.repository.MetricsCacheRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
+import com.featureprobe.api.service.aspect.ExcludeTenant;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +31,10 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
@@ -207,14 +212,15 @@ public class MetricService {
         cache.setStartDate(startDate);
         cache.setEndDate(endDate);
         cache.setData(JsonMapper.toJSONString(variationAccessCounters));
+        cache.setType(MetricsCacheTypeEnum.METRICS);
         metricsCacheRepository.save(cache);
     }
 
     private List<VariationAccessCounter> queryMetricsCache(String serverSdkKey, String toggleKey, Date startDate,
                                                            Date endDate) {
         Optional<MetricsCache> metricsCache =
-                metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDate(serverSdkKey, toggleKey,
-                        startDate, endDate);
+                metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDateAndType(serverSdkKey, toggleKey,
+                        startDate, endDate, MetricsCacheTypeEnum.METRICS);
         if (metricsCache.isPresent()) {
             return JsonMapper.toListObject(metricsCache.get().getData(), VariationAccessCounter.class);
         } else {
@@ -412,4 +418,5 @@ public class MetricService {
             }
         }
     }
+
 }

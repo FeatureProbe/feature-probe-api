@@ -13,8 +13,11 @@ import java.util.Optional;
 public interface TargetingSketchRepository extends JpaRepository<TargetingSketch, Long>,
         JpaSpecificationExecutor<TargetingSketch> {
 
-    List<TargetingSketch> findAllByStatus(SketchStatusEnum status);
-
     Optional<TargetingSketch> findByApprovalId(Long approvalId);
+
+    List<TargetingSketch> findByProjectKeyAndEnvironmentKeyAndStatusAndToggleKeyIn(String projectKey,
+                                                                                   String environmentKey,
+                                                                                   SketchStatusEnum status,
+                                                                                   List<String> toggleKeys);
     
 }

@@ -26,7 +26,7 @@ public interface ToggleMapper extends BaseMapper {
     ToggleMapper INSTANCE = Mappers.getMapper(ToggleMapper.class);
 
     @Mapping(target = "modifiedBy", expression = "java(getAccount(toggle.getModifiedBy()))")
-    @Mapping(target = "tags", expression = "java(toTagNames(toggle.getTags()))")
+    @Mapping(target = "tags", ignore = true)
     ToggleItemResponse entityToItemResponse(Toggle toggle);
 
     @Mapping(target = "variations", expression = "java(toVariation(toggle.getVariations()))")

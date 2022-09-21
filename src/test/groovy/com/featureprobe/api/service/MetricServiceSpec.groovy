@@ -2,6 +2,7 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.auth.tenant.TenantContext
 import com.featureprobe.api.base.constants.MetricType
+import com.featureprobe.api.base.enums.MetricsCacheTypeEnum
 import com.featureprobe.api.base.enums.OrganizationRoleEnum
 import com.featureprobe.api.dto.AccessStatusResponse
 import com.featureprobe.api.dto.MetricResponse
@@ -70,7 +71,7 @@ class MetricServiceSpec extends Specification {
         then:
         1 * environmentRepository.findByProjectKeyAndKey(projectKey, envKey) >> Optional.of(new Environment(serverSdkKey: serverSdkKey))
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> Optional.of(new Targeting(id: 1))
-        2 * metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDate(serverSdkKey, toggleKey, _, _) >> Optional.empty()
+        2 * metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDateAndType(serverSdkKey, toggleKey, _, _, MetricsCacheTypeEnum.METRICS) >> Optional.empty()
         3 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(serverSdkKey, toggleKey,
                 _, _) >> []
         1 * variationHistoryRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, envKey, toggleKey) >> []
@@ -91,7 +92,7 @@ class MetricServiceSpec extends Specification {
                 lastHours)
 
         then:
-        9 * metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDate(_, _, _, _) >> Optional.empty()
+        9 * metricsCacheRepository.findBySdkKeyAndToggleKeyAndStartDateAndEndDateAndType(_, _, _, _, MetricsCacheTypeEnum.METRICS) >> Optional.empty()
         10 * eventRepository.findBySdkKeyAndToggleKeyAndStartDateGreaterThanEqualAndEndDateLessThanEqual(_, _, _, _) >> []
         lastHours == accessEventPoints.size()
     }

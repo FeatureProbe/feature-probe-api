@@ -1,5 +1,6 @@
 package com.featureprobe.api.repository;
 
+import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
 import com.featureprobe.api.entity.MetricsCache;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -12,7 +13,10 @@ import java.util.Optional;
 public interface MetricsCacheRepository extends JpaRepository<MetricsCache, Long>,
         JpaSpecificationExecutor<MetricsCache> {
 
-    Optional<MetricsCache> findBySdkKeyAndToggleKeyAndStartDateAndEndDate(String sdkKey, String toggleKey,
-                                                                          Date startDate, Date endDate);
+    Optional<MetricsCache> findBySdkKeyAndToggleKeyAndStartDateAndEndDateAndType(String sdkKey, String toggleKey,
+                                                                                 Date startDate, Date endDate,
+                                                                                 MetricsCacheTypeEnum type);
+
+    void deleteBySdkKeyAndToggleKey(String sdkKey, String toggleKey);
 
 }

@@ -46,7 +46,7 @@ class ApprovalRecordServiceSpec extends Specification {
 
     def "Query approval record list"() {
         when:
-        def list = approvalRecordService.list(new ApprovalRecordQueryRequest(keyword: "test", status: "PENDING", type: ApprovalTypeEnum.APPLY))
+        def list = approvalRecordService.list(new ApprovalRecordQueryRequest(keyword: "test", status: [ApprovalStatusEnum.PENDING], type: ApprovalTypeEnum.APPLY))
         then:
         1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
         1 * projectRepository.findByKey("projectKey") >> Optional.of(new Project(name: "projectName"))

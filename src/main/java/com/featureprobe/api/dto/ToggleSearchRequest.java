@@ -1,9 +1,8 @@
 package com.featureprobe.api.dto;
 
+import com.featureprobe.api.base.enums.ToggleReleaseStatusEnum;
 import com.featureprobe.api.base.enums.VisitFilter;
 import lombok.Data;
-
-import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 @Data
@@ -20,5 +19,7 @@ public class ToggleSearchRequest extends PaginationRequest {
     private String keyword;
 
     private boolean archived;
+
+    private List<ToggleReleaseStatusEnum> releaseStatusList;
 
 }

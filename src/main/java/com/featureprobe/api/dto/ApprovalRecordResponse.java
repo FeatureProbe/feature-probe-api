@@ -37,10 +37,12 @@ public class ApprovalRecordResponse {
 
     private String comment;
 
-    private Date approvalTime;
+    private Date createdTime;
 
-    private Date sketchTime;
+    private Date modifiedTime;
 
-    private Date cancelTime;
+    private boolean canceled;
+
+    private String cancelReason;
 
 }

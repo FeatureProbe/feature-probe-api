@@ -10,6 +10,7 @@ import com.featureprobe.api.base.doc.ToggleKeyParameter;
 import com.featureprobe.api.base.enums.ResponseCodeEnum;
 import com.featureprobe.api.dto.AfterTargetingVersionResponse;
 import com.featureprobe.api.dto.BaseResponse;
+import com.featureprobe.api.dto.CancelSketchRequest;
 import com.featureprobe.api.dto.TargetingDiffResponse;
 import com.featureprobe.api.dto.TargetingRequest;
 import com.featureprobe.api.dto.TargetingResponse;
@@ -69,9 +70,10 @@ public class TargetingController {
     @CreateApiResponse
     @Operation(summary = "Cancel targeting sketch", description = "Cancel targeting sketch.")
     public BaseResponse cancelSketch(@PathVariable("projectKey") String projectKey,
-                                           @PathVariable("environmentKey") String environmentKey,
-                                           @PathVariable("toggleKey") String toggleKey) {
-        targetingService.cancelSketch(projectKey, environmentKey, toggleKey);
+                                     @PathVariable("environmentKey") String environmentKey,
+                                     @PathVariable("toggleKey") String toggleKey,
+                                     @RequestBody @Validated CancelSketchRequest cancelSketchRequest) {
+        targetingService.cancelSketch(projectKey, environmentKey, toggleKey, cancelSketchRequest);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 

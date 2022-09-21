@@ -1,47 +1,52 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.SketchStatusEnum;
+import com.featureprobe.api.base.enums.ToggleReleaseStatusEnum;
 import com.featureprobe.api.base.enums.VisitFilter;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.base.exception.ResourceOverflowException;
-import com.featureprobe.api.dto.PaginationRequest;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
 import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
-import com.featureprobe.api.entity.ApprovalRecord;
 import com.featureprobe.api.entity.Environment;
 import com.featureprobe.api.entity.Event;
+import com.featureprobe.api.entity.MetricsCache;
 import com.featureprobe.api.entity.Tag;
 import com.featureprobe.api.entity.Targeting;
 import com.featureprobe.api.entity.TargetingSketch;
 import com.featureprobe.api.entity.TargetingVersion;
 import com.featureprobe.api.entity.Toggle;
+import com.featureprobe.api.entity.ToggleTagRelation;
 import com.featureprobe.api.entity.VariationHistory;
 import com.featureprobe.api.mapper.JsonMapper;
 import com.featureprobe.api.mapper.ToggleMapper;
 import com.featureprobe.api.model.TargetingContent;
 import com.featureprobe.api.model.Variation;
-import com.featureprobe.api.repository.ApprovalRecordRepository;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.EventRepository;
+import com.featureprobe.api.repository.MetricsCacheRepository;
 import com.featureprobe.api.repository.TagRepository;
 import com.featureprobe.api.repository.TargetingRepository;
 import com.featureprobe.api.repository.TargetingSketchRepository;
 import com.featureprobe.api.repository.TargetingVersionRepository;
 import com.featureprobe.api.repository.ToggleRepository;
+import com.featureprobe.api.repository.ToggleTagRepository;
 import com.featureprobe.api.repository.VariationHistoryRepository;
 import com.featureprobe.api.service.aspect.Archived;
 import com.featureprobe.api.util.PageRequestUtil;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -52,19 +57,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -88,6 +95,10 @@ public class ToggleService {
     private VariationHistoryRepository variationHistoryRepository;
 
     private TargetingSketchRepository targetingSketchRepository;
+
+    private MetricsCacheRepository metricsCacheRepository;
+
+    private ToggleTagRepository toggleTagRepository;
 
     private FeatureProbe featureProbe;
 
@@ -205,12 +216,6 @@ public class ToggleService {
         return ToggleMapper.INSTANCE.entityToResponse(toggle);
     }
 
-    private void validateKey(String projectKey, String key) {
-        if (toggleRepository.existsByProjectKeyAndKey(projectKey, key)) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
-        }
-    }
-
     private void validateName(String projectKey, String name) {
         if (toggleRepository.existsByProjectKeyAndName(projectKey, name)) {
             throw new ResourceConflictException(ResourceType.TOGGLE);
@@ -238,7 +243,7 @@ public class ToggleService {
                         searchRequest.getDisabled());
                 retainAllKeys(toggleKeys, keys);
             }
-            if (!CollectionUtils.isEmpty(searchRequest.getTags())) {
+            if (CollectionUtils.isNotEmpty(searchRequest.getTags())) {
                 isPrecondition = true;
                 Set<String> keys = queryToggleKeysByTags(searchRequest.getTags());
                 retainAllKeys(toggleKeys, keys);
@@ -248,9 +253,24 @@ public class ToggleService {
                 Set<String> keys = queryToggleKeysByVisited(searchRequest.getVisitFilter(), projectKey, environment);
                 retainAllKeys(toggleKeys, keys);
             }
+            if (CollectionUtils.isNotEmpty(searchRequest.getReleaseStatusList())) {
+                isPrecondition = true;
+                Set<String> keys = queryToggleKeysByReleaseStatus(projectKey, searchRequest.getEnvironmentKey(),
+                        searchRequest.getReleaseStatusList());
+                retainAllKeys(toggleKeys, keys);
+            }
             togglePage = compoundQuery(projectKey, searchRequest, toggleKeys, isPrecondition);
+            List<String> keys = togglePage.getContent().stream().map(Toggle::getKey).collect(Collectors.toList());
+            Map<String, Targeting> targetingMap = queryTargetingMap(projectKey, searchRequest.getEnvironmentKey(),
+                    keys);
+            Map<String, TargetingSketch> targetingSketchMap = queryNewestTargetingSketchMap(projectKey,
+                    searchRequest.getEnvironmentKey(), keys);
+            Map<String, MetricsCache> metricsCacheMap = queryMetricsCacheMap(projectKey,
+                    searchRequest.getEnvironmentKey(), keys);
+            Map<String, Set<String>> tagMap = queryTagMap(keys);
             return togglePage.map(item ->
-                    entityToItemResponse(item, projectKey, searchRequest.getEnvironmentKey()));
+                    entityToItemResponse(item, projectKey, searchRequest.getEnvironmentKey(),
+                            targetingMap, targetingSketchMap, metricsCacheMap, tagMap));
         } else {
             togglePage = toggleRepository.findAllByProjectKeyAndArchived(projectKey, false,
                     PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "createdTime"));
@@ -258,33 +278,61 @@ public class ToggleService {
         }
     }
 
+    private Map<String, Set<String>> queryTagMap(List<String> toggleKeys) {
+        List<ToggleTagRelation> toggleTags = toggleTagRepository.findByToggleKeyIn(toggleKeys);
+        Set<Long> tagIds = toggleTags.stream().map(ToggleTagRelation::getTagId).collect(Collectors.toSet());
+        List<Tag> tags = tagRepository.findAllById(tagIds);
+        Map<Long, String> tagMap = tags.stream().collect(Collectors.toMap(Tag::getId, Tag::getName));
+        Map<String, Set<String>> res = new HashMap<>(10);
+        toggleTags.stream().forEach(toggleTag -> {
+            if (res.containsKey(toggleTag.getToggleKey())) {
+                res.get(toggleTag.getToggleKey()).add(tagMap.get(toggleTag.getTagId()));
+            } else {
+                res.put(toggleTag.getToggleKey(), new HashSet<>(Arrays.asList(tagMap.get(toggleTag.getTagId()))));
+            }
+        });
+        return res;
+    }
+
+    private Map<String, TargetingSketch> queryNewestTargetingSketchMap(String projectKey, String environmentKey,
+                                                                       List<String> toggleKeys) {
+        List<TargetingSketch> targetingSketches = targetingSketchRepository
+                .findByProjectKeyAndEnvironmentKeyAndStatusAndToggleKeyIn(projectKey, environmentKey,
+                        SketchStatusEnum.PENDING, toggleKeys);
+        return targetingSketches.stream().collect(Collectors.toMap(TargetingSketch::uniqueKey, Function.identity()));
+    }
+
+    private Map<String, Targeting> queryTargetingMap(String projectKey, String environmentKey,
+                                                     List<String> toggleKeys) {
+        List<Targeting> targetingList = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKeyIn(projectKey,
+                environmentKey, toggleKeys);
+        return targetingList.stream().collect(Collectors.toMap(Targeting::uniqueKey, Function.identity()));
+    }
+
     private Page<Toggle> compoundQuery(String projectKey, ToggleSearchRequest searchRequest, Set<String> toggleKeys,
                                        boolean isPrecondition) {
-        Specification<Toggle> resultSpec = new Specification<Toggle>() {
-            @Override
-            public Predicate toPredicate(Root<Toggle> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-                Predicate p1 = cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%");
-                Predicate p2 = cb.like(root.get("key"), "%" + searchRequest.getKeyword() + "%");
-                Predicate p3 = cb.like(root.get("desc"), "%" + searchRequest.getKeyword() + "%");
-                Predicate p4 = root.get("key").in(toggleKeys);
-                Predicate p5 = cb.equal(root.get("projectKey"), projectKey);
-                Predicate p6;
-                if (searchRequest.isArchived()) {
-                    p6 = cb.equal(root.get("archived"), 1);
-                } else {
-                    p6 = cb.equal(root.get("archived"), 0);
-                }
-                if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
-                    if (isPrecondition) {
-                        return query.where(cb.or(p1, p2, p3), cb.and(p4, p5, p6)).getRestriction();
-                    }
-                    return query.where(cb.or(p1, p2, p3), cb.and(p5, p6)).getRestriction();
-                }
-                if (isPrecondition) {
-                    return query.where(cb.and(p4, p5, p6)).getRestriction();
-                }
-                return query.where(cb.and(p5, p6)).getRestriction();
+        Specification<Toggle> resultSpec = (root, query, cb) -> {
+            Predicate p1 = cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%");
+            Predicate p2 = cb.like(root.get("key"), "%" + searchRequest.getKeyword() + "%");
+            Predicate p3 = cb.like(root.get("desc"), "%" + searchRequest.getKeyword() + "%");
+            Predicate p4 = root.get("key").in(toggleKeys);
+            Predicate p5 = cb.equal(root.get("projectKey"), projectKey);
+            Predicate p6;
+            if (searchRequest.isArchived()) {
+                p6 = cb.equal(root.get("archived"), 1);
+            } else {
+                p6 = cb.equal(root.get("archived"), 0);
             }
+            if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
+                if (isPrecondition) {
+                    return query.where(cb.or(p1, p2, p3), cb.and(p4, p5, p6)).getRestriction();
+                }
+                return query.where(cb.or(p1, p2, p3), cb.and(p5, p6)).getRestriction();
+            }
+            if (isPrecondition) {
+                return query.where(cb.and(p4, p5, p6)).getRestriction();
+            }
+            return query.where(cb.and(p5, p6)).getRestriction();
         };
         Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
                 Sort.Direction.DESC, "createdTime");
@@ -305,14 +353,18 @@ public class ToggleService {
         return targetingList.stream().map(Targeting::getToggleKey).collect(Collectors.toSet());
     }
 
+    private Set<String> queryToggleKeysByReleaseStatus(String projectKey, String environmentKey,
+                                                       List<ToggleReleaseStatusEnum> statusList) {
+        List<Targeting> targetingList = targetingRepository.findAllByProjectKeyAndEnvironmentKeyAndStatusIn(projectKey,
+                environmentKey, statusList);
+        return targetingList.stream().map(Targeting::getToggleKey).collect(Collectors.toSet());
+    }
+
     private Set<String> queryToggleKeysByTags(List<String> tagNames) {
         List<Tag> tags = tagRepository.findByNameIn(tagNames);
-        Set<String> toggleKeys = new TreeSet<>();
-        tags.forEach(tag -> {
-            Set<String> collect = tag.getToggles().stream().map(Toggle::getKey).collect(Collectors.toSet());
-            toggleKeys.addAll(collect);
-        });
-        return toggleKeys;
+        Set<Long> tagIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
+        List<ToggleTagRelation> toggleTags = toggleTagRepository.findByTagIdIn(tagIds);
+        return toggleTags.stream().map(ToggleTagRelation::getToggleKey).collect(Collectors.toSet());
     }
 
     private Set<String> queryToggleKeysByVisited(VisitFilter visitFilter, String projectKey, Environment environment) {
@@ -370,63 +422,49 @@ public class ToggleService {
         return toggles.stream().map(Toggle::getKey).collect(Collectors.toSet());
     }
 
-    private ToggleItemResponse entityToItemResponse(Toggle toggle, String projectKey, String environmentKey) {
+    private ToggleItemResponse entityToItemResponse(Toggle toggle, String projectKey, String environmentKey,
+                                                    Map<String, Targeting> targetingMap,
+                                                    Map<String, TargetingSketch> targetingSketchMap,
+                                                    Map<String, MetricsCache> metricsCacheMap,
+                                                    Map<String, Set<String>> tagMap) {
         ToggleItemResponse toggleItem = ToggleMapper.INSTANCE.entityToItemResponse(toggle);
-        Set<Tag> tags = toggle.getTags();
-        toggleItem.setTags(tags.stream().map(Tag::getName).collect(Collectors.toSet()));
-        Targeting targeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
-                environmentKey, toggle.getKey()).get();
-        toggleItem.setDisabled(targeting.getDisabled());
-        toggleItem.setVisitedTime(queryToggleVisited(projectKey, environmentKey, toggle.getKey()));
-        Optional<TargetingSketch> targetingSketchOptional = queryNewestTargetingSketch(projectKey, environmentKey,
-                toggle.getKey());
-        if (targetingSketchOptional.isPresent()) {
-            toggleItem.setLocked(locked(targetingSketchOptional.get()));
-            toggleItem.setLockedBy(targetingSketchOptional.get().getCreatedBy().getAccount());
-            toggleItem.setLockedTime(targetingSketchOptional.get().getCreatedTime());
+        toggleItem.setTags(tagMap.get(toggle.getKey()));
+        toggleItem.setDisabled(targetingMap.get(uniqueKey(projectKey, environmentKey, toggle.getKey()))
+                .getDisabled());
+        toggleItem.setReleaseStatus(targetingMap.get(uniqueKey(projectKey, environmentKey, toggle.getKey()))
+                .getStatus());
+        if (ObjectUtils.isNotEmpty(metricsCacheMap.get(toggle.getKey()))) {
+            toggleItem.setVisitedTime(metricsCacheMap.get(toggle.getKey()).getStartDate());
+        }
+        TargetingSketch sketch = targetingSketchMap.get(uniqueKey(projectKey, environmentKey, toggle.getKey()));
+        if (ObjectUtils.isNotEmpty(sketch)) {
+            toggleItem.setLocked(locked(sketch));
+            toggleItem.setLockedBy(sketch.getCreatedBy().getAccount());
+            toggleItem.setLockedTime(sketch.getCreatedTime());
         }
         return toggleItem;
+    }
+
+    private String uniqueKey(String projectKey, String environmentKey, String toggleKey) {
+        return projectKey + "&" + environmentKey + "&" + toggleKey;
     }
 
     private boolean locked(TargetingSketch targetingSketch) {
         return targetingSketch.getStatus() == SketchStatusEnum.PENDING;
     }
 
-    private Optional<TargetingSketch> queryNewestTargetingSketch(String projectKey, String environmentKey,
-                                                                 String toggleKey) {
-        Specification<TargetingSketch> spec = (root, query, cb) -> {
-            Predicate p1 = cb.equal(root.get("projectKey"), projectKey);
-            Predicate p2 = cb.equal(root.get("environmentKey"), environmentKey);
-            Predicate p3 = cb.equal(root.get("toggleKey"), toggleKey);
-            return query.where(p1, p2, p3).getRestriction();
-        };
-        Pageable pageable = PageRequestUtil.toPageable(new PaginationRequest(), Sort.Direction.DESC,
-                "createdTime");
-        Page<TargetingSketch> targetingSketches = targetingSketchRepository.findAll(spec, pageable);
-        if (org.springframework.util.CollectionUtils.isEmpty(targetingSketches.getContent())) {
-            return Optional.empty();
-        }
-        return Optional.of(targetingSketches.getContent().get(0));
-    }
-
-    private Date queryToggleVisited(String projectKey, String environmentKey, String toggleKey) {
+    private Map<String, MetricsCache> queryMetricsCacheMap(String projectKey, String environmentKey,
+                                                           List<String> toggleKeys) {
         Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey).get();
-        Pageable pageable = PageRequest.of(0, 1,
-                Sort.Direction.DESC, "startDate");
-        Specification<Event> spec = new Specification<Event>() {
-            @Override
-            public Predicate toPredicate(Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-                Predicate p0 = cb.equal(root.get("toggleKey"), toggleKey);
-                Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
-                Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
-                return query.where(cb.and(p0), cb.or(p1, p2)).getRestriction();
-            }
+        Specification<MetricsCache> spec = (root, query, cb) -> {
+            Predicate p0 = root.get("toggleKey").in(toggleKeys);
+            Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
+            Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
+            Predicate p3 = cb.equal(root.get("type"), MetricsCacheTypeEnum.EVALUATION);
+            return query.where(cb.and(p0, p3), cb.or(p1, p2)).getRestriction();
         };
-        Page<Event> events = eventRepository.findAll(spec, pageable);
-        if (!CollectionUtils.isEmpty(events.getContent())) {
-            return events.getContent().get(0).getStartDate();
-        }
-        return null;
+        List<MetricsCache> metricsCaches = metricsCacheRepository.findAll(spec);
+        return metricsCaches.stream().collect(Collectors.toMap(MetricsCache::getToggleKey, Function.identity()));
     }
 
     @Archived
