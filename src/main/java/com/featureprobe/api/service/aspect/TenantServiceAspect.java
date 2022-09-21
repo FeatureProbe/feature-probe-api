@@ -33,7 +33,8 @@ public class TenantServiceAspect {
                 EntityManager entityManager = (EntityManager) field.get(pjp.getTarget());
                 Session session = entityManager.unwrap(Session.class);
                 ExcludeTenant excludeTenantAnnotation = clazz.getAnnotation(ExcludeTenant.class);
-                if (Objects.isNull(excludeTenantAnnotation)) {
+                ExcludeTenant excludeTenantMethodAnnotation = getMethodAnnotation(pjp, ExcludeTenant.class);
+                if (Objects.isNull(excludeTenantAnnotation) && Objects.isNull(excludeTenantMethodAnnotation)) {
                     session.enableFilter("tenantFilter").setParameter("organizationId",
                                     Long.parseLong(TenantContext.getCurrentTenant()))
                             .validate();

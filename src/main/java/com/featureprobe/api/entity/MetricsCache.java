@@ -1,5 +1,6 @@
 package com.featureprobe.api.entity;
 
+import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,6 +8,8 @@ import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -40,4 +43,7 @@ public class MetricsCache {
 
     @Column(name = "end_date")
     private Date endDate;
+
+    @Enumerated(EnumType.STRING)
+    private MetricsCacheTypeEnum type;
 }

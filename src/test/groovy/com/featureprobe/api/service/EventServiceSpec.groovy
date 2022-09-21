@@ -7,6 +7,7 @@ import com.featureprobe.api.model.AccessSummary
 import com.featureprobe.api.model.VariationAccessCounter
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.EventRepository
+import com.featureprobe.api.repository.MetricsCacheRepository
 import spock.lang.Specification
 
 class EventServiceSpec extends Specification {
@@ -14,11 +15,13 @@ class EventServiceSpec extends Specification {
     EventService eventService
     EventRepository eventRepository
     EnvironmentRepository environmentRepository
+    MetricsCacheRepository metricsCacheRepository
 
     def setup() {
-        this.eventRepository = Mock(EventRepository)
-        this.environmentRepository = Mock(EnvironmentRepository)
-        this.eventService = new EventService(eventRepository, environmentRepository)
+        eventRepository = Mock(EventRepository)
+        environmentRepository = Mock(EnvironmentRepository)
+        metricsCacheRepository = Mock(MetricsCacheRepository)
+        eventService = new EventService(eventRepository, environmentRepository, metricsCacheRepository)
     }
 
     def "test create access events"() {

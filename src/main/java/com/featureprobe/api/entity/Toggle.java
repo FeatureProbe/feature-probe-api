@@ -3,13 +3,11 @@ package com.featureprobe.api.entity;
 import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -27,15 +25,12 @@ import javax.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
 
-@EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
-@Builder
+
+@Getter
+@Setter
 @Entity
 @Table(name = "toggle")
 @DynamicInsert
-@ToString(callSuper = true)
 @EntityListeners(TenantEntityListener.class)
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "organizationId", type = "long")})
 @Filter(name = "tenantFilter", condition = "organization_id = :organizationId")
@@ -80,8 +75,9 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "toggle_tag", joinColumns = {@JoinColumn(name = "toggle_key", referencedColumnName = "key")},
             inverseJoinColumns = {@JoinColumn(name = "tag_id", referencedColumnName = "id")})
-    @Fetch(FetchMode.JOIN)
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Tag> tags = new HashSet<>();
 
+    public String uniqueKey() {
+        return projectKey + "&" + key;
+    }
 }

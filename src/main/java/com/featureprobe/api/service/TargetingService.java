@@ -4,8 +4,10 @@ import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ApprovalStatusEnum;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.SketchStatusEnum;
+import com.featureprobe.api.base.enums.ToggleReleaseStatusEnum;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
 import com.featureprobe.api.dto.AfterTargetingVersionResponse;
+import com.featureprobe.api.dto.CancelSketchRequest;
 import com.featureprobe.api.dto.PaginationRequest;
 import com.featureprobe.api.dto.TargetingDiffResponse;
 import com.featureprobe.api.dto.TargetingRequest;
@@ -98,11 +100,15 @@ public class TargetingService {
         if (environment.isEnableApproval()) {
             List<String> reviews = JsonMapper.toListObject(environment.getReviewers(), String.class);
             targetingRequest.setReviewers(reviews);
+            Targeting targeting = selectTargeting(projectKey, environmentKey, toggleKey);
+            targeting.setStatus(ToggleReleaseStatusEnum.PENDING_APPROVAL);
+            targetingRepository.save(targeting);
             return submitApproval(projectKey, environmentKey, toggleKey, targetingRequest);
         }
         return publishTargeting(projectKey, environmentKey, toggleKey, targetingRequest, null);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public TargetingResponse publishSketch(String projectKey, String environmentKey, String toggleKey) {
         Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
                 environmentKey, toggleKey);
@@ -121,24 +127,32 @@ public class TargetingService {
         return null;
     }
 
-    public void cancelSketch(String projectKey, String environmentKey, String toggleKey) {
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelSketch(String projectKey, String environmentKey, String toggleKey,
+                             CancelSketchRequest cancelSketchRequest) {
         Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
                 environmentKey, toggleKey);
         Optional<TargetingSketch> targetingSketchOptional = queryNewestTargetingSketch(projectKey, environmentKey,
                 toggleKey);
+        Targeting targeting = selectTargeting(projectKey, environmentKey, toggleKey);
         if (approvalRecordOptional.isPresent() && targetingSketchOptional.isPresent()) {
             TargetingSketch sketch = targetingSketchOptional.get();
             sketch.setStatus(SketchStatusEnum.CANCEL);
+            sketch.setComment(cancelSketchRequest.getComment());
+            targeting.setStatus(ToggleReleaseStatusEnum.RELEASE);
             targetingSketchRepository.save(sketch);
+            targetingRepository.save(targeting);
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void updateApprovalStatus(String projectKey, String environmentKey, String toggleKey,
                                                UpdateApprovalStatusRequest updateRequest) {
         Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
                 environmentKey, toggleKey);
         Optional<TargetingSketch> targetingSketchOptional = queryNewestTargetingSketch(projectKey, environmentKey,
                 toggleKey);
+        Targeting targeting = selectTargeting(projectKey, environmentKey, toggleKey);
         if (approvalRecordOptional.isPresent() && targetingSketchOptional.isPresent() &&
                 checkStateMachine(approvalRecordOptional.get(), updateRequest.getStatus())) {
             if (updateRequest.getStatus() == ApprovalStatusEnum.REVOKE) {
@@ -154,6 +168,14 @@ public class TargetingService {
             if (updateRequest.getStatus() == ApprovalStatusEnum.JUMP) {
                 publishSketch(projectKey, environmentKey, toggleKey);
             }
+            if (updateRequest.getStatus() == ApprovalStatusEnum.PASS) {
+                targeting.setStatus(ToggleReleaseStatusEnum.PENDING_RELEASE);
+            } else if (updateRequest.getStatus() == ApprovalStatusEnum.REJECT) {
+                targeting.setStatus(ToggleReleaseStatusEnum.REJECT);
+            } else {
+                targeting.setStatus(ToggleReleaseStatusEnum.RELEASE);
+            }
+            targetingRepository.save(targeting);
             return;
         }
         throw new IllegalArgumentException();
@@ -292,6 +314,7 @@ public class TargetingService {
             saveTargetingVersion(buildTargetingVersion(updatedTargeting, targetingRequest.getComment(), approvalId));
             saveVariationHistory(updatedTargeting, targetingRequest.getContent());
         }
+        updatedTargeting.setStatus(ToggleReleaseStatusEnum.RELEASE);
         return TargetingMapper.INSTANCE.entityToResponse(updatedTargeting);
     }
 
@@ -326,6 +349,7 @@ public class TargetingService {
 
     private Targeting updateTargeting(Targeting currentTargeting, TargetingRequest updateTargetingRequest) {
         TargetingMapper.INSTANCE.mapEntity(updateTargetingRequest, currentTargeting);
+        currentTargeting.setVersion(currentTargeting.getVersion() + 1);
         return targetingRepository.saveAndFlush(currentTargeting);
     }
 

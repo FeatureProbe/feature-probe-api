@@ -7,11 +7,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface EnvironmentRepository extends JpaRepository<Environment, Long> {
 
     List<Environment> findAllByProjectKey(String projectKey);
+
+    List<Environment> findByKeyIn(Set<String> key);
 
     List<Environment> findAllByProjectKeyAndArchived(String projectKey, Boolean archived);
 

@@ -9,6 +9,8 @@ public class EnvironmentResponse {
 
     private String key;
 
+    private boolean enableApproval;
+
     private String serverSdkKey;
     private String clientSdkKey;
 

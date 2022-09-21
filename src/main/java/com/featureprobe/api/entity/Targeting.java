@@ -2,6 +2,7 @@ package com.featureprobe.api.entity;
 
 import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
+import com.featureprobe.api.base.enums.ToggleReleaseStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,8 @@ import org.hibernate.annotations.ParamDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
@@ -43,7 +46,6 @@ public class Targeting extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "project_key")
     private String projectKey;
 
-    @Version
     private Long version;
 
     @Column(columnDefinition = "TINYINT")
@@ -57,5 +59,12 @@ public class Targeting extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "organization_id")
     private Long organizationId;
+
+    @Enumerated(EnumType.STRING)
+    private ToggleReleaseStatusEnum status;
+
+    public String uniqueKey() {
+        return projectKey + "&" + environmentKey + "&" + toggleKey;
+    }
 
 }

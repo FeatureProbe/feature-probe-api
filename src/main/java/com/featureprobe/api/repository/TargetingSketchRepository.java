@@ -8,13 +8,19 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface TargetingSketchRepository extends JpaRepository<TargetingSketch, Long>,
         JpaSpecificationExecutor<TargetingSketch> {
 
-    List<TargetingSketch> findAllByStatus(SketchStatusEnum status);
-
     Optional<TargetingSketch> findByApprovalId(Long approvalId);
+
+    List<TargetingSketch> findByApprovalIdIn(Set<Long> approvalIds);
+
+    List<TargetingSketch> findByProjectKeyAndEnvironmentKeyAndStatusAndToggleKeyIn(String projectKey,
+                                                                                   String environmentKey,
+                                                                                   SketchStatusEnum status,
+                                                                                   List<String> toggleKeys);
     
 }

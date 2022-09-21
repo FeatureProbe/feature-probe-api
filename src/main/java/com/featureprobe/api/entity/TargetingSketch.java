@@ -66,4 +66,8 @@ public class TargetingSketch extends AbstractAuditEntity implements TenantSuppor
     @Enumerated(EnumType.STRING)
     private SketchStatusEnum status;
 
+    public String uniqueKey() {
+        return projectKey + "&" + environmentKey + "&" + toggleKey;
+    }
+
 }

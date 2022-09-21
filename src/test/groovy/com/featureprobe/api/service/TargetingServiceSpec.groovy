@@ -5,6 +5,7 @@ import com.featureprobe.api.base.enums.ApprovalStatusEnum
 import com.featureprobe.api.base.enums.OrganizationRoleEnum
 import com.featureprobe.api.base.enums.SketchStatusEnum
 import com.featureprobe.api.base.exception.ResourceNotFoundException
+import com.featureprobe.api.dto.CancelSketchRequest
 import com.featureprobe.api.dto.TargetingRequest
 import com.featureprobe.api.dto.TargetingVersionRequest
 import com.featureprobe.api.dto.UpdateApprovalStatusRequest
@@ -306,7 +307,11 @@ class TargetingServiceSpec extends Specification {
         then:
         1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
         1 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
+                Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                        content: "", disabled: false, version: 2))
         1 * approvalRecordRepository.saveAndFlush(_)
+        1 * targetingRepository.save(_)
     }
 
     def "update approval status to REVOKE"() {
@@ -317,8 +322,12 @@ class TargetingServiceSpec extends Specification {
         then:
         1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
         1 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
+                Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                        content: "", disabled: false, version: 2))
         1 * targetingSketchRepository.save(_)
         1 * approvalRecordRepository.saveAndFlush(_)
+        1 * targetingRepository.save(_)
     }
 
     def "update approval status to JUMP"() {
@@ -329,6 +338,9 @@ class TargetingServiceSpec extends Specification {
         then:
         2 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
         2 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey, toggleKey) >>
+                Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: false, version: 2))
         1 * targetingSketchRepository.save(_)
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey,
                 toggleKey) >> Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
@@ -340,15 +352,20 @@ class TargetingServiceSpec extends Specification {
         1 * targetingVersionRepository.save(_)
         1 * variationHistoryRepository.saveAll(_)
         1 * approvalRecordRepository.saveAndFlush(_)
+        1 * targetingRepository.save(_)
     }
 
     def "cancel targeting sketch"() {
         when:
-        targetingService.cancelSketch(projectKey, environmentKey, toggleKey)
+        targetingService.cancelSketch(projectKey, environmentKey, toggleKey, new CancelSketchRequest(comment: ""))
         then:
         1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
         1 * targetingSketchRepository.findAll(_, _) >> new PageImpl<>([targetingSketch], Pageable.ofSize(1), 1)
+        1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey,
+                toggleKey) >> Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: false, version: 2))
         1 * targetingSketchRepository.save(_)
+        1 * targetingRepository.save(_)
     }
 
 

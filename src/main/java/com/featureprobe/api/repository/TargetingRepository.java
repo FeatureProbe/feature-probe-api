@@ -1,5 +1,6 @@
 package com.featureprobe.api.repository;
 
+import com.featureprobe.api.base.enums.ToggleReleaseStatusEnum;
 import com.featureprobe.api.entity.Targeting;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -17,6 +18,12 @@ public interface TargetingRepository extends JpaRepository<Targeting, Long>, Jpa
     List<Targeting> findAllByProjectKeyAndEnvironmentKeyAndDisabled(String projectKey, String environmentKey,
                                                                     boolean disabled);
 
+    List<Targeting> findAllByProjectKeyAndEnvironmentKeyAndStatusIn(String projectKey, String environmentKey,
+                                                                  List<ToggleReleaseStatusEnum> statusList);
+
     List<Targeting> findAllByProjectKeyAndEnvironmentKeyAndOrganizationId(String projectKey, String environmentKey,
                                                                       Long organizationId);
+
+    List<Targeting> findByProjectKeyAndEnvironmentKeyAndToggleKeyIn(String projectKey, String environmentKey,
+                                                                    List<String> toggleKeys);
 }
