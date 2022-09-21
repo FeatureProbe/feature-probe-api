@@ -84,4 +84,8 @@ public class Environment extends AbstractAuditEntity implements TenantSupport, S
     public void setOrganizationId(Long organizationId) {
         project.setOrganizationId(organizationId);
     }
+
+    public String uniqueKey() {
+        return project.getKey() + "&" + key;
+    }
 }

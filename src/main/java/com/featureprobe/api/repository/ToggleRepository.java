@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface ToggleRepository extends JpaRepository<Toggle, Long>, JpaSpecificationExecutor<Toggle> {
@@ -19,6 +20,8 @@ public interface ToggleRepository extends JpaRepository<Toggle, Long>, JpaSpecif
     Optional<Toggle> findByProjectKeyAndKeyAndArchived(String projectKey, String key, Boolean archived);
 
     List<Toggle> findAllByProjectKey(String projectKey);
+
+    List<Toggle> findByKeyIn(Set<String> keys);
 
     List<Toggle> findAllByProjectKeyAndOrganizationId(String projectKey, Long organizationId);
 

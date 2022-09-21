@@ -49,10 +49,10 @@ class ApprovalRecordServiceSpec extends Specification {
         def list = approvalRecordService.list(new ApprovalRecordQueryRequest(keyword: "test", status: [ApprovalStatusEnum.PENDING], type: ApprovalTypeEnum.APPLY))
         then:
         1 * approvalRecordRepository.findAll(_, _) >> new PageImpl<>([approvalRecord], Pageable.ofSize(1), 1)
-        1 * projectRepository.findByKey("projectKey") >> Optional.of(new Project(name: "projectName"))
-        1 * environmentRepository.findByProjectKeyAndKey("projectKey", "environmentKey") >> Optional.of(new Environment(name: "environmentName"))
-        1 * toggleRepository.findByProjectKeyAndKey("projectKey", "toggleKey") >> Optional.of(new Toggle(name: "toggleName"))
-        1 * targetingSketchRepository.findByApprovalId(1) >> Optional.of(new TargetingSketch(modifiedTime: new Date()))
+        1 * targetingSketchRepository.findByApprovalIdIn(_) >> [new TargetingSketch(approvalId: 1, modifiedTime: new Date())]
+        1 * projectRepository.findByKeyIn(_) >> [new Project(name: "projectName", key: "projectKey")]
+        1 * environmentRepository.findByKeyIn(_) >> [new Environment(name: "environmentName",key: "environmentKey", project: new Project(key: "projectKey"))]
+        1 * toggleRepository.findByKeyIn(_) >> [new Toggle(name: "toggleName", projectKey: "projectKey", key: "toggleKey")]
         1 == list.content.size()
     }
 

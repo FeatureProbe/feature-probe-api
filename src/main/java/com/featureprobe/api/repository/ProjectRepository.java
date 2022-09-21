@@ -6,11 +6,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     Optional<Project> findByKey(String key);
+
+    List<Project> findByKeyIn(Set<String> keys);
 
     boolean existsByKey(String key);
 

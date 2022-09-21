@@ -66,6 +66,12 @@ public class ApprovalRecord  extends AbstractAuditEntity implements TenantSuppor
     @Column(columnDefinition = "TEXT")
     private String comment;
 
+    public String environmentUniqueKey() {
+        return projectKey + "&" + environmentKey;
+    }
 
+    public String toggleUniqueKey() {
+        return projectKey + "&" + toggleKey;
+    }
 
 }

@@ -77,4 +77,7 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
             inverseJoinColumns = {@JoinColumn(name = "tag_id", referencedColumnName = "id")})
     private Set<Tag> tags = new HashSet<>();
 
+    public String uniqueKey() {
+        return projectKey + "&" + key;
+    }
 }

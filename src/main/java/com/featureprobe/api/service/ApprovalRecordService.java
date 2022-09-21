@@ -19,6 +19,7 @@ import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.ProjectRepository;
 import com.featureprobe.api.repository.TargetingSketchRepository;
 import com.featureprobe.api.repository.ToggleRepository;
+import com.featureprobe.api.service.aspect.Archived;
 import com.featureprobe.api.util.PageRequestUtil;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -53,6 +54,7 @@ public class ApprovalRecordService {
     @PersistenceContext
     public EntityManager entityManager;
 
+    @Archived
     public Page<ApprovalRecordResponse> list(ApprovalRecordQueryRequest queryRequest) {
         Specification<ApprovalRecord> spec = buildListSpec(queryRequest);
         Pageable pageable = PageRequestUtil.toPageable(queryRequest, Sort.Direction.DESC, "createdTime");
@@ -60,8 +62,14 @@ public class ApprovalRecordService {
         Set<Long> approvalIds = approvalRecords.getContent().stream().map(ApprovalRecord::getId)
                 .collect(Collectors.toSet());
         Map<Long, TargetingSketch> targetingSketchMap = queryTargetingSketchMap(approvalIds);
+        Map<String, Project> projectMap = queryProjectMap(approvalRecords.getContent().stream()
+                .map(ApprovalRecord::getProjectKey).collect(Collectors.toSet()));
+        Map<String, Environment> environmentMap = queryEnvironmentMap(approvalRecords.getContent().stream()
+                .map(ApprovalRecord::getEnvironmentKey).collect(Collectors.toSet()));
+        Map<String, Toggle> toggleMap = queryToggleMap(approvalRecords.getContent().stream()
+                .map(ApprovalRecord::getToggleKey).collect(Collectors.toSet()));
         Page<ApprovalRecordResponse> res = approvalRecords.map(approvalRecord ->
-                translateResponse(approvalRecord, targetingSketchMap));
+                translateResponse(approvalRecord, targetingSketchMap, projectMap, environmentMap, toggleMap));
         List<ApprovalRecordResponse> sortedRes = res.getContent().stream()
                 .sorted(Comparator.comparing(ApprovalRecordResponse::isLocked).reversed()).collect(Collectors.toList());
         return new PageImpl<>(sortedRes, pageable, res.getTotalElements());
@@ -106,12 +114,30 @@ public class ApprovalRecordService {
                 .collect(Collectors.toMap(TargetingSketch::getApprovalId, Function.identity()));
     }
 
+    private Map<String, Project> queryProjectMap(Set<String> projectKeys) {
+        List<Project> projects = projectRepository.findByKeyIn(projectKeys);
+        return projects.stream().collect(Collectors.toMap(Project::getKey, Function.identity()));
+    }
+
+    private Map<String, Environment> queryEnvironmentMap(Set<String> environmentKeys) {
+        List<Environment> environments = environmentRepository.findByKeyIn(environmentKeys);
+        return environments.stream().collect(Collectors.toMap(Environment::uniqueKey, Function.identity()));
+    }
+
+    private Map<String, Toggle> queryToggleMap(Set<String> toggleKeys) {
+        List<Toggle> toggles = toggleRepository.findByKeyIn(toggleKeys);
+        return toggles.stream().collect(Collectors.toMap(Toggle::uniqueKey, Function.identity()));
+    }
+
     private ApprovalRecordResponse translateResponse(ApprovalRecord approvalRecord,
-                                                     Map<Long, TargetingSketch> targetingSketchMap) {
+                                                     Map<Long, TargetingSketch> targetingSketchMap,
+                                                     Map<String, Project> projectMap,
+                                                     Map<String, Environment> environmentMap,
+                                                     Map<String, Toggle> toggleMap) {
         ApprovalRecordResponse approvalRecordResponse = ApprovalRecordMapper.INSTANCE.entityToResponse(approvalRecord);
-        approvalRecordResponse.setProjectName(selectApprovalRecordProject(approvalRecord).getName());
-        approvalRecordResponse.setEnvironmentName(selectApprovalRecordEnvironment(approvalRecord).getName());
-        approvalRecordResponse.setToggleName(selectApprovalRecordToggle(approvalRecord).getName());
+        approvalRecordResponse.setProjectName(projectMap.get(approvalRecord.getProjectKey()).getName());
+        approvalRecordResponse.setEnvironmentName(environmentMap.get(approvalRecord.environmentUniqueKey()).getName());
+        approvalRecordResponse.setToggleName(toggleMap.get(approvalRecord.toggleUniqueKey()).getName());
         approvalRecordResponse.setReviewers(JsonMapper.toListObject(approvalRecord.getReviewers(), String.class));
         approvalRecordResponse.setComment(approvalRecord.getComment());
         TargetingSketch sketch = targetingSketchMap.get(approvalRecord.getId());
@@ -129,25 +155,6 @@ public class ApprovalRecordService {
 
     private boolean locked(TargetingSketch targetingSketch) {
         return targetingSketch.getStatus() == SketchStatusEnum.PENDING;
-    }
-
-    private Project selectApprovalRecordProject(ApprovalRecord approvalRecord) {
-        return projectRepository.findByKey(approvalRecord.getProjectKey()).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.PROJECT, approvalRecord.getProjectKey()));
-    }
-
-    private Environment selectApprovalRecordEnvironment(ApprovalRecord approvalRecord) {
-        return environmentRepository.findByProjectKeyAndKey(approvalRecord.getProjectKey(),
-                approvalRecord.getEnvironmentKey()).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.ENVIRONMENT,
-                        approvalRecord.getProjectKey() + "-" + approvalRecord.getEnvironmentKey()));
-    }
-
-    private Toggle selectApprovalRecordToggle(ApprovalRecord approvalRecord) {
-        return toggleRepository.findByProjectKeyAndKey(approvalRecord.getProjectKey(),
-                approvalRecord.getToggleKey()).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.TOGGLE,
-                        approvalRecord.getProjectKey() + "-" + approvalRecord.getToggleKey()));
     }
 
 }
