@@ -37,11 +37,6 @@ public class EventService {
 
     @Transactional(rollbackFor = Exception.class)
     public void create(String serverSdkKey, String userAgent, List<EventCreateRequest> requests) {
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         Environment environment = environmentRepository.findByServerSdkKey(serverSdkKey)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, serverSdkKey));
 
