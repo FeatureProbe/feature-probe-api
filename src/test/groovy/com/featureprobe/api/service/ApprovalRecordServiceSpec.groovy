@@ -1,5 +1,6 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.auth.TokenHelper
 import com.featureprobe.api.base.enums.ApprovalStatusEnum
 import com.featureprobe.api.base.enums.ApprovalTypeEnum
 import com.featureprobe.api.dto.ApprovalRecordQueryRequest
@@ -16,6 +17,10 @@ import com.featureprobe.api.repository.ToggleRepository
 import org.hibernate.internal.SessionImpl
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import spock.lang.Specification
 
 import javax.persistence.EntityManager
@@ -56,5 +61,20 @@ class ApprovalRecordServiceSpec extends Specification {
         1 == list.content.size()
     }
 
+    def "Query approval record total by status" () {
+        given:
+        setAuthContext("Admin", "ADMIN")
+        when:
+        def total = approvalRecordService.total(ApprovalStatusEnum.PENDING)
+        then:
+        1 * approvalRecordRepository.countByStatusAndReviewersIsContaining(ApprovalStatusEnum.PENDING, "\"Admin\"") >> 1
+        1 == total
+    }
+
+    private setAuthContext(String account, String role) {
+        SecurityContextHolder.setContext(new SecurityContextImpl(
+                new JwtAuthenticationToken(new Jwt.Builder("21212").header("a","a")
+                        .claim("role", role).claim("account", account).build())))
+    }
 }
 

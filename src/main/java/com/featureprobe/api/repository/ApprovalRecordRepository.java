@@ -1,5 +1,6 @@
 package com.featureprobe.api.repository;
 
+import com.featureprobe.api.base.enums.ApprovalStatusEnum;
 import com.featureprobe.api.entity.ApprovalRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -14,4 +15,5 @@ public interface ApprovalRecordRepository extends JpaRepository<ApprovalRecord, 
     Optional<ApprovalRecord> findByProjectKeyAndEnvironmentKeyAndToggleKey(String projectKey, String environmentKey,
                                                                            String toggleKey);
 
+    long countByStatusAndReviewersIsContaining(ApprovalStatusEnum status, String account);
 }

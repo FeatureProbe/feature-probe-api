@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.enums.ApprovalStatusEnum;
 import com.featureprobe.api.base.enums.ApprovalTypeEnum;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.SketchStatusEnum;
@@ -73,6 +74,11 @@ public class ApprovalRecordService {
         List<ApprovalRecordResponse> sortedRes = res.getContent().stream()
                 .sorted(Comparator.comparing(ApprovalRecordResponse::isLocked).reversed()).collect(Collectors.toList());
         return new PageImpl<>(sortedRes, pageable, res.getTotalElements());
+    }
+
+    public long total(ApprovalStatusEnum status) {
+        return approvalRecordRepository.countByStatusAndReviewersIsContaining(status,
+                "\"" + TokenHelper.getAccount() + "\"");
     }
 
     private Specification<ApprovalRecord> buildListSpec(ApprovalRecordQueryRequest queryRequest) {
