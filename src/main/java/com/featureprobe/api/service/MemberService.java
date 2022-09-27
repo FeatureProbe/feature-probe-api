@@ -143,13 +143,12 @@ public class MemberService {
         }
     }
 
-    public Page<MemberResponse> query(MemberSearchRequest searchRequest) {
+    public Page<MemberResponse> list(MemberSearchRequest searchRequest) {
         Pageable pageable = PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "createdTime");
         Specification<OrganizationMember> spec = (root, query, cb) -> {
             Predicate p1 = cb.equal(root.get("organizationId"), TenantContext.getCurrentOrganization()
                     .getOrganizationId());
-            return query.where(cb.and(p1)).groupBy(root.get("memberId"))
-                    .getRestriction();
+            return query.where(cb.and(p1)).getRestriction();
         };
         Page<OrganizationMember> organizationMembers = organizationMemberRepository.findAll(spec, pageable);
         List<Long> memberIds = organizationMembers.getContent().stream().map(OrganizationMember::getMemberId)

@@ -54,7 +54,7 @@ public class MemberController {
     @Operation(summary = "List Member", description = "Get a list of all member")
     @PreAuthorize("hasAnyAuthority('OWNER', 'WRITER')")
     public Page<MemberResponse> list(MemberSearchRequest searchRequest) {
-        return memberService.query(searchRequest);
+        return memberService.list(searchRequest);
     }
 
     @PatchMapping

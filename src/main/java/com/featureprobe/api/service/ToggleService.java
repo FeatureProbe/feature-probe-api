@@ -42,7 +42,6 @@ import com.featureprobe.api.service.aspect.Archived;
 import com.featureprobe.api.util.PageRequestUtil;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
-import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -60,9 +59,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -381,27 +378,13 @@ public class ToggleService {
     }
     
     private Set<String> allVisitedToggleKeys(Environment environment) {
-        Specification<Event> spec = (root, query, cb) -> {
-            Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
-            Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
-            return query.where(cb.or(p1, p2)).groupBy(root.get("toggleKey"))
-                    .getRestriction();
-        };
-        List<Event> events = eventRepository.findAll(spec);
-        return events.stream().map(Event::getToggleKey).collect(Collectors.toSet());
+        return eventRepository.findAllAccessedToggleKey(environment.getServerSdkKey(), environment.getClientSdkKey());
     }
 
     private Set<String> weekVisitedToggleKeys(Environment environment) {
         Date lastWeek = Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant());
-        Specification<Event> spec = (root, query, cb) -> {
-            Predicate p1 = cb.equal(root.get("sdkKey"), environment.getServerSdkKey());
-            Predicate p2 = cb.equal(root.get("sdkKey"), environment.getClientSdkKey());
-            Predicate p3 = cb.greaterThanOrEqualTo(root.get("endDate"), lastWeek);
-            return query.where(cb.or(p1, p2), cb.and(p3)).groupBy(root.get("toggleKey"))
-                    .getRestriction();
-        };
-        List<Event> events = eventRepository.findAll(spec);
-        return events.stream().map(Event::getToggleKey).collect(Collectors.toSet());
+        return eventRepository.findAllAccessedToggleKeyGreaterThanOrEqualToEndDate(
+                environment.getServerSdkKey(), environment.getClientSdkKey(), lastWeek);
     }
 
     private Set<String> lastVisitBeforeWeekToggleKeys(Environment environment) {

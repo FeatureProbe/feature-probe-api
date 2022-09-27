@@ -166,7 +166,7 @@ class MemberServiceSpec extends Specification {
 
     def "query member list"() {
         when:
-        def list = memberService.query(new MemberSearchRequest(keyword: "root",
+        def list = memberService.list(new MemberSearchRequest(keyword: "root",
                 pageIndex: 0, pageSize: 10))
 
         then:
