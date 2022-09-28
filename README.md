@@ -11,6 +11,7 @@ FeatureProbe API is one of the key components of the whole system. You must inst
 We provide a docker composer configuration as an example to make it easier to set up all the services together including API;
 or you can choose to run API as a docker container and boot other services one by one.
 
+## [中文文档](https://docs.featureprobe.io/zh-CN/)
 
 ## Getting Started
 
