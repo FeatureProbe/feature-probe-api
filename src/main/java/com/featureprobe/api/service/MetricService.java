@@ -45,10 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -57,7 +54,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class MetricService {
 
-    private static final ExecutorService taskExecutor = Executors.newFixedThreadPool(12);
+    private static final ExecutorService taskExecutor = new ThreadPoolExecutor(12, 50,
+            30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1000));
 
     private EnvironmentRepository environmentRepository;
     private EventRepository eventRepository;
@@ -146,7 +144,7 @@ public class MetricService {
         LocalDateTime pointStartTime = getQueryStartDateTime(lastHours);
         String pointNameFormat = getPointNameFormat(lastHours);
 
-        List<AccessEventPoint> accessEventPoints = Lists.newArrayList();
+        List<AccessEventPoint> accessEventPoints = Collections.synchronizedList(new ArrayList<>());
         CountDownLatch counter = new CountDownLatch(pointCount);
         for (int i = 1; i <= pointCount; i++) {
             boolean cacheFlag = i != pointCount;
