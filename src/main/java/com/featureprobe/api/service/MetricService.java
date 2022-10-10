@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class MetricService {
 
-    private static final ExecutorService taskExecutor = new ThreadPoolExecutor(12, 50,
+    private static final ExecutorService taskExecutor = new ThreadPoolExecutor(3, 50,
             30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1000));
 
     private EnvironmentRepository environmentRepository;
@@ -89,11 +89,8 @@ public class MetricService {
                 queryLastHours);
         List<AccessEventPoint> aggregatedAccessEventPoints = aggregatePointByMetricType(variationVersionMap,
                 accessEventPoints, metricType);
-
         List<VariationAccessCounter> accessCounters = summaryAccessEvents(aggregatedAccessEventPoints);
-        Targeting latestTargeting = targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey,
-                environmentKey, toggleKey).get();
-        appendLatestVariations(accessCounters, latestTargeting, metricType);
+        appendLatestVariations(accessCounters, targeting, metricType);
         boolean isAccess = eventRepository.existsBySdkKeyAndToggleKey(serverSdkKey, toggleKey);
         return new MetricResponse(isAccess, accessEventPoints, sortAccessCounters(accessCounters));
     }

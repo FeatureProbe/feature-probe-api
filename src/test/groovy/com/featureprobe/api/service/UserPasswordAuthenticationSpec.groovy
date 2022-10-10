@@ -4,21 +4,20 @@ import com.featureprobe.api.auth.UserPasswordAuthenticationProvider
 import com.featureprobe.api.auth.UserPasswordAuthenticationToken
 import com.featureprobe.api.base.enums.RoleEnum
 import com.featureprobe.api.entity.Member
-import com.featureprobe.api.repository.MemberRepository
 import com.featureprobe.api.repository.OperationLogRepository
 import spock.lang.Specification
 
 class UserPasswordAuthenticationSpec extends Specification{
 
-    def MemberService memberService
+    MemberService memberService
 
     OperationLogService operationLogService
 
     OperationLogRepository operationLogRepository
 
-    def UserPasswordAuthenticationProvider userPasswordAuthenticationProvider
+    UserPasswordAuthenticationProvider userPasswordAuthenticationProvider
 
-    def UserPasswordAuthenticationToken token
+    UserPasswordAuthenticationToken token
 
     def setup() {
         this.memberService = Mock(MemberService)

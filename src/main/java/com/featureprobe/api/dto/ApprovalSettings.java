@@ -9,8 +9,12 @@ public class ApprovalSettings {
 
     private String environmentKey;
 
+    private String environmentName;
+
     private Boolean enable;
 
     private List<String> reviewers;
+
+    private boolean locked;
 
 }

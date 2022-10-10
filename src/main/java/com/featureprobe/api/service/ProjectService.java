@@ -2,6 +2,7 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.enums.SketchStatusEnum;
 import com.featureprobe.api.base.enums.ValidateTypeEnum;
 import com.featureprobe.api.base.exception.ResourceConflictException;
 import com.featureprobe.api.base.exception.ResourceNotFoundException;
@@ -18,6 +19,7 @@ import com.featureprobe.api.mapper.EnvironmentMapper;
 import com.featureprobe.api.mapper.ProjectMapper;
 import com.featureprobe.api.repository.EnvironmentRepository;
 import com.featureprobe.api.repository.ProjectRepository;
+import com.featureprobe.api.repository.TargetingSketchRepository;
 import com.featureprobe.api.util.SdkKeyGenerateUtil;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
@@ -44,6 +46,8 @@ public class ProjectService {
     private ProjectRepository projectRepository;
 
     private EnvironmentRepository environmentRepository;
+
+    private TargetingSketchRepository targetingSketchRepository;
 
     private FeatureProbe featureProbe;
 
@@ -90,8 +94,14 @@ public class ProjectService {
 
     public List<ApprovalSettings> approvalSettingsList(String projectKey) {
         List<Environment> environments = environmentRepository.findAllByProjectKey(projectKey);
-        return environments.stream().map(environment ->
+        List<ApprovalSettings> approvalSettingsList = environments.stream().map(environment ->
                 EnvironmentMapper.INSTANCE.entityToApprovalSettings(environment)).collect(Collectors.toList());
+        for (ApprovalSettings approvalSettings : approvalSettingsList) {
+            boolean locked = targetingSketchRepository.existsByProjectKeyAndEnvironmentKeyAndStatus(projectKey,
+                    approvalSettings.getEnvironmentKey(), SketchStatusEnum.PENDING);
+            approvalSettings.setLocked(locked);
+        }
+        return approvalSettingsList;
     }
 
     private void archiveAllEnvironments(List<Environment> environments) {

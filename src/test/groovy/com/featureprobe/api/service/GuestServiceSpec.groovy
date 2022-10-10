@@ -9,9 +9,9 @@ import com.featureprobe.api.entity.Project
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.MemberRepository
 import com.featureprobe.api.repository.ProjectRepository
+import com.featureprobe.api.repository.TargetingSketchRepository
 import com.featureprobe.sdk.server.FeatureProbe
 import org.hibernate.internal.SessionImpl
-import org.hibernate.query.internal.QueryImpl
 import org.hibernate.query.spi.NativeQueryImplementor
 import spock.lang.Specification
 
@@ -28,6 +28,8 @@ class GuestServiceSpec extends Specification{
 
     EnvironmentRepository environmentRepository
 
+    TargetingSketchRepository targetingSketchRepository
+
     EntityManager entityManager
 
     ProjectService projectService
@@ -41,8 +43,9 @@ class GuestServiceSpec extends Specification{
         entityManager = Mock(SessionImpl)
         projectRepository = Mock(ProjectRepository)
         environmentRepository = Mock(EnvironmentRepository)
+        targetingSketchRepository = Mock(TargetingSketchRepository)
         FeatureProbe featureProbe = new FeatureProbe("_")
-        projectService = new ProjectService(projectRepository, environmentRepository, featureProbe, entityManager)
+        projectService = new ProjectService(projectRepository, environmentRepository, targetingSketchRepository, featureProbe, entityManager)
         guestService = new GuestService(appConfig, memberRepository, entityManager, projectService)
     }
 

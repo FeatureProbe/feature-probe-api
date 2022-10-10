@@ -11,6 +11,7 @@ import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Project
 import com.featureprobe.api.repository.EnvironmentRepository
 import com.featureprobe.api.repository.ProjectRepository
+import com.featureprobe.api.repository.TargetingSketchRepository
 import com.featureprobe.sdk.server.FeatureProbe
 import org.hibernate.internal.SessionImpl
 import org.springframework.security.core.context.SecurityContextHolder
@@ -28,6 +29,8 @@ class ProjectServiceSpec extends Specification {
     ProjectRepository projectRepository
 
     EnvironmentRepository environmentRepository
+
+    TargetingSketchRepository targetingSketchRepository
 
     ProjectQueryRequest queryRequest
 
@@ -49,9 +52,10 @@ class ProjectServiceSpec extends Specification {
         keyword = "feature"
         projectRepository = Mock(ProjectRepository)
         environmentRepository = Mock(EnvironmentRepository)
+        targetingSketchRepository = Mock(TargetingSketchRepository)
         entityManager = Mock(SessionImpl)
         featureProbe = new FeatureProbe("_")
-        projectService = new ProjectService(projectRepository, environmentRepository, featureProbe, entityManager)
+        projectService = new ProjectService(projectRepository, environmentRepository, targetingSketchRepository, featureProbe, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
         projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey, archived: true)
@@ -155,6 +159,7 @@ class ProjectServiceSpec extends Specification {
         def list = projectService.approvalSettingsList(projectKey)
         then:
         1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "dev", enableApproval: true, reviewers: "[\"Admin\"]")]
+        1 * targetingSketchRepository.existsByProjectKeyAndEnvironmentKeyAndStatus(_, _, _) >> true
         1 == list.size()
     }
 

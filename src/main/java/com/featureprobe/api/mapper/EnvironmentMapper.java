@@ -25,6 +25,7 @@ public interface EnvironmentMapper {
     Environment requestToEntity(EnvironmentCreateRequest createRequest);
 
     @Mapping(target = "environmentKey", source = "key")
+    @Mapping(target = "environmentName", source = "name")
     @Mapping(target = "enable", source = "enableApproval")
     @Mapping(target = "reviewers", expression = "java(toReviewerList(environment.getReviewers()))")
     ApprovalSettings entityToApprovalSettings(Environment environment);
