@@ -243,9 +243,9 @@ public class MetricService {
 
     protected LocalDateTime getQueryStartDateTime(LocalDateTime nowDateTime, int queryLastHours) {
         if (isGroupByDay(queryLastHours)) {
-            nowDateTime = nowDateTime.withHour(23).withMinute(59).withSecond(59);
+            nowDateTime = nowDateTime.withHour(23).withMinute(59).withSecond(59).withNano(0);
         } else {
-            nowDateTime = nowDateTime.withMinute(0).withSecond(0).plusHours(1);
+            nowDateTime = nowDateTime.withMinute(0).withSecond(0).withNano(0).plusHours(1);
         }
         return nowDateTime.minusHours(queryLastHours);
     }
