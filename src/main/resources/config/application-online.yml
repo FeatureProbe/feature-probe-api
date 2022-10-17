@@ -36,6 +36,7 @@ logging:
     path: ./logs
 
 app:
+  toggle-deadline: 30
   security:
     jwt:
       keystore-location: keys/keystore.jks

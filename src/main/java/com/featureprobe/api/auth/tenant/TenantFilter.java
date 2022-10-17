@@ -1,7 +1,7 @@
 package com.featureprobe.api.auth.tenant;
 
 import com.featureprobe.api.auth.TokenHelper;
-import com.featureprobe.api.base.config.AppConfig;
+import com.featureprobe.api.base.config.JWTConfig;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.dto.OrganizationMember;
 import com.featureprobe.api.mapper.JsonMapper;
@@ -32,7 +32,7 @@ public class TenantFilter implements Filter {
 
     private OrganizationService organizationService;
 
-    private AppConfig appConfig;
+    private JWTConfig JWTConfig;
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
@@ -40,7 +40,7 @@ public class TenantFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         String requestURI = request.getRequestURI();
-        if (!appConfig.getExcludeTenantUri().contains(requestURI)) {
+        if (!JWTConfig.getExcludeTenantUri().contains(requestURI)) {
             String tenantHeader = request.getHeader(TENANT_HEADER);
             try {
                 if (StringUtils.isNotBlank(tenantHeader)) {

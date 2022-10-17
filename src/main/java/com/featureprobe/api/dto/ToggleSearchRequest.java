@@ -22,4 +22,6 @@ public class ToggleSearchRequest extends PaginationRequest {
 
     private List<ToggleReleaseStatusEnum> releaseStatusList;
 
+    private Boolean permanent;
+
 }

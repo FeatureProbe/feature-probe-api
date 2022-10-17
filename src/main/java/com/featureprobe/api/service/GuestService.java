@@ -1,7 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.tenant.TenantContext;
-import com.featureprobe.api.base.config.AppConfig;
+import com.featureprobe.api.base.config.JWTConfig;
 import com.featureprobe.api.base.enums.RoleEnum;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.entity.Member;
@@ -20,7 +20,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ResourceUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -37,7 +36,7 @@ import java.util.List;
 @Service
 public class GuestService {
 
-    AppConfig appConfig;
+    JWTConfig JWTConfig;
 
     private MemberRepository memberRepository;
 
@@ -56,7 +55,7 @@ public class GuestService {
     public Member initGuest(String account, String source) {
         Member createdMember = new Member();
         createdMember.setAccount(account);
-        createdMember.setPassword(passwordEncoder.encode(appConfig.getGuestDefaultPassword()));
+        createdMember.setPassword(passwordEncoder.encode(JWTConfig.getGuestDefaultPassword()));
         createdMember.setRole(RoleEnum.ADMIN);
         List<Organization> organizations = new ArrayList<>(1);
         organizations.add(new Organization(account));

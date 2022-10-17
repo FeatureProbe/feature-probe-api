@@ -2,15 +2,9 @@ package com.featureprobe.api.entity;
 
 import com.featureprobe.api.base.config.TenantEntityListener;
 import com.featureprobe.api.base.entity.AbstractAuditEntity;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
@@ -44,6 +38,9 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "[key]")
     private String key;
+
+    @Column(columnDefinition = "TINYINT")
+    private boolean permanent;
 
     @Column(name = "description" , columnDefinition = "TEXT")
     private String desc;

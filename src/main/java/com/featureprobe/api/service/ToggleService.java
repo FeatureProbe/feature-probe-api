@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.config.AppConfig;
 import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.SketchStatusEnum;
@@ -15,7 +16,6 @@ import com.featureprobe.api.dto.ToggleResponse;
 import com.featureprobe.api.dto.ToggleSearchRequest;
 import com.featureprobe.api.dto.ToggleUpdateRequest;
 import com.featureprobe.api.entity.Environment;
-import com.featureprobe.api.entity.Event;
 import com.featureprobe.api.entity.MetricsCache;
 import com.featureprobe.api.entity.Tag;
 import com.featureprobe.api.entity.Targeting;
@@ -59,15 +59,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -77,6 +69,7 @@ import java.util.stream.IntStream;
 @AllArgsConstructor
 public class ToggleService {
 
+    private AppConfig appConfig;
     private ToggleRepository toggleRepository;
 
     private TagRepository tagRepository;
@@ -109,7 +102,7 @@ public class ToggleService {
         validateLimit(projectKey);
         Toggle toggle = createToggle(projectKey, createRequest);
         createDefaultTargetingEntities(projectKey, toggle);
-        return ToggleMapper.INSTANCE.entityToResponse(toggle);
+        return ToggleMapper.INSTANCE.entityToResponse(toggle, appConfig.getToggleDeadline());
     }
 
     private void validateLimit(String projectKey) {
@@ -210,7 +203,7 @@ public class ToggleService {
             setToggleTagRefs(toggle, updateRequest.getTags());
         }
         toggleRepository.save(toggle);
-        return ToggleMapper.INSTANCE.entityToResponse(toggle);
+        return ToggleMapper.INSTANCE.entityToResponse(toggle, appConfig.getToggleDeadline());
     }
 
     private void validateName(String projectKey, String name) {
@@ -271,7 +264,8 @@ public class ToggleService {
         } else {
             togglePage = toggleRepository.findAllByProjectKeyAndArchived(projectKey, false,
                     PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "createdTime"));
-            return togglePage.map(item -> ToggleMapper.INSTANCE.entityToItemResponse(item));
+            return togglePage.map(item -> ToggleMapper.INSTANCE.entityToItemResponse(item,
+                    appConfig.getToggleDeadline()));
         }
     }
 
@@ -309,27 +303,31 @@ public class ToggleService {
     private Page<Toggle> compoundQuery(String projectKey, ToggleSearchRequest searchRequest, Set<String> toggleKeys,
                                        boolean isPrecondition) {
         Specification<Toggle> resultSpec = (root, query, cb) -> {
-            Predicate p1 = cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%");
-            Predicate p2 = cb.like(root.get("key"), "%" + searchRequest.getKeyword() + "%");
-            Predicate p3 = cb.like(root.get("desc"), "%" + searchRequest.getKeyword() + "%");
-            Predicate p4 = root.get("key").in(toggleKeys);
-            Predicate p5 = cb.equal(root.get("projectKey"), projectKey);
-            Predicate p6;
+            List<Predicate> predicateListAnd = new ArrayList<>();
+            List<Predicate> predicateListOr = new ArrayList<>();
+            predicateListAnd.add(cb.equal(root.get("projectKey"), projectKey));
             if (searchRequest.isArchived()) {
-                p6 = cb.equal(root.get("archived"), 1);
+                predicateListAnd.add(cb.equal(root.get("archived"), 1));
             } else {
-                p6 = cb.equal(root.get("archived"), 0);
+                predicateListAnd.add(cb.equal(root.get("archived"), 0));
             }
-            if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
-                if (isPrecondition) {
-                    return query.where(cb.or(p1, p2, p3), cb.and(p4, p5, p6)).getRestriction();
-                }
-                return query.where(cb.or(p1, p2, p3), cb.and(p5, p6)).getRestriction();
+            if(StringUtils.isNotBlank(searchRequest.getKeyword())) {
+                predicateListOr.add(cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%"));
+                predicateListOr.add(cb.like(root.get("key"), "%" + searchRequest.getKeyword() + "%"));
+                predicateListOr.add(cb.like(root.get("desc"), "%" + searchRequest.getKeyword() + "%"));
             }
             if (isPrecondition) {
-                return query.where(cb.and(p4, p5, p6)).getRestriction();
+                predicateListAnd.add(root.get("key").in(toggleKeys));
             }
-            return query.where(cb.and(p5, p6)).getRestriction();
+            if (!Objects.isNull(searchRequest.getPermanent())) {
+                predicateListAnd.add(cb.equal(root.get("permanent"), searchRequest.getPermanent()));
+            }
+            if (predicateListOr.size() > 0) {
+                return query.where(cb.and(predicateListAnd.toArray(new Predicate[predicateListAnd.size()])),
+                        cb.or(predicateListOr.toArray(new Predicate[predicateListOr.size()]))).getRestriction();
+            }
+            return query.where(cb.and(predicateListAnd.toArray(new Predicate[predicateListAnd.size()])))
+                    .getRestriction();
         };
         Pageable pageable = PageRequest.of(searchRequest.getPageIndex(), searchRequest.getPageSize(),
                 Sort.Direction.DESC, "createdTime");
@@ -410,7 +408,8 @@ public class ToggleService {
                                                     Map<String, TargetingSketch> targetingSketchMap,
                                                     Map<String, MetricsCache> metricsCacheMap,
                                                     Map<String, Set<String>> tagMap) {
-        ToggleItemResponse toggleItem = ToggleMapper.INSTANCE.entityToItemResponse(toggle);
+        ToggleItemResponse toggleItem = ToggleMapper.INSTANCE.entityToItemResponse(toggle,
+                appConfig.getToggleDeadline());
         toggleItem.setTags(tagMap.get(toggle.getKey()));
         toggleItem.setDisabled(targetingMap.get(uniqueKey(projectKey, environmentKey, toggle.getKey()))
                 .getDisabled());
@@ -454,7 +453,7 @@ public class ToggleService {
     public ToggleResponse queryByKey(String projectKey, String toggleKey) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).orElseThrow(() ->
                 new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
-        return ToggleMapper.INSTANCE.entityToResponse(toggle);
+        return ToggleMapper.INSTANCE.entityToResponse(toggle, appConfig.getToggleDeadline());
     }
 
 }

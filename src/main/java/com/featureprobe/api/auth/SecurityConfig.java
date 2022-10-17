@@ -1,6 +1,6 @@
 package com.featureprobe.api.auth;
 
-import com.featureprobe.api.base.config.AppConfig;
+import com.featureprobe.api.base.config.JWTConfig;
 import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import com.featureprobe.api.dto.BaseResponse;
 import com.featureprobe.api.mapper.JsonMapper;
@@ -36,7 +36,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private LoginSuccessHandler loginSuccessHandler;
 
-    private AppConfig appConfig;
+    private JWTConfig JWTConfig;
 
     private UserPasswordAuthenticationProvider userPasswordAuthenticationProvider;
 
@@ -98,7 +98,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticationEntryPoint(authenticationEntryPoint());
         http.addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
                 UsernamePasswordAuthenticationFilter.class);
-        if (!appConfig.isGuestDisabled()) {
+        if (!JWTConfig.isGuestDisabled()) {
             http.addFilterBefore(guestAuthenticationProcessingFilter(authenticationManager()),
                     UserPasswordAuthenticationProcessingFilter.class);
         }

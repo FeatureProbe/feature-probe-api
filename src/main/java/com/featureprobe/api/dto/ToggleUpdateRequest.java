@@ -22,4 +22,6 @@ public class ToggleUpdateRequest {
     private Integer disabledServe;
 
     private Boolean archived;
+
+    private boolean permanent;
 }

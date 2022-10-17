@@ -16,6 +16,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,13 +28,20 @@ public interface ToggleMapper extends BaseMapper {
 
     @Mapping(target = "modifiedBy", expression = "java(getAccount(toggle.getModifiedBy()))")
     @Mapping(target = "tags", ignore = true)
-    ToggleItemResponse entityToItemResponse(Toggle toggle);
+    @Mapping(target = "useDays", expression = "java(getUseDays(toggle, deadline))")
+    ToggleItemResponse entityToItemResponse(Toggle toggle, Long deadline);
 
     @Mapping(target = "variations", expression = "java(toVariation(toggle.getVariations()))")
     @Mapping(target = "tags", expression = "java(toTagNames(toggle.getTags()))")
     @Mapping(target = "modifiedBy", expression = "java(getAccount(toggle.getModifiedBy()))")
-    ToggleResponse entityToResponse(Toggle toggle);
+    @Mapping(target = "useDays", expression = "java(getUseDays(toggle, deadline))")
+    ToggleResponse entityToResponse(Toggle toggle, Long deadline);
 
+    default Long getUseDays(Toggle toggle, Long deadline) {
+        long useDays = Math.floorDiv(System.currentTimeMillis() - toggle.getCreatedTime().getTime(),
+                1000 * 60 * 60 * 24);
+        return !toggle.isPermanent() && useDays > deadline ? useDays : null;
+    }
     default Set<String> toTagNames(Set<Tag> tags) {
         if (CollectionUtils.isEmpty(tags)) {
             return Collections.emptySet();

@@ -13,6 +13,10 @@ public class ToggleResponse {
 
     private String key;
 
+    private Boolean permanent;
+
+    private Long useDays;
+
     private String returnType;
 
     private Integer disabledServe;

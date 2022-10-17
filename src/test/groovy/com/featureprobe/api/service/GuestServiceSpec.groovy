@@ -1,6 +1,6 @@
 package com.featureprobe.api.service
 
-import com.featureprobe.api.base.config.AppConfig
+import com.featureprobe.api.base.config.JWTConfig
 import com.featureprobe.api.base.enums.RoleEnum
 import com.featureprobe.api.entity.Environment
 import com.featureprobe.api.entity.Member
@@ -20,7 +20,7 @@ import javax.persistence.Query
 
 class GuestServiceSpec extends Specification{
 
-    AppConfig appConfig
+    JWTConfig appConfig
 
     MemberRepository memberRepository
 
@@ -37,7 +37,7 @@ class GuestServiceSpec extends Specification{
     GuestService guestService
 
     def setup() {
-        appConfig = new AppConfig()
+        appConfig = new JWTConfig()
         appConfig.setGuestDefaultPassword("Password")
         memberRepository = Mock(MemberRepository)
         entityManager = Mock(SessionImpl)

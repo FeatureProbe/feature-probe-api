@@ -1,5 +1,6 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.base.config.AppConfig
 import com.featureprobe.api.base.enums.SketchStatusEnum
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.enums.VisitFilter
@@ -44,6 +45,8 @@ class ToggleServiceSpec extends Specification {
 
     ToggleService toggleService
 
+    AppConfig appConfig
+
     ToggleRepository toggleRepository
 
     TagRepository tagRepository
@@ -83,6 +86,7 @@ class ToggleServiceSpec extends Specification {
     def setup() {
         toggleRepository = Mock(ToggleRepository)
         tagRepository = Mock(TagRepository)
+        appConfig = new AppConfig(30)
         toggleTagRepository = Mock(ToggleTagRepository)
         targetingRepository = Mock(TargetingRepository)
         environmentRepository = Mock(EnvironmentRepository)
@@ -94,7 +98,7 @@ class ToggleServiceSpec extends Specification {
         toggleTagRepository = Mock(ToggleTagRepository)
         featureProbe = new FeatureProbe("_")
         entityManager = Mock(SessionImpl)
-        toggleService = new ToggleService(toggleRepository, tagRepository, targetingRepository,
+        toggleService = new ToggleService(appConfig, toggleRepository, tagRepository, targetingRepository,
                 environmentRepository, eventRepository, targetingVersionRepository,
                 variationHistoryRepository, targetingSketchRepository, metricsCacheRepository,
                 toggleTagRepository, featureProbe, entityManager)
@@ -125,7 +129,7 @@ class ToggleServiceSpec extends Specification {
         def ret = toggleService.queryByKey(projectKey, toggleKey)
 
         then:
-        1 * toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey) >> Optional.of(new Toggle(key: toggleKey, projectKey: projectKey))
+        1 * toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey) >> Optional.of(new Toggle(key: toggleKey, projectKey: projectKey, createdTime: new Date()))
         with(ret) {
             toggleKey == it.key
         }
@@ -146,7 +150,7 @@ class ToggleServiceSpec extends Specification {
         1 * tagRepository.findByNameIn(["test"]) >> [new Tag(name: "test", toggles: [new Toggle(key: toggleKey)])]
         1 * toggleTagRepository.findByTagIdIn(_) >> [new ToggleTagRelation(toggleKey: toggleKey)]
         1 * eventRepository.findAllAccessedToggleKeyGreaterThanOrEqualToEndDate(_, _, _) >> toggleKeys
-        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey)],
+        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey, createdTime: new Date())],
                 Pageable.ofSize(1), 1)
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKeyIn(projectKey, environmentKey, [toggleKey]) >>
                 [new Targeting(toggleKey: toggleKey, environmentKey: environmentKey, projectKey: projectKey, disabled: true)]
@@ -181,7 +185,7 @@ class ToggleServiceSpec extends Specification {
         1 * toggleTagRepository.findByTagIdIn(_) >> [new ToggleTagRelation(toggleKey: toggleKey)]
         1 * eventRepository.findAllAccessedToggleKey(_, _) >> toggleKeys
         1 * eventRepository.findAllAccessedToggleKeyGreaterThanOrEqualToEndDate(_, _, _) >> toggleKeys
-        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey)],
+        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey, createdTime: new Date())],
                 Pageable.ofSize(1), 1)
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKeyIn(projectKey, environmentKey, [toggleKey]) >>
                 [new Targeting(toggleKey: toggleKey, environmentKey: environmentKey, projectKey: projectKey, disabled: true)]
@@ -215,8 +219,8 @@ class ToggleServiceSpec extends Specification {
         1 * tagRepository.findByNameIn(["test"]) >> [new Tag(name: "test", toggles: [new Toggle(key: toggleKey)])]
         1 * toggleTagRepository.findByTagIdIn(_) >> [new ToggleTagRelation(toggleKey: toggleKey)]
         1 * eventRepository.findAllAccessedToggleKey(_, _) >> toggleKeys
-        1 * toggleRepository.findAll(_) >> [new Toggle(key: toggleKey, projectKey: projectKey)]
-        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey)],
+        1 * toggleRepository.findAll(_) >> [new Toggle(key: toggleKey, projectKey: projectKey, createdTime: new Date())]
+        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey, createdTime: new Date())],
                 Pageable.ofSize(1), 1)
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKeyIn(projectKey, environmentKey, [toggleKey]) >>
                 [new Targeting(toggleKey: toggleKey, environmentKey: environmentKey, projectKey: projectKey, disabled: true)]
@@ -250,7 +254,7 @@ class ToggleServiceSpec extends Specification {
         1 * tagRepository.findByNameIn(["test"]) >> [new Tag(name: "test", toggles: [new Toggle(key: toggleKey)])]
         1 * toggleTagRepository.findByTagIdIn(_) >> [new ToggleTagRelation(toggleKey: toggleKey)]
         1 * eventRepository.findAllAccessedToggleKeyGreaterThanOrEqualToEndDate(_, _, _) >> toggleKeys
-        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey)],
+        1 * toggleRepository.findAll(_, _) >> new PageImpl<>([new Toggle(key: toggleKey, projectKey: projectKey, createdTime: new Date())],
                 Pageable.ofSize(1), 1)
         1 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKeyIn(projectKey, environmentKey, [toggleKey]) >>
                 [new Targeting(toggleKey: toggleKey, environmentKey: environmentKey, projectKey: projectKey, disabled: true)]
@@ -280,12 +284,13 @@ class ToggleServiceSpec extends Specification {
         then:
         response
         1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "test"), new Environment(key: "online")]
-        1 * toggleRepository.save(_ as Toggle) >> { it -> savedToggle = it[0] }
+        1 * toggleRepository.save(_ as Toggle) >> new Toggle(projectKey: projectKey,
+                key: toggleKey, name: "toggle1", desc: "init", createdTime: new Date(), tags: [new Tag(name: "tg1"),  new Tag(name: "tg2")])
         1 * targetingRepository.saveAll(_ as List<Targeting>) >> { it -> savedTargetingList = it[0] }
         1 * tagRepository.findByProjectKeyAndNameIn(projectKey, ["tg1", "tg2"]) >> [new Tag(name: "tg1"), new Tag(name: "tg2")]
-        with(savedToggle) {
+        with(response) {
             toggleKey == key
-            "tg1" == tags[0].name
+            2 == tags.size()
         }
         2 == savedTargetingList.size()
     }
@@ -300,7 +305,7 @@ class ToggleServiceSpec extends Specification {
         then:
         response
         1 * toggleRepository.findByProjectKeyAndKeyAndArchived(projectKey, toggleKey, false) >> Optional.of(new Toggle(projectKey: projectKey,
-                key: toggleKey, name: "toggle1", desc: "init"))
+                key: toggleKey, name: "toggle1", desc: "init", createdTime: new Date()))
         1 * toggleRepository.existsByProjectKeyAndName(projectKey, "toggle2") >> false
         1 * toggleRepository.save(_ as Toggle) >> { it -> updatedToggle = it[0] }
         1 * tagRepository.findByProjectKeyAndNameIn(projectKey, ["tg1", "tg2"]) >> [new Tag(name: "tg1")]

@@ -33,4 +33,6 @@ public class ToggleCreateRequest {
 
     @NotNull
     private Integer disabledServe;
+
+    private boolean permanent;
 }
