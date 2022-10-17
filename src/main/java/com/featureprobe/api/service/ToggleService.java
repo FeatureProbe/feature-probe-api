@@ -116,7 +116,7 @@ public class ToggleService {
     }
 
     protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        Toggle toggle = ToggleMapper.INSTANCE.requestToEntify(createRequest);
+        Toggle toggle = ToggleMapper.INSTANCE.requestToEntity(createRequest);
         toggle.setProjectKey(projectKey);
         setToggleTagRefs(toggle, createRequest.getTags());
         return toggleRepository.save(toggle);

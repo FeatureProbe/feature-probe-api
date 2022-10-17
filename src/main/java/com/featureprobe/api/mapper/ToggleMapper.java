@@ -16,7 +16,6 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,9 +37,9 @@ public interface ToggleMapper extends BaseMapper {
     ToggleResponse entityToResponse(Toggle toggle, Long deadline);
 
     default Long getUseDays(Toggle toggle, Long deadline) {
-        long useDays = Math.floorDiv(System.currentTimeMillis() - toggle.getCreatedTime().getTime(),
-                1000 * 60 * 60 * 24);
-        return !toggle.isPermanent() && useDays > deadline ? useDays : null;
+        long days = (long) Math.floor((System.currentTimeMillis() - toggle.getCreatedTime().getTime()) /
+                (1000 * 60 * 60 * 24));
+        return !toggle.isPermanent() && days > deadline ? days : null;
     }
     default Set<String> toTagNames(Set<Tag> tags) {
         if (CollectionUtils.isEmpty(tags)) {
@@ -55,7 +54,7 @@ public interface ToggleMapper extends BaseMapper {
 
     @Mapping(target = "variations", expression = "java(toVariationJson(toggleRequest.getVariations()))")
     @Mapping(target = "tags", ignore = true)
-    Toggle requestToEntify(ToggleCreateRequest toggleRequest);
+    Toggle requestToEntity(ToggleCreateRequest toggleRequest);
 
     default String toVariationJson(List<Variation> variations)  {
         return JsonMapper.toJSONString(variations);
