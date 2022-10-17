@@ -35,4 +35,6 @@ public class TargetingResponse {
 
     private String modifiedBy;
 
+    private Date publishTime;
+
 }

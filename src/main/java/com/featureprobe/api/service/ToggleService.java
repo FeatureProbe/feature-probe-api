@@ -185,6 +185,7 @@ public class ToggleService {
         targeting.setContent(TargetingContent.newDefault(toggle).toJson());
         targeting.setToggleKey(toggle.getKey());
         targeting.setEnvironmentKey(environment.getKey());
+        targeting.setPublishTime(new Date());
         return targeting;
     }
 

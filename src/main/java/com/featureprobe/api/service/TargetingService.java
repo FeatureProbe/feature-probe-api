@@ -57,6 +57,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.Date;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -282,6 +283,7 @@ public class TargetingService {
             }
         }
         targetingResponse.setEnableApproval(environment.isEnableApproval());
+        targetingResponse.setPublishTime(targeting.getPublishTime());
         return targetingResponse;
     }
 
@@ -315,6 +317,7 @@ public class TargetingService {
             saveVariationHistory(updatedTargeting, targetingRequest.getContent());
         }
         updatedTargeting.setStatus(ToggleReleaseStatusEnum.RELEASE);
+        updatedTargeting.setPublishTime(new Date());
         return TargetingMapper.INSTANCE.entityToResponse(updatedTargeting);
     }
 

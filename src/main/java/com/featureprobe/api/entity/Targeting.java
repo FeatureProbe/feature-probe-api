@@ -19,7 +19,10 @@ import javax.persistence.EntityListeners;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import javax.persistence.Version;
+import java.util.Date;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -53,6 +56,10 @@ public class Targeting extends AbstractAuditEntity implements TenantSupport {
 
     @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "publish_time", nullable = false, updatable = false)
+    private Date publishTime;
 
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
