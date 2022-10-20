@@ -15,7 +15,7 @@ spring:
       connection-timeout: 15000
       connection-test-query: SELECT 1 FROM DUAL
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: validate
     properties:
@@ -30,7 +30,7 @@ logging:
   level:
     root: INFO
     org.hibernate.SQL: INFO
-    org.hibernate.type.descriptor.sql.BasicBinder: trace
+    org.hibernate.type.descriptor.sql.BasicBinder: info
   config: classpath:logback/logback.xml
   file:
     path: ./logs
