@@ -1,2 +1,2 @@
 alter table segment
-    add version bigint default 1 not null;
+    add version bigint  default 1 not null;

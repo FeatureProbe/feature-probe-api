@@ -4,4 +4,4 @@ alter table event
     add project_key varchar(128) NOT NULL DEFAULT ''  after toggle_key,
     add environment_key varchar(128) NOT NULL DEFAULT '' after toggle_key;
 
-alter table event drop column variationModel;
+alter table event drop column variation;

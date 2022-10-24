@@ -3,29 +3,24 @@ SET content = '{"rules":[],"disabledServe":{"select":0},"defaultServe":{"select"
 WHERE toggle_key = 'header_skin';
 
 UPDATE `toggle`
-SET name        = 'Change FeatureProbe Header Skin',
+SET name = 'Change FeatureProbe Header Skin',
     description = 'Try change Default Rule to Serve Dark skin and Refresh!',
-    variations  = '[{"value":"false","name":"Light skin","description":"Use default skin."},{"value":"true", "name":"Dark skin", "description":"Switch to Dark skin."}]'
+    variations = '[{"value":"false","name":"Light skin","description":"Use default skin."},{"value":"true", "name":"Dark skin", "description":"Switch to Dark skin."}]'
 WHERE `key` = 'header_skin';
 
 UPDATE `targeting`
 SET content = '{"rules":[{"conditions":[{"type":"string","subject":"city","predicate":"is one of","objects":["Paris"]},{"type":"string","subject":"gender","predicate":"is one of","objects":["famale"]}],"name":"Paris women show 50% red buttons, 50% blue","serve":{"split":[5000,5000,0]}}],"disabledServe":{"select":1},"defaultServe":{"select":1},"variations":[{"value":"red","name":"Red Button","description":"Set button color to Red"},{"value":"blue","name":"Blue Button","description":"Set button color to Blue"}]}'
-WHERE toggle_key = 'color_ab_test'
-  and environment_key = 'online';
+WHERE toggle_key = 'color_ab_test' and environment_key = 'online';
 
 UPDATE `toggle`
-SET name                = 'Button Color AB Test',
-    description         = 'Test which color is more preferable',
-    variations          = '[{"value":"red","name":"","description":""},{"value":"blue","name":"","description":""}]',
+SET name = 'Button Color AB Test',
+    description = 'Test which color is more preferable',
+    variations = '[{"value":"red","name":"","description":""},{"value":"blue","name":"","description":""}]',
     client_availability = 0
 WHERE `key` = 'color_ab_test';
 
-DELETE
-FROM `targeting`
-WHERE toggle_key = 'commodity_spike_activity';
-DELETE
-FROM `toggle`
-WHERE `key` = 'commodity_spike_activity';
+DELETE FROM `targeting` WHERE toggle_key = 'commodity_spike_activity';
+DELETE FROM `toggle` WHERE `key` = 'commodity_spike_activity';
 
 INSERT INTO `targeting`
 VALUES (37, 'promotion_activity', 'online', 'My_First_Project', 3, 0,
@@ -41,12 +36,8 @@ VALUES (19, 'Promotional Campaign', 'promotion_activity', 'Promotional Campaign 
         'My_First_Project', 0, 0, 0, 'Admin', 'Admin', now(), now());
 
 
-DELETE
-FROM `targeting`
-WHERE toggle_key = 'product_inventory_fallback';
-DELETE
-FROM `toggle`
-WHERE `key` = 'product_inventory_fallback';
+DELETE FROM `targeting` WHERE toggle_key = 'product_inventory_fallback';
+DELETE FROM `toggle` WHERE `key` = 'product_inventory_fallback';
 
 INSERT INTO `toggle`
 VALUES (20, 'Service Degrade', 'service_degrade', 'System degrade configuration.', 'boolean', 0,

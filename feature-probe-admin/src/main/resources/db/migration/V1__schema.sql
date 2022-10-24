@@ -1,12 +1,12 @@
 create table SPRING_SESSION
 (
-    PRIMARY_ID            char(36) not null
+    PRIMARY_ID            char(36)     not null
         primary key,
-    SESSION_ID            char(36) not null,
-    CREATION_TIME         bigint   not null,
-    LAST_ACCESS_TIME      bigint   not null,
-    MAX_INACTIVE_INTERVAL int      not null,
-    EXPIRY_TIME           bigint   not null,
+    SESSION_ID            char(36)     not null,
+    CREATION_TIME         bigint       not null,
+    LAST_ACCESS_TIME      bigint       not null,
+    MAX_INACTIVE_INTERVAL int          not null,
+    EXPIRY_TIME           bigint       not null,
     PRINCIPAL_NAME        varchar(100) null,
     constraint SPRING_SESSION_IX1
         unique (SESSION_ID)
@@ -40,7 +40,8 @@ create table attribute
     created_by    varchar(32)       not null,
     created_time  datetime          not null,
     modified_time datetime          not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create table config
 (
@@ -56,19 +57,21 @@ create table config
     created_by     bigint            not null,
     created_time   datetime          not null,
     modified_time  datetime          not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create table config_segment
 (
     id            bigint auto_increment
         primary key,
-    config_id     bigint null,
+    config_id     bigint   null,
     segment_id    bigint   not null,
     modified_by   bigint   not null,
     created_by    bigint   not null,
     created_time  datetime not null,
     modified_time datetime not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create table environment
 (
@@ -84,24 +87,26 @@ create table environment
     created_by     varchar(32)       not null,
     created_time   datetime          not null,
     modified_by    varchar(32)       not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create index idx_key
     on environment (project_key);
 
 create table event
 (
-    id             bigint auto_increment
+    id           bigint auto_increment
         primary key,
-    type           varchar(32)  not null,
-    sdk_key        varchar(128) not null,
-    toggle_key     varchar(128) not null,
-    variationModel text         not null,
-    count          bigint       not null,
-    start_date     datetime     not null,
-    end_date       datetime     not null,
-    created_time   datetime     not null
-) collate = utf8mb4_unicode_ci;
+    type         varchar(32)  not null,
+    sdk_key      varchar(128) not null,
+    toggle_key   varchar(128) not null,
+    variation    text         not null,
+    count        bigint       not null,
+    start_date   datetime     not null,
+    end_date     datetime     not null,
+    created_time datetime     not null
+)
+    collate = utf8mb4_unicode_ci;
 
 
 CREATE TABLE `member`
@@ -128,13 +133,14 @@ create table project
         primary key,
     `key`         varchar(128)      not null,
     name          varchar(256)      not null,
-    description   varchar(1024) null,
+    description   varchar(1024)     null,
     deleted       tinyint default 0 not null,
     modified_time datetime          not null,
     created_by    varchar(32)       not null,
     created_time  datetime          not null,
     modified_by   varchar(32)       not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create index idx_key
     on project (`key`);
@@ -151,7 +157,8 @@ create table segment
     created_by    varchar(32)  not null,
     created_time  datetime     not null,
     modified_time datetime     not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create table tag
 (
@@ -164,7 +171,8 @@ create table tag
     created_by    varchar(32)       not null,
     created_time  datetime          not null,
     modified_time datetime          not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create table targeting
 (
@@ -181,7 +189,8 @@ create table targeting
     created_by      varchar(32)       not null,
     created_time    datetime          not null,
     modified_time   datetime          not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create table targeting_segment
 (
@@ -193,7 +202,8 @@ create table targeting_segment
     created_by    varchar(32)  not null,
     created_time  datetime     not null,
     modified_time datetime     not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create table toggle
 (
@@ -201,7 +211,7 @@ create table toggle
         primary key,
     name                varchar(128)      not null,
     `key`               varchar(128)      not null,
-    description         text null,
+    description         text              null,
     return_type         char(10)          not null,
     disabled_serve      int               not null,
     variations          text              not null,
@@ -213,7 +223,8 @@ create table toggle
     created_by          varchar(32)       not null,
     created_time        datetime          not null,
     modified_time       datetime          not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 
 create index idx_key
     on toggle (`key`);
@@ -224,5 +235,6 @@ create table toggle_tag
         primary key,
     tag_id     bigint       not null,
     toggle_key varchar(128) not null
-) collate = utf8mb4_unicode_ci;
+)
+    collate = utf8mb4_unicode_ci;
 

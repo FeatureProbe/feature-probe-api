@@ -39,5 +39,4 @@ WHERE toggle_key = 'promotion_campaign';
 
 UPDATE `targeting`
 SET content = '{\"rules\":[],\"disabledServe\":{\"select\":1},\"defaultServe\":{\"select\":1},\"variations\":[{\"value\":\"https://featureprobe.io/server\",\"name\":\"online service\",\"description\":\"\"},{\"value\":\"http://localhost:4009/server\",\"name\":\"local docker\",\"description\":\"\"}]}'
-WHERE toggle_key = 'remote_url'
-  AND organization_id = -1;
+WHERE toggle_key = 'remote_url' AND organization_id = -1;
