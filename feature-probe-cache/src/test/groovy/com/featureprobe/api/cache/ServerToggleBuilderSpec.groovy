@@ -1,15 +1,10 @@
-package com.featureprobe.api.model
+package com.featureprobe.api.cache
 
-import com.featureprobe.api.base.model.ConditionValue
-import com.featureprobe.api.base.model.ServeValue
-import com.featureprobe.api.base.model.TargetingContent
-import com.featureprobe.api.base.model.ToggleRule
-import com.featureprobe.api.base.model.Variation
+import com.featureprobe.api.base.model.*
 import com.featureprobe.api.cache.model.ServerSegmentBuilder
 import com.featureprobe.api.cache.model.ServerToggleBuilder
 import com.featureprobe.api.dao.entity.Segment
 import spock.lang.Specification
-
 
 class ServerToggleBuilderSpec extends Specification {
 

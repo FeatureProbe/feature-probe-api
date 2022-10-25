@@ -5,6 +5,7 @@ import com.featureprobe.api.cache.service.CacheService;
 import com.featureprobe.api.dao.entity.ChangeLog;
 import com.featureprobe.api.base.enums.ChangeLogType;
 import com.featureprobe.api.dao.repository.ChangeLogRepository;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,11 +49,12 @@ public class CacheStarter {
             cacheService.queryServerTogglesByServerSdkKeyFromCache(serverSdkKey);
         }
         watcher.stop();
-        log.info("FeatureProbe API initialization cache finished . Time : -----"
+        log.info("FeatureProbe API initialization cache finished . Time : "
                 + watcher.getTime(TimeUnit.SECONDS) + " s");
         scheduler.scheduleAtFixedRate(this::handleChangeLog, 0L, 200, TimeUnit.MILLISECONDS);
     }
 
+    @VisibleForTesting
     private void handleChangeLog() {
         try {
             List<ChangeLog> changeLogs = changeLogRepository
@@ -75,7 +77,7 @@ public class CacheStarter {
                 }
             }
         } catch (Exception e) {
-
+            log.error("Cache update error. ", e);
         }
     }
 

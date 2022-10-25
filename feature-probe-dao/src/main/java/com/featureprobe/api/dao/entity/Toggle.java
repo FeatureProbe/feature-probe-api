@@ -71,7 +71,8 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "toggle_tag", joinColumns = {@JoinColumn(name = "toggle_key", referencedColumnName = "key")},
-            inverseJoinColumns = {@JoinColumn(name = "tag_id", referencedColumnName = "id")})
+            inverseJoinColumns = {@JoinColumn(name = "tag_id", referencedColumnName = "id"),
+            @JoinColumn(name = "organization_id", referencedColumnName = "organization_id")})
     private Set<Tag> tags = new HashSet<>();
 
     public String uniqueKey() {

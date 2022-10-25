@@ -1,17 +1,8 @@
-package com.featureprobe.api.service
+package com.featureprobe.api.cache
 
 import com.featureprobe.api.cache.service.ServerService
-import com.featureprobe.api.dao.entity.Dictionary
-import com.featureprobe.api.dao.entity.Environment
-import com.featureprobe.api.dao.entity.Project
-import com.featureprobe.api.dao.entity.Segment
-import com.featureprobe.api.dao.entity.Targeting
-import com.featureprobe.api.dao.entity.Toggle
-import com.featureprobe.api.dao.repository.DictionaryRepository
-import com.featureprobe.api.dao.repository.EnvironmentRepository
-import com.featureprobe.api.dao.repository.SegmentRepository
-import com.featureprobe.api.dao.repository.TargetingRepository
-import com.featureprobe.api.dao.repository.ToggleRepository
+import com.featureprobe.api.dao.entity.*
+import com.featureprobe.api.dao.repository.*
 import org.hibernate.internal.SessionImpl
 import spock.lang.Specification
 
