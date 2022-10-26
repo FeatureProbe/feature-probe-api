@@ -1,10 +1,10 @@
 package com.featureprobe.api.service;
 
-import com.featureprobe.api.dao.entity.ChangeLog;
+import com.featureprobe.api.dao.entity.PublishMessage;
 import com.featureprobe.api.dao.entity.Dictionary;
 import com.featureprobe.api.dao.entity.Environment;
 import com.featureprobe.api.dao.exception.ResourceNotFoundException;
-import com.featureprobe.api.dao.repository.ChangeLogRepository;
+import com.featureprobe.api.dao.repository.PublishMessageRepository;
 import com.featureprobe.api.dao.repository.DictionaryRepository;
 import com.featureprobe.api.dao.repository.EnvironmentRepository;
 import com.featureprobe.api.base.db.ExcludeTenant;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ExcludeTenant
 public class ChangeLogService {
 
-    private ChangeLogRepository changeLogRepository;
+    private PublishMessageRepository publishMessageRepository;
 
     private EnvironmentRepository environmentRepository;
 
@@ -45,11 +45,11 @@ public class ChangeLogService {
             default:
                 break;
         }
-        ChangeLog changeLog = new ChangeLog();
-        changeLog.setClientSdkKey(environment.getClientSdkKey());
-        changeLog.setServerSdkKey(environment.getServerSdkKey());
-        changeLog.setType(type);
-        changeLogRepository.save(changeLog);
+        PublishMessage publishMessage = new PublishMessage();
+        publishMessage.setClientSdkKey(environment.getClientSdkKey());
+        publishMessage.setServerSdkKey(environment.getServerSdkKey());
+        publishMessage.setType(type);
+        publishMessageRepository.save(publishMessage);
     }
 
 }

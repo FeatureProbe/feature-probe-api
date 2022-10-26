@@ -14,7 +14,7 @@ import com.featureprobe.api.dao.entity.TargetingSegment
 import com.featureprobe.api.dao.entity.Toggle
 import com.featureprobe.api.base.model.ConditionValue
 import com.featureprobe.api.base.model.SegmentRuleModel
-import com.featureprobe.api.dao.repository.ChangeLogRepository
+import com.featureprobe.api.dao.repository.PublishMessageRepository
 import com.featureprobe.api.dao.repository.DictionaryRepository
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.ProjectRepository
@@ -46,7 +46,7 @@ class SegmentServiceSpec extends Specification {
 
     ProjectRepository projectRepository
 
-    private ChangeLogRepository changeLogRepository;
+    private PublishMessageRepository changeLogRepository;
 
     private DictionaryRepository dictionaryRepository;
 
@@ -66,7 +66,7 @@ class SegmentServiceSpec extends Specification {
         toggleRepository = Mock(ToggleRepository)
         environmentRepository = Mock(EnvironmentRepository)
         projectRepository = Mock(ProjectRepository)
-        changeLogRepository = Mock(ChangeLogRepository)
+        changeLogRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
         ChangeLogService changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
         segmentService = new SegmentService(segmentRepository, targetingSegmentRepository, targetingRepository,

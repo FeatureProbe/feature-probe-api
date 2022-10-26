@@ -10,7 +10,7 @@ import com.featureprobe.api.dao.entity.Dictionary
 import com.featureprobe.api.dao.entity.Environment
 import com.featureprobe.api.dao.entity.Project
 import com.featureprobe.api.dao.entity.Toggle
-import com.featureprobe.api.dao.repository.ChangeLogRepository
+import com.featureprobe.api.dao.repository.PublishMessageRepository
 import com.featureprobe.api.dao.repository.DictionaryRepository
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.ProjectRepository
@@ -39,7 +39,7 @@ class EnvironmentServiceSpec extends Specification {
 
     EnvironmentService environmentService
 
-    ChangeLogRepository changeLogRepository
+    PublishMessageRepository changeLogRepository
 
     DictionaryRepository dictionaryRepository
 
@@ -78,7 +78,7 @@ class EnvironmentServiceSpec extends Specification {
         toggleRepository = Mock(ToggleRepository)
         targetingRepository = Mock(TargetingRepository)
         entityManager = Mock(SessionImpl)
-        changeLogRepository = Mock(ChangeLogRepository)
+        changeLogRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
         changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
         environmentService = new EnvironmentService(environmentRepository, projectRepository,

@@ -21,7 +21,7 @@ import com.featureprobe.api.dao.entity.TargetingVersion
 
 
 import com.featureprobe.api.dao.repository.ApprovalRecordRepository
-import com.featureprobe.api.dao.repository.ChangeLogRepository
+import com.featureprobe.api.dao.repository.PublishMessageRepository
 import com.featureprobe.api.dao.repository.DictionaryRepository
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.SegmentRepository
@@ -56,7 +56,7 @@ class TargetingServiceSpec extends Specification {
     ApprovalRecordRepository approvalRecordRepository
     TargetingSketchRepository targetingSketchRepository
     ChangeLogService changeLogService
-    ChangeLogRepository changeLogRepository
+    PublishMessageRepository changeLogRepository
     DictionaryRepository dictionaryRepository
     EntityManager entityManager
 
@@ -80,7 +80,7 @@ class TargetingServiceSpec extends Specification {
         approvalRecordRepository = Mock(ApprovalRecordRepository)
         targetingSketchRepository = Mock(TargetingSketchRepository)
         entityManager = Mock(SessionImpl)
-        changeLogRepository = Mock(ChangeLogRepository)
+        changeLogRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
         changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
         targetingService = new TargetingService(targetingRepository, segmentRepository,

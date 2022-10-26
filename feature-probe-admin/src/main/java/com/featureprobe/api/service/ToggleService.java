@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.db.Archived;
 import com.featureprobe.api.base.model.TargetingContent;
 import com.featureprobe.api.base.model.Variation;
 import com.featureprobe.api.component.SpringBeanManager;
@@ -207,6 +208,7 @@ public class ToggleService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Archived
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
         Project project = projectRepository.findByKey(projectKey).orElseThrow(() ->
                 new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
@@ -241,6 +243,7 @@ public class ToggleService {
         toggle.setTags(tags);
     }
 
+    @Archived
     public Page<ToggleItemResponse> list(String projectKey, ToggleSearchRequest searchRequest) {
         Page<Toggle> togglePage;
         if (StringUtils.isNotBlank(searchRequest.getEnvironmentKey())) {
@@ -330,9 +333,9 @@ public class ToggleService {
             List<Predicate> predicateListOr = new ArrayList<>();
             predicateListAnd.add(cb.equal(root.get("projectKey"), projectKey));
             if (searchRequest.isArchived()) {
-                predicateListAnd.add(cb.equal(root.get("archived"), 1));
+                predicateListAnd.add(cb.equal(root.get("archived"), Boolean.TRUE));
             } else {
-                predicateListAnd.add(cb.equal(root.get("archived"), 0));
+                predicateListAnd.add(cb.equal(root.get("archived"), Boolean.FALSE));
             }
             if (StringUtils.isNotBlank(searchRequest.getKeyword())) {
                 predicateListOr.add(cb.like(root.get("name"), "%" + searchRequest.getKeyword() + "%"));
@@ -472,6 +475,7 @@ public class ToggleService {
         return metricsCaches.stream().collect(Collectors.toMap(MetricsCache::getToggleKey, Function.identity()));
     }
 
+    @Archived
     public ToggleResponse queryByKey(String projectKey, String toggleKey) {
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).orElseThrow(() ->
                 new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));

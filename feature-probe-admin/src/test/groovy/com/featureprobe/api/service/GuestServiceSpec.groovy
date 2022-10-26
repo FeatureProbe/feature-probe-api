@@ -8,7 +8,7 @@ import com.featureprobe.api.dao.entity.Environment
 import com.featureprobe.api.dao.entity.Member
 import com.featureprobe.api.dao.entity.Organization
 import com.featureprobe.api.dao.entity.Project
-import com.featureprobe.api.dao.repository.ChangeLogRepository
+import com.featureprobe.api.dao.repository.PublishMessageRepository
 import com.featureprobe.api.dao.repository.DictionaryRepository
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.MemberRepository
@@ -37,7 +37,7 @@ class GuestServiceSpec extends Specification {
 
     EntityManager entityManager
 
-    ChangeLogRepository changeLogRepository;
+    PublishMessageRepository changeLogRepository;
 
     DictionaryRepository dictionaryRepository
 
@@ -57,7 +57,7 @@ class GuestServiceSpec extends Specification {
         projectRepository = Mock(ProjectRepository)
         environmentRepository = Mock(EnvironmentRepository)
         targetingSketchRepository = Mock(TargetingSketchRepository)
-        changeLogRepository = Mock(ChangeLogRepository)
+        changeLogRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
         changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
         projectService = new ProjectService(projectRepository, environmentRepository, targetingSketchRepository, changeLogService, entityManager)

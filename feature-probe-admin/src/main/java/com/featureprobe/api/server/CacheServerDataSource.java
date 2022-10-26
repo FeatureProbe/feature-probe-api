@@ -3,8 +3,8 @@ package com.featureprobe.api.server;
 import com.featureprobe.api.base.enums.ChangeLogType;
 import com.featureprobe.api.base.util.JsonMapper;
 import com.featureprobe.api.cache.ICache;
-import com.featureprobe.api.dao.entity.ChangeLog;
-import com.featureprobe.api.dao.repository.ChangeLogRepository;
+import com.featureprobe.api.dao.entity.PublishMessage;
+import com.featureprobe.api.dao.repository.PublishMessageRepository;
 import com.featureprobe.api.dto.SdkKeyResponse;
 import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.service.BaseServerService;
@@ -32,7 +32,7 @@ public class CacheServerDataSource extends AbstractCacheServerDataSource {
 
     ICache<String, byte[]> cache;
 
-    private ChangeLogRepository changeLogRepository;
+    private PublishMessageRepository publishMessageRepository;
 
     private BaseServerService baseServerService;
 
@@ -61,9 +61,11 @@ public class CacheServerDataSource extends AbstractCacheServerDataSource {
         StopWatch watcher = new StopWatch();
         watcher.start();
         log.info("FeatureProbe API start initialization cache .");
-        List<ChangeLog> changeLogs = changeLogRepository.findAll(PageRequest.of(0, 1, Sort.Direction.DESC,
+        List<PublishMessage> publishMessages = publishMessageRepository.findAll(PageRequest.of(0, 1,
+                Sort.Direction.DESC,
                 "id")).getContent();
-        ChangeLog maxId = CollectionUtils.isNotEmpty(changeLogs) ? changeLogs.get(0) : null;
+        PublishMessage maxId = CollectionUtils.isNotEmpty(publishMessages) ? publishMessages.get(0) :
+                new PublishMessage(0L);
         cache.put(CacheServerDataSource.MAX_CHANGE_LOG_ID_CACHE_KEY, JsonMapper.toJSONString(maxId).getBytes());
         SdkKeyResponse sdkKeyResponse = baseServerService.queryAllSdkKeys();
         cache.put(CacheServerDataSource.SDK_KEYS_CACHE_KEY, JsonMapper.toJSONString(sdkKeyResponse).getBytes());
@@ -78,18 +80,19 @@ public class CacheServerDataSource extends AbstractCacheServerDataSource {
     @VisibleForTesting
     private void handleChangeLog() {
         try {
-            ChangeLog maxChangeLog = JsonMapper.toObject(new String(
-                    cache.get(CacheServerDataSource.MAX_CHANGE_LOG_ID_CACHE_KEY)), ChangeLog.class);
-            List<ChangeLog> changeLogs = changeLogRepository
-                    .findAllByIdGreaterThanOrderByIdAsc(maxChangeLog.getId());
-            if (CollectionUtils.isNotEmpty(changeLogs)) {
+            PublishMessage maxPublishMessage = JsonMapper.toObject(new String(
+                    cache.get(CacheServerDataSource.MAX_CHANGE_LOG_ID_CACHE_KEY)), PublishMessage.class);
+            List<PublishMessage> publishMessages = publishMessageRepository
+                    .findAllByIdGreaterThanOrderByIdAsc(maxPublishMessage.getId());
+            if (CollectionUtils.isNotEmpty(publishMessages)) {
                 cache.put(CacheServerDataSource.MAX_CHANGE_LOG_ID_CACHE_KEY,
-                        JsonMapper.toJSONString(changeLogs.get(changeLogs.size() - 1)).getBytes());
+                        JsonMapper.toJSONString(publishMessages.get(publishMessages.size() - 1)).getBytes());
                 Map<String, ChangeLogType> logGroup = new HashMap<>();
                 boolean isUpdateSdkKey = false;
-                for (ChangeLog changeLog : changeLogs) {
-                    logGroup.put(changeLog.getServerSdkKey(), changeLog.getType());
-                    if (changeLog.getType() == ChangeLogType.ADD || changeLog.getType() == ChangeLogType.DELETE) {
+                for (PublishMessage publishMessage : publishMessages) {
+                    logGroup.put(publishMessage.getServerSdkKey(), publishMessage.getType());
+                    if (publishMessage.getType() == ChangeLogType.ADD ||
+                            publishMessage.getType() == ChangeLogType.DELETE) {
                         isUpdateSdkKey = true;
                     }
                 }

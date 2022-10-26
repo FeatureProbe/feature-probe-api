@@ -22,10 +22,10 @@ import javax.persistence.Table;
 @Data
 @Builder
 @Entity
-@Table(name = "change_log")
+@Table(name = "publish_message")
 @ToString(callSuper = true)
 @DynamicInsert
-public class ChangeLog {
+public class PublishMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,4 +39,8 @@ public class ChangeLog {
 
     @Enumerated(EnumType.STRING)
     private ChangeLogType type;
+
+    public PublishMessage(Long id) {
+        this.id = id;
+    }
 }

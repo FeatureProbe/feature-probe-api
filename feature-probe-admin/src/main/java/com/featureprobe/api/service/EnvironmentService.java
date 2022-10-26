@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.db.Archived;
 import com.featureprobe.api.base.model.TargetingContent;
 import com.featureprobe.api.component.SpringBeanManager;
 import com.featureprobe.api.dao.exception.ResourceConflictException;
@@ -69,6 +70,7 @@ public class EnvironmentService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Archived
     public EnvironmentResponse update(String projectKey, String environmentKey,
                                       EnvironmentUpdateRequest updateRequest) {
         boolean archived = updateRequest.getArchived() == null ? false : !updateRequest.getArchived();
@@ -98,6 +100,7 @@ public class EnvironmentService {
         return EnvironmentMapper.INSTANCE.entityToResponse(environment);
     }
 
+    @Archived
     public List<EnvironmentResponse> list(String projectKey, EnvironmentQueryRequest queryRequest) {
         List<Environment> environments = environmentRepository
                 .findAllByProjectKeyAndArchived(projectKey, queryRequest.isArchived());

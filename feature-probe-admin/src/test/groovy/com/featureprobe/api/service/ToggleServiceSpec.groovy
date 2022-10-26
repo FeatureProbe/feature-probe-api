@@ -18,7 +18,7 @@ import com.featureprobe.api.dao.entity.Targeting
 import com.featureprobe.api.dao.entity.TargetingSketch
 import com.featureprobe.api.dao.entity.Toggle
 import com.featureprobe.api.dao.entity.ToggleTagRelation
-import com.featureprobe.api.dao.repository.ChangeLogRepository
+import com.featureprobe.api.dao.repository.PublishMessageRepository
 import com.featureprobe.api.dao.repository.DictionaryRepository
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.EventRepository
@@ -33,7 +33,6 @@ import com.featureprobe.api.dao.repository.ToggleTagRepository
 import com.featureprobe.api.dao.repository.VariationHistoryRepository
 import com.featureprobe.sdk.server.FeatureProbe
 import org.hibernate.internal.SessionImpl
-import org.mockito.Mockito
 import org.springframework.context.ApplicationContext
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
@@ -41,7 +40,6 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
-import org.springframework.web.context.WebApplicationContext
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -82,7 +80,7 @@ class ToggleServiceSpec extends Specification {
 
     IncludeArchivedToggleService includeArchivedToggleService
 
-    ChangeLogRepository changeLogRepository
+    PublishMessageRepository changeLogRepository
 
     DictionaryRepository dictionaryRepository
 
@@ -112,7 +110,7 @@ class ToggleServiceSpec extends Specification {
         metricsCacheRepository = Mock(MetricsCacheRepository)
         toggleTagRepository = Mock(ToggleTagRepository)
         projectRepository = Mock(ProjectRepository)
-        changeLogRepository = Mock(ChangeLogRepository)
+        changeLogRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
         changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
         entityManager = Mock(SessionImpl)

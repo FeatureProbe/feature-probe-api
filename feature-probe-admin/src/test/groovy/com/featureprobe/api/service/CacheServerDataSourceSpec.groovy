@@ -4,14 +4,14 @@ import com.featureprobe.api.base.enums.ChangeLogType
 import com.featureprobe.api.base.util.JsonMapper
 import com.featureprobe.api.cache.ICache
 import com.featureprobe.api.cache.MemoryCache
-import com.featureprobe.api.dao.entity.ChangeLog
+import com.featureprobe.api.dao.entity.PublishMessage
 import com.featureprobe.api.dao.entity.Dictionary
 import com.featureprobe.api.dao.entity.Environment
 import com.featureprobe.api.dao.entity.Project
 import com.featureprobe.api.dao.entity.ServerSegmentEntity
 import com.featureprobe.api.dao.entity.ServerToggleEntity
 import com.featureprobe.api.dao.entity.Targeting
-import com.featureprobe.api.dao.repository.ChangeLogRepository
+import com.featureprobe.api.dao.repository.PublishMessageRepository
 import com.featureprobe.api.dao.repository.DictionaryRepository
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.SegmentRepository
@@ -42,7 +42,7 @@ class CacheServerDataSourceSpec extends Specification {
 
     ICache<String, byte[]> cache
 
-    ChangeLogRepository changeLogRepository
+    PublishMessageRepository publishMessageRepository
 
     BaseServerService baseServerService
 
@@ -71,10 +71,10 @@ class CacheServerDataSourceSpec extends Specification {
         dictionaryRepository = Mock(DictionaryRepository)
         entityManager = Mock(SessionImpl)
         cache = Mock(MemoryCache)
-        changeLogRepository = Mock(ChangeLogRepository)
+        publishMessageRepository = Mock(PublishMessageRepository)
         baseServerService = new BaseServerService(environmentRepository, segmentRepository, toggleRepository,
                 targetingRepository, dictionaryRepository, entityManager)
-        cacheServerDataSource = new CacheServerDataSource(cache, changeLogRepository, baseServerService)
+        cacheServerDataSource = new CacheServerDataSource(cache, publishMessageRepository, baseServerService)
         serverToggle = Mock(ServerToggleEntity)
         serverSegment = Mock(ServerSegmentEntity)
         serverToggleList = [serverToggle]
@@ -128,7 +128,7 @@ class CacheServerDataSourceSpec extends Specification {
         when:
         cacheServerDataSource.init()
         then:
-        1 * changeLogRepository.findAll(_) >> new PageImpl<>([new ChangeLog(id: 2, type: ChangeLogType.ADD, serverSdkKey: "server-123")], Pageable.ofSize(1), 1)
+        1 * publishMessageRepository.findAll(_) >> new PageImpl<>([new PublishMessage(id: 2, type: ChangeLogType.ADD, serverSdkKey: "server-123")], Pageable.ofSize(1), 1)
         1 * cache.put(CacheServerDataSource.MAX_CHANGE_LOG_ID_CACHE_KEY, _)
         1 * environmentRepository.findAllByArchivedAndDeleted(false, false) >> [new Environment(clientSdkKey: "client-123", serverSdkKey: "server-123", version: 1)]
         1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
@@ -157,11 +157,11 @@ class CacheServerDataSourceSpec extends Specification {
         when:
         cacheServerDataSource.handleChangeLog()
         then:
-        1 * cache.get(CacheServerDataSource.MAX_CHANGE_LOG_ID_CACHE_KEY) >> JsonMapper.toJSONString(new ChangeLog(id: 2, type: ChangeLogType.ADD, serverSdkKey: "server-222"),).getBytes()
-        1 * changeLogRepository.findAllByIdGreaterThanOrderByIdAsc(2L) >>
-                [new ChangeLog(id: 3, type: ChangeLogType.ADD, serverSdkKey: "server-333"),
-                 new ChangeLog(id: 4, type: ChangeLogType.CHANGE, serverSdkKey: "server-444"),
-                 new ChangeLog(id: 5, type: ChangeLogType.DELETE, serverSdkKey: "server-555")]
+        1 * cache.get(CacheServerDataSource.MAX_CHANGE_LOG_ID_CACHE_KEY) >> JsonMapper.toJSONString(new PublishMessage(id: 2, type: ChangeLogType.ADD, serverSdkKey: "server-222"),).getBytes()
+        1 * publishMessageRepository.findAllByIdGreaterThanOrderByIdAsc(2L) >>
+                [new PublishMessage(id: 3, type: ChangeLogType.ADD, serverSdkKey: "server-333"),
+                 new PublishMessage(id: 4, type: ChangeLogType.CHANGE, serverSdkKey: "server-444"),
+                 new PublishMessage(id: 5, type: ChangeLogType.DELETE, serverSdkKey: "server-555")]
         1 * cache.put(CacheServerDataSource.SDK_KEYS_CACHE_KEY, _);
         1 * environmentRepository.findAllByArchivedAndDeleted(false, false) >> [new Environment(clientSdkKey: "client-123", serverSdkKey: "server-123", version: 1)]
         1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
