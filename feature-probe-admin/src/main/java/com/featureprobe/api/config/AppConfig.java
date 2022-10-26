@@ -14,4 +14,6 @@ import org.springframework.stereotype.Component;
 public class AppConfig {
 
     private Long toggleDeadline;
+
+    private String serverDataSource;
 }

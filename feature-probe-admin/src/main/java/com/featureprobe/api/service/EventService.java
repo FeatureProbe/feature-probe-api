@@ -1,6 +1,8 @@
-package com.featureprobe.api.cache.service;
+package com.featureprobe.api.service;
 
-import com.featureprobe.api.cache.dto.EventCreateRequest;
+import com.featureprobe.api.base.db.ExcludeTenant;
+import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
+import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.dao.entity.Environment;
 import com.featureprobe.api.dao.entity.Event;
 import com.featureprobe.api.dao.entity.MetricsCache;
@@ -8,10 +10,8 @@ import com.featureprobe.api.dao.exception.ResourceNotFoundException;
 import com.featureprobe.api.dao.repository.EnvironmentRepository;
 import com.featureprobe.api.dao.repository.EventRepository;
 import com.featureprobe.api.dao.repository.MetricsCacheRepository;
-import com.featureprobe.api.base.db.ExcludeTenant;
-import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
-import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.cache.model.VariationAccessCounter;
+import com.featureprobe.api.dto.EventCreateRequest;
+import com.featureprobe.api.dto.VariationAccessCounter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

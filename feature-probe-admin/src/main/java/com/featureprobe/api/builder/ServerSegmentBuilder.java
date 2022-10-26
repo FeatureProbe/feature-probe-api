@@ -1,4 +1,4 @@
-package com.featureprobe.api.cache.model;
+package com.featureprobe.api.builder;
 
 import com.featureprobe.api.base.model.SegmentRuleModel;
 import com.featureprobe.api.base.util.DateTimeTranslateUtil;

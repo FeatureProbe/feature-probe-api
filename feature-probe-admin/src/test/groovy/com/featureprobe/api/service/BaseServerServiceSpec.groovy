@@ -1,6 +1,6 @@
-package com.featureprobe.api.cache
+package com.featureprobe.api.service
 
-import com.featureprobe.api.cache.service.ServerService
+
 import com.featureprobe.api.dao.entity.*
 import com.featureprobe.api.dao.repository.*
 import org.hibernate.internal.SessionImpl
@@ -8,15 +8,15 @@ import spock.lang.Specification
 
 import javax.persistence.EntityManager
 
-class ServerServiceSpec extends Specification {
+class BaseServerServiceSpec extends Specification {
 
     EnvironmentRepository environmentRepository
     SegmentRepository segmentRepository
     ToggleRepository toggleRepository
     TargetingRepository targetingRepository
     DictionaryRepository dictionaryRepository
-    ServerService serverService
     EntityManager entityManager
+    BaseServerService baseServerService
 
     def projectKey
     def environmentKey
@@ -33,8 +33,8 @@ class ServerServiceSpec extends Specification {
         targetingRepository = Mock(TargetingRepository)
         dictionaryRepository = Mock(DictionaryRepository)
         entityManager = Mock(SessionImpl)
-        serverService = new ServerService(environmentRepository, segmentRepository, toggleRepository, targetingRepository, dictionaryRepository, entityManager)
-
+        baseServerService = new BaseServerService(environmentRepository, segmentRepository, toggleRepository,
+                targetingRepository, dictionaryRepository, entityManager)
         projectKey = "feature_probe"
         environmentKey = "test"
         toggleKey = "feature_toggle_unit_test"
@@ -56,29 +56,17 @@ class ServerServiceSpec extends Specification {
 
     def "query all sdkKeys"() {
         when:
-        def keys = serverService.queryAllSdkKeys()
+        def keys = baseServerService.queryAllSdkKeys()
         then:
         1 * environmentRepository.findAllByArchivedAndDeleted(false, false) >> [new Environment(clientSdkKey: "client-123", serverSdkKey: "server-123", version: 1)]
         1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
         1 == keys.clientKeyToServerKey.size()
     }
 
-    def "test get sdk server key"() {
-        given:
-        environmentRepository.findByServerSdkKeyOrClientSdkKey("key1", "key1") >>
-                Optional.of(new Environment(serverSdkKey: "key001"))
-
-        when:
-        def sdkServerKey = serverService.getSdkServerKey("key1")
-
-        then:
-        "key001" == sdkServerKey
-
-    }
 
     def "query server toggles by server sdkKey"() {
         when:
-        def serverResponse = serverService.queryServerTogglesByServerSdkKey(sdkKey)
+        def serverResponse = baseServerService.queryServerTogglesByServerSdkKey(sdkKey)
 
         then:
         1 * environmentRepository.findByServerSdkKeyOrClientSdkKey(_, _) >>

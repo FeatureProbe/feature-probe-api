@@ -1,6 +1,5 @@
 package com.featureprobe.api.service
 
-
 import com.featureprobe.api.base.enums.ApprovalStatusEnum
 import com.featureprobe.api.base.enums.ApprovalTypeEnum
 import com.featureprobe.api.dto.ApprovalRecordQueryRequest

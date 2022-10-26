@@ -24,4 +24,5 @@ public class SpringBeanManager implements ApplicationContextAware {
     public static <T>T getBeanByType(Class<T> clazz){
         return (T) applicationContext.getBean(clazz);
     }
+
 }

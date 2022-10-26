@@ -59,4 +59,8 @@ public class Segment extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "organization_id")
     private Long organizationId;
 
+    public String uniqueKey() {
+        return projectKey + "&" + key;
+    }
+
 }

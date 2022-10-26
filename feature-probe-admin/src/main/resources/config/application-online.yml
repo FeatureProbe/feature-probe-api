@@ -37,6 +37,7 @@ logging:
 
 app:
   toggle-deadline: 30
+  server-data-source: MEMORY # DB
   security:
     jwt:
       keystore-location: keys/keystore.jks

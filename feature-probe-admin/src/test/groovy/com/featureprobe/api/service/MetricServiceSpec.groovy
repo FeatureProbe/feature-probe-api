@@ -7,20 +7,21 @@ import com.featureprobe.api.base.model.OrganizationMemberModel
 import com.featureprobe.api.base.model.TargetingContent
 import com.featureprobe.api.base.model.Variation
 import com.featureprobe.api.base.tenant.TenantContext
+import com.featureprobe.api.dto.AccessEventPoint
 import com.featureprobe.api.dto.MetricResponse
 import com.featureprobe.api.dao.entity.Environment
 import com.featureprobe.api.dao.entity.Event
 import com.featureprobe.api.dao.entity.Targeting
 import com.featureprobe.api.dao.entity.VariationHistory
-import com.featureprobe.api.cache.model.AccessEventPoint
 
-import com.featureprobe.api.cache.model.VariationAccessCounter
+
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.EventRepository
 import com.featureprobe.api.dao.repository.MetricsCacheRepository
 import com.featureprobe.api.dao.repository.TargetingRepository
 import com.featureprobe.api.dao.repository.TargetingVersionRepository
 import com.featureprobe.api.dao.repository.VariationHistoryRepository
+import com.featureprobe.api.dto.VariationAccessCounter
 import org.hibernate.internal.SessionImpl
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl

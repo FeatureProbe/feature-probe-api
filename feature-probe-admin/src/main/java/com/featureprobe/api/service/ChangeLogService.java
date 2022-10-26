@@ -1,6 +1,5 @@
 package com.featureprobe.api.service;
 
-import com.featureprobe.api.cache.service.CacheService;
 import com.featureprobe.api.dao.entity.ChangeLog;
 import com.featureprobe.api.dao.entity.Dictionary;
 import com.featureprobe.api.dao.entity.Environment;
@@ -35,7 +34,7 @@ public class ChangeLogService {
             case DELETE:
                 Dictionary dictionary = dictionaryRepository.findByKey(SDK_KEY_MAP_VERSION_DICT_KEY)
                         .orElseThrow(() -> new ResourceNotFoundException(ResourceType.DICTIONARY,
-                                CacheService.MAX_CHANGE_LOG_ID_CACHE_KEY));
+                                SDK_KEY_MAP_VERSION_DICT_KEY));
                 dictionary.setValue(String.valueOf(Long.parseLong(dictionary.getValue()) + 1));
                 dictionaryRepository.save(dictionary);
                 break;

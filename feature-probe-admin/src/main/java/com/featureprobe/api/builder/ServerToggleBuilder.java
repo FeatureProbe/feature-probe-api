@@ -1,11 +1,11 @@
-package com.featureprobe.api.cache.model;
+package com.featureprobe.api.builder;
 
+import com.featureprobe.api.base.exception.ServerToggleBuildException;
 import com.featureprobe.api.base.model.TargetingContent;
 import com.featureprobe.api.base.model.Variation;
-import com.featureprobe.api.cache.exception.ServerToggleBuildException;
-import com.featureprobe.api.dao.entity.Segment;
 import com.featureprobe.api.base.util.DateTimeTranslateUtil;
 import com.featureprobe.api.base.util.JsonMapper;
+import com.featureprobe.api.dao.entity.Segment;
 import com.featureprobe.sdk.server.model.Condition;
 import com.featureprobe.sdk.server.model.ConditionType;
 import com.featureprobe.sdk.server.model.Rule;
@@ -13,7 +13,6 @@ import com.featureprobe.sdk.server.model.Toggle;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
-
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;

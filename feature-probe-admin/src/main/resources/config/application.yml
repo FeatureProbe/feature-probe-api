@@ -20,7 +20,7 @@ server:
 
 spring:
   profiles:
-    active: online
+    active: test
   session:
     store-type: JDBC
     jdbc:

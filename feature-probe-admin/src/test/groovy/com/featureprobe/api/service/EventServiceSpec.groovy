@@ -1,14 +1,13 @@
 package com.featureprobe.api.service
 
-import com.featureprobe.api.cache.dto.EventCreateRequest
-import com.featureprobe.api.cache.service.EventService
 import com.featureprobe.api.dao.entity.Environment
 import com.featureprobe.api.dao.entity.Project
-import com.featureprobe.api.cache.model.AccessSummary
-import com.featureprobe.api.cache.model.VariationAccessCounter
 import com.featureprobe.api.dao.repository.EnvironmentRepository
 import com.featureprobe.api.dao.repository.EventRepository
 import com.featureprobe.api.dao.repository.MetricsCacheRepository
+import com.featureprobe.api.dto.AccessSummary
+import com.featureprobe.api.dto.EventCreateRequest
+import com.featureprobe.api.dto.VariationAccessCounter
 import spock.lang.Specification
 
 class EventServiceSpec extends Specification {

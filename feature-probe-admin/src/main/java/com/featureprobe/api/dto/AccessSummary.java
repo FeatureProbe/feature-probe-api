@@ -1,4 +1,4 @@
-package com.featureprobe.api.cache.model;
+package com.featureprobe.api.dto;
 
 import lombok.Data;
 

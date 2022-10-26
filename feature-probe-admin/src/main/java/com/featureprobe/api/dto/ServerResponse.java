@@ -1,4 +1,4 @@
-package com.featureprobe.api.cache.dto;
+package com.featureprobe.api.dto;
 
 import com.featureprobe.sdk.server.model.Segment;
 import com.featureprobe.sdk.server.model.Toggle;

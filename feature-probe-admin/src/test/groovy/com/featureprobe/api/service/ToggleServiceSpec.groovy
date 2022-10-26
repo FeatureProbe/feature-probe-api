@@ -101,7 +101,7 @@ class ToggleServiceSpec extends Specification {
     def setup() {
         toggleRepository = Mock(ToggleRepository)
         tagRepository = Mock(TagRepository)
-        appConfig = new AppConfig(30)
+        appConfig = new AppConfig(30, "cache")
         toggleTagRepository = Mock(ToggleTagRepository)
         targetingRepository = Mock(TargetingRepository)
         environmentRepository = Mock(EnvironmentRepository)

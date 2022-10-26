@@ -1,13 +1,13 @@
-package com.featureprobe.api.cache.controller;
+package com.featureprobe.api.controller;
 
-import com.featureprobe.api.cache.service.CacheService;
-import com.featureprobe.api.cache.dto.SdkKeyResponse;
-import com.featureprobe.api.cache.dto.ServerResponse;
-import com.featureprobe.api.cache.service.ServerService;
-import com.featureprobe.api.cache.dto.EventCreateRequest;
-import com.featureprobe.api.cache.service.EventService;
 import com.featureprobe.api.base.doc.CreateApiResponse;
 import com.featureprobe.api.base.doc.GetApiResponse;
+import com.featureprobe.api.dto.EventCreateRequest;
+import com.featureprobe.api.dto.SdkKeyResponse;
+import com.featureprobe.api.dto.ServerResponse;
+import com.featureprobe.api.server.ServerDataSource;
+import com.featureprobe.api.service.EnvironmentService;
+import com.featureprobe.api.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,11 +22,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @RestController
@@ -34,20 +32,18 @@ import java.util.concurrent.ExecutionException;
 @Tag(name = "Server API", description = "Provided to the server api")
 @AllArgsConstructor
 public class ServerController {
-
-    private ServerService serverService;
-
     private EventService eventService;
 
-    private CacheService cacheService;
+    private ServerDataSource dataSource;
+
+    private EnvironmentService environmentService;
 
     @GetApiResponse
     @GetMapping("/sdk_keys")
     @Operation(summary = "List sdk keys", description = "Get all sdk keys.")
     public SdkKeyResponse queryAllSdkKeys(@RequestParam(value = "version", required = false) Long version,
-                                          HttpServletResponse response)
-            throws ExecutionException {
-        SdkKeyResponse sdkKeyResponse = cacheService.queryAllSdkKeysFromCache();
+                                          HttpServletResponse response) throws Exception {
+        SdkKeyResponse sdkKeyResponse = dataSource.queryAllSdkKeys();
         if (Objects.nonNull(version) && version >= sdkKeyResponse.getVersion()) {
             response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return null;
@@ -61,9 +57,8 @@ public class ServerController {
     public ServerResponse fetchToggles(@Parameter(description = "sdk key")
                                        @RequestHeader(value = "Authorization") String sdkKey,
                                        @RequestParam(value = "version", required = false) Long version,
-                                       HttpServletResponse response)
-            throws ExecutionException {
-        ServerResponse serverResponse = cacheService.queryServerTogglesByServerSdkKeyFromCache(sdkKey);
+                                       HttpServletResponse response) throws Exception {
+        ServerResponse serverResponse = dataSource.queryServerTogglesByServerSdkKey(sdkKey);
         if (Objects.nonNull(version) && version >= serverResponse.getVersion()) {
             response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return null;
@@ -83,7 +78,7 @@ public class ServerController {
         if (StringUtils.isNotBlank(javascriptUserAgent)) {
             userAgent = javascriptUserAgent;
         }
-        eventService.create(serverService.getSdkServerKey(sdkKey), userAgent, batchRequest);
+        eventService.create(environmentService.getSdkServerKey(sdkKey), userAgent, batchRequest);
     }
 
 }

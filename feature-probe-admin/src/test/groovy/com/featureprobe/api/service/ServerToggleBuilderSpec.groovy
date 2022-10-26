@@ -1,8 +1,8 @@
-package com.featureprobe.api.cache
+package com.featureprobe.api.service
 
 import com.featureprobe.api.base.model.*
-import com.featureprobe.api.cache.model.ServerSegmentBuilder
-import com.featureprobe.api.cache.model.ServerToggleBuilder
+import com.featureprobe.api.builder.ServerSegmentBuilder
+import com.featureprobe.api.builder.ServerToggleBuilder
 import com.featureprobe.api.dao.entity.Segment
 import spock.lang.Specification
 

@@ -2,6 +2,7 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.base.model.TargetingContent;
 import com.featureprobe.api.base.model.Variation;
+import com.featureprobe.api.dto.AccessEventPoint;
 import com.featureprobe.api.dto.AccessStatusResponse;
 import com.featureprobe.api.dto.MetricResponse;
 import com.featureprobe.api.dao.entity.Environment;
@@ -12,9 +13,8 @@ import com.featureprobe.api.dao.entity.TargetingVersion;
 import com.featureprobe.api.dao.entity.VariationHistory;
 import com.featureprobe.api.base.enums.MetricType;
 import com.featureprobe.api.base.enums.MetricsCacheTypeEnum;
+import com.featureprobe.api.dto.VariationAccessCounter;
 import com.featureprobe.api.mapper.TargetingVersionMapper;
-import com.featureprobe.api.cache.model.AccessEventPoint;
-import com.featureprobe.api.cache.model.VariationAccessCounter;
 import com.featureprobe.api.dao.repository.EnvironmentRepository;
 import com.featureprobe.api.dao.repository.EventRepository;
 import com.featureprobe.api.dao.repository.MetricsCacheRepository;
