@@ -57,13 +57,13 @@ public class Environment extends AbstractAuditEntity implements TenantSupport, S
 
     private Long version;
 
-    @Column(columnDefinition = "TINYINT")
+    @Column(columnDefinition = "BIT", length = 1)
     private boolean deleted;
 
-    @Column(columnDefinition = "TINYINT")
+    @Column(columnDefinition = "BIT", length = 1)
     private boolean archived;
 
-    @Column(name = "enable_approval", columnDefinition = "TINYINT")
+    @Column(name = "enable_approval", columnDefinition = "BIT", length = 1)
     private boolean enableApproval;
 
     private String reviewers;

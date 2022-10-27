@@ -50,7 +50,7 @@ public class Targeting extends AbstractAuditEntity implements TenantSupport {
 
     private Long version;
 
-    @Column(columnDefinition = "TINYINT")
+    @Column(columnDefinition = "BIT", length = 1)
     private Boolean disabled;
 
     @Column(columnDefinition = "TEXT")
@@ -60,7 +60,7 @@ public class Targeting extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "publish_time", nullable = false)
     private Date publishTime;
 
-    @Column(columnDefinition = "TINYINT")
+    @Column(columnDefinition = "BIT", length = 1)
     private boolean deleted;
 
     @Column(name = "organization_id")

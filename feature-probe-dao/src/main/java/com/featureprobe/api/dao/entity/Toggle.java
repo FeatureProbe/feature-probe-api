@@ -39,7 +39,7 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "[key]")
     private String key;
 
-    @Column(columnDefinition = "TINYINT")
+    @Column(columnDefinition = "BIT", length = 1)
     private boolean permanent;
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -57,13 +57,13 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "project_key")
     private String projectKey;
 
-    @Column(name = "client_availability", columnDefinition = "TINYINT")
+    @Column(name = "client_availability", columnDefinition = "BIT", length = 1)
     private Boolean clientAvailability;
 
-    @Column(columnDefinition = "TINYINT")
+    @Column(columnDefinition = "BIT", length = 1)
     private Boolean archived;
 
-    @Column(columnDefinition = "TINYINT")
+    @Column(columnDefinition = "BIT", length = 1)
     private Boolean deleted;
 
     @Column(name = "organization_id")
