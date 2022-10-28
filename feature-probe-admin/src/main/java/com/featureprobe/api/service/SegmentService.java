@@ -131,7 +131,7 @@ public class SegmentService {
                     .findByProjectKeyAndKey(projectKey, targeting.getToggleKey());
             ToggleSegmentResponse toggleSegmentResponse = SegmentMapper.INSTANCE
                     .toggleToToggleSegment(toggleOptional.get());
-            toggleSegmentResponse.setDisabled(targeting.getDisabled());
+            toggleSegmentResponse.setDisabled(targeting.isDisabled());
             Optional<Environment> environment = environmentRepository
                     .findByProjectKeyAndKey(projectKey, targeting.getEnvironmentKey());
             toggleSegmentResponse.setEnvironmentName(environment.get().getName());

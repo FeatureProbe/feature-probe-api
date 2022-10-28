@@ -247,7 +247,7 @@ public class BaseServerService {
             try {
                 return new ServerToggleBuilder().builder()
                         .key(toggle.getKey())
-                        .disabled(targeting.getDisabled())
+                        .disabled(targeting.isDisabled())
                         .version(targeting.getVersion())
                         .returnType(toggle.getReturnType())
                         .forClient(toggle.getClientAvailability())

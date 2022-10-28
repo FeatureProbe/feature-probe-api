@@ -61,10 +61,10 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     private Boolean clientAvailability;
 
     @Column(columnDefinition = "BIT", length = 1)
-    private Boolean archived;
+    private boolean archived;
 
     @Column(columnDefinition = "BIT", length = 1)
-    private Boolean deleted;
+    private boolean deleted;
 
     @Column(name = "organization_id")
     private Long organizationId;

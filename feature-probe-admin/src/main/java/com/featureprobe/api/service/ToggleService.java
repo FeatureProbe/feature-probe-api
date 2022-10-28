@@ -187,7 +187,7 @@ public class ToggleService {
         targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
         targetingVersion.setToggleKey(targeting.getToggleKey());
         targetingVersion.setContent(targeting.getContent());
-        targetingVersion.setDisabled(targeting.getDisabled());
+        targetingVersion.setDisabled(targeting.isDisabled());
         targetingVersion.setVersion(targeting.getVersion());
         targetingVersion.setComment(comment);
         return targetingVersion;
@@ -437,8 +437,7 @@ public class ToggleService {
         ToggleItemResponse toggleItem = ToggleMapper.INSTANCE.entityToItemResponse(toggle,
                 appConfig.getToggleDeadline());
         toggleItem.setTags(tagMap.get(toggle.getKey()));
-        toggleItem.setDisabled(targetingMap.get(uniqueKey(projectKey, environmentKey, toggle.getKey()))
-                .getDisabled());
+        toggleItem.setDisabled(targetingMap.get(uniqueKey(projectKey, environmentKey, toggle.getKey())).isDisabled());
         toggleItem.setReleaseStatus(targetingMap.get(uniqueKey(projectKey, environmentKey, toggle.getKey()))
                 .getStatus());
         if (ObjectUtils.isNotEmpty(metricsCacheMap.get(toggle.getKey()))) {

@@ -256,7 +256,7 @@ public class TargetingService {
             diffResponse.setCurrentDisabled(targetingSketch.get().getDisabled());
             diffResponse.setCurrentContent(JsonMapper.toObject(targetingSketch.get().getContent(),
                     TargetingContent.class));
-            diffResponse.setOldDisabled(targeting.get().getDisabled());
+            diffResponse.setOldDisabled(targeting.get().isDisabled());
             diffResponse.setOldContent(JsonMapper.toObject(targeting.get().getContent(), TargetingContent.class));
         }
         return diffResponse;
@@ -369,7 +369,7 @@ public class TargetingService {
         targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
         targetingVersion.setToggleKey(targeting.getToggleKey());
         targetingVersion.setContent(targeting.getContent());
-        targetingVersion.setDisabled(targeting.getDisabled());
+        targetingVersion.setDisabled(targeting.isDisabled());
         targetingVersion.setVersion(targeting.getVersion());
         targetingVersion.setComment(comment);
         targetingVersion.setApprovalId(approvalId);
