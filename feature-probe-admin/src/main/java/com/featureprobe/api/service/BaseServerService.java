@@ -124,17 +124,20 @@ public class BaseServerService {
         allServerToggle.stream().forEach(serverToggle -> {
             if (toggleMap.containsKey(getServerToggleUniqueKey(serverToggle))) {
                 toggleMap.get(getServerToggleUniqueKey(serverToggle)).add(toToggle(serverToggle));
-            } else {
+            } else if (Objects.nonNull(serverToggle.getToggleKey())) {
                 List<Toggle> toggles = new ArrayList<>();
                 toggles.add(toToggle(serverToggle));
                 toggleMap.put(getServerToggleUniqueKey(serverToggle), toggles);
             }
 
-            if (targetingMap.containsKey(serverToggle.getServerSdkKey())) {
+            if (targetingMap.containsKey(serverToggle.getServerSdkKey()) &&
+                    Objects.nonNull(serverToggle.getToggleKey())) {
                 targetingMap.get(serverToggle.getServerSdkKey()).add(toTargeting(serverToggle));
             } else {
                 List<Targeting> targetingList = new ArrayList<>();
-                targetingList.add(toTargeting(serverToggle));
+                if (Objects.nonNull(serverToggle.getToggleKey())) {
+                    targetingList.add(toTargeting(serverToggle));
+                }
                 targetingMap.put(serverToggle.getServerSdkKey(), targetingList);
             }
 

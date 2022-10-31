@@ -44,7 +44,9 @@ public class ServerController {
     public SdkKeyResponse queryAllSdkKeys(@RequestParam(value = "version", required = false) Long version,
                                           HttpServletResponse response) throws Exception {
         SdkKeyResponse sdkKeyResponse = dataSource.queryAllSdkKeys();
-        if (Objects.nonNull(version) && version >= sdkKeyResponse.getVersion()) {
+        if (Objects.isNull(sdkKeyResponse)) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        } else if (Objects.nonNull(version) && version >= sdkKeyResponse.getVersion()) {
             response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return null;
         }
@@ -59,7 +61,9 @@ public class ServerController {
                                        @RequestParam(value = "version", required = false) Long version,
                                        HttpServletResponse response) throws Exception {
         ServerResponse serverResponse = dataSource.queryServerTogglesByServerSdkKey(sdkKey);
-        if (Objects.nonNull(version) && version >= serverResponse.getVersion()) {
+        if (Objects.isNull(serverResponse)) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        } else if (Objects.nonNull(version) && version >= serverResponse.getVersion()) {
             response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             return null;
         }
