@@ -1,5 +1,6 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.dao.entity.Toggle;
 import com.featureprobe.api.dao.exception.ResourceConflictException;
 import com.featureprobe.api.dao.repository.ToggleRepository;
 import com.featureprobe.api.base.db.Archived;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import java.util.List;
 
 @AllArgsConstructor
 @Service
@@ -19,6 +21,12 @@ public class IncludeArchivedToggleService {
 
     @PersistenceContext
     public EntityManager entityManager;
+
+
+    @Archived
+    public List<Toggle> findAllByProjectKey(String projectKey) {
+        return toggleRepository.findAllByProjectKey(projectKey);
+    }
 
     @Archived
     public void validateIncludeArchivedToggle(String projectKey, ValidateTypeEnum type, String value) {

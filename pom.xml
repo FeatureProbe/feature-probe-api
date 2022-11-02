@@ -13,7 +13,6 @@
     <modules>
         <module>feature-probe-admin</module>
         <module>feature-probe-dao</module>
-        <module>feature-probe-cache</module>
         <module>feature-probe-base</module>
     </modules>
 

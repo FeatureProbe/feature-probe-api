@@ -2,6 +2,7 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.db.Archived;
+import com.featureprobe.api.base.db.ExcludeTenant;
 import com.featureprobe.api.base.model.TargetingContent;
 import com.featureprobe.api.component.SpringBeanManager;
 import com.featureprobe.api.dao.exception.ResourceConflictException;
@@ -50,6 +51,8 @@ public class EnvironmentService {
     private TargetingRepository targetingRepository;
 
     private ChangeLogService changeLogService;
+
+    private IncludeArchivedToggleService includeArchivedToggleService;
 
     @PersistenceContext
     public EntityManager entityManager;
@@ -120,7 +123,7 @@ public class EnvironmentService {
     }
 
     private void initEnvironmentTargeting(String projectKey, String environmentKey) {
-        List<Toggle> toggles = toggleRepository.findAllByProjectKey(projectKey);
+        List<Toggle> toggles = includeArchivedToggleService.findAllByProjectKey(projectKey);
         List<Targeting> targetingList = toggles.stream().map(toggle -> createDefaultTargeting(toggle, environmentKey))
                 .collect(Collectors.toList());
         targetingRepository.saveAll(targetingList);
@@ -146,6 +149,7 @@ public class EnvironmentService {
         }
     }
 
+    @ExcludeTenant
     public String getSdkServerKey(String serverKeyOrClientKey) {
         return environmentRepository.findByServerSdkKeyOrClientSdkKey(serverKeyOrClientKey, serverKeyOrClientKey)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, serverKeyOrClientKey))

@@ -1,4 +1,4 @@
-package com.featureprobe.api.cache;
+package com.featureprobe.api.base.cache;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;

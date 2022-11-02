@@ -47,7 +47,7 @@ public interface EnvironmentRepository extends JpaRepository<Environment, Long> 
             "       ta.disabled as targetingDisabled,\n" +
             "       ta.content as targetingContent\n" +
             "FROM environment env\n" +
-            "    LEFT JOIN (SELECT * FROM toggle WHERE deleted = 0) tg\n" +
+            "    LEFT JOIN (SELECT * FROM toggle WHERE deleted = 0 AND archived = 0) tg\n" +
             "        ON env.organization_id = tg.organization_id AND env.project_key=tg.project_key\n" +
             "    LEFT JOIN (SELECT * FROM targeting WHERE deleted = 0) ta\n" +
             "         ON tg.organization_id=ta.organization_id AND\n" +

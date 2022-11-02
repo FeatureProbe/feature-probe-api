@@ -1,9 +1,9 @@
 package com.featureprobe.api.service
 
+import com.featureprobe.api.base.cache.ICache
+import com.featureprobe.api.base.cache.MemoryCache
 import com.featureprobe.api.base.enums.ChangeLogType
 import com.featureprobe.api.base.util.JsonMapper
-import com.featureprobe.api.cache.ICache
-import com.featureprobe.api.cache.MemoryCache
 import com.featureprobe.api.dao.entity.PublishMessage
 import com.featureprobe.api.dao.entity.Dictionary
 import com.featureprobe.api.dao.entity.Environment

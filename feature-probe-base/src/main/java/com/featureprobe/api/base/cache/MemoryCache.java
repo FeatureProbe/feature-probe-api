@@ -1,8 +1,9 @@
-package com.featureprobe.api.cache;
+package com.featureprobe.api.base.cache;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
+
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 

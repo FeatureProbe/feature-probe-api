@@ -53,6 +53,8 @@ class EnvironmentServiceSpec extends Specification {
 
     IncludeArchivedEnvironmentService includeArchivedEnvironmentService
 
+    IncludeArchivedToggleService includeArchivedToggleService
+
     ApplicationContext applicationContext
 
     def projectName
@@ -80,9 +82,10 @@ class EnvironmentServiceSpec extends Specification {
         entityManager = Mock(SessionImpl)
         changeLogRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
+        includeArchivedToggleService = new IncludeArchivedToggleService(toggleRepository, entityManager)
         changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
         environmentService = new EnvironmentService(environmentRepository, projectRepository,
-                toggleRepository, targetingRepository, changeLogService, entityManager)
+                toggleRepository, targetingRepository, changeLogService, includeArchivedToggleService, entityManager)
         includeArchivedEnvironmentService = new IncludeArchivedEnvironmentService(environmentRepository, entityManager)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
         updateRequest = new EnvironmentUpdateRequest(name: "env_test_update", resetServerSdk: true, resetClientSdk: true, archived: true)

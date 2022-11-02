@@ -258,10 +258,9 @@ public class BaseServerService {
                         .segments(segments.stream().collect(Collectors.toMap(Segment::getKey, Function.identity())))
                         .build();
             } catch (Exception e) {
-                log.warn("Build server toggle failed, OrganizationId : {}, projectKey:{}, envKey:{}, " +
-                                " toggle key: {}, env key: {}",
-                        targeting.getOrganizationId(), targeting.getProjectKey(), targeting.getEnvironmentKey(),
-                        targeting.getToggleKey(), targeting.getEnvironmentKey(), e);
+                log.warn("Build server toggle failed, OrganizationId : {}, projectKey:{}, " +
+                                " toggle key: {}", toggle.getOrganizationId(), toggle.getProjectKey(),
+                        toggle.getKey(), e);
                 return null;
             }
         }).filter(Objects::nonNull).collect(Collectors.toList());

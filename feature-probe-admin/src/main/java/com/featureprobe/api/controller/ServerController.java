@@ -1,5 +1,6 @@
 package com.featureprobe.api.controller;
 
+import com.featureprobe.api.base.db.ExcludeTenant;
 import com.featureprobe.api.base.doc.CreateApiResponse;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.dto.EventCreateRequest;
@@ -73,6 +74,7 @@ public class ServerController {
     @CreateApiResponse
     @PostMapping("/events")
     @Operation(summary = "Create event", description = "Create toggle event.")
+    @ExcludeTenant
     public void createEvent(
             @RequestBody @Validated List<EventCreateRequest> batchRequest,
             @Parameter(description = "sdk key")

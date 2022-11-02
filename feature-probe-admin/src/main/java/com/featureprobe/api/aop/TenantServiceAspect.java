@@ -51,6 +51,8 @@ public class TenantServiceAspect {
                 Archived archivedAnnotation = getMethodAnnotation(pjp, Archived.class);
                 if (Objects.isNull(archivedAnnotation)) {
                     session.enableFilter("archivedFilter").setParameter("archived", false).validate();
+                } else if (Objects.nonNull(session.getEnabledFilter("archivedFilter"))) {
+                    session.disableFilter("archivedFilter");
                 }
             }
         }
