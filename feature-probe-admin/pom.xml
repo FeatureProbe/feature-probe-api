@@ -25,10 +25,6 @@
         </dependency>
         <dependency>
             <groupId>com.featureprobe</groupId>
-            <artifactId>feature-probe-cache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.featureprobe</groupId>
             <artifactId>feature-probe-dao</artifactId>
         </dependency>
         <dependency>
