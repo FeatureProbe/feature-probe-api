@@ -5,9 +5,12 @@ import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.dto.SegmentCreateRequest;
+import com.featureprobe.api.dto.SegmentPublishRequest;
 import com.featureprobe.api.dto.SegmentResponse;
 import com.featureprobe.api.dto.SegmentSearchRequest;
 import com.featureprobe.api.dto.SegmentUpdateRequest;
+import com.featureprobe.api.dto.SegmentVersionRequest;
+import com.featureprobe.api.dto.SegmentVersionResponse;
 import com.featureprobe.api.dto.ToggleSegmentResponse;
 import com.featureprobe.api.base.enums.ResponseCodeEnum;
 import com.featureprobe.api.base.enums.ValidateTypeEnum;
@@ -66,6 +69,15 @@ public class SegmentController {
         return segmentService.update(projectKey, segmentKey, segmentUpdateRequest);
     }
 
+    @PatchApiResponse
+    @PatchMapping("/{segmentKey}/publish")
+    @Operation(summary = "publish segment", description = "publish a segment.")
+    public SegmentResponse publish(@PathVariable(name = "projectKey") String projectKey,
+                                  @PathVariable(name = "segmentKey") String segmentKey,
+                                  @RequestBody @Validated SegmentPublishRequest publishRequest) {
+        return segmentService.publish(projectKey, segmentKey, publishRequest);
+    }
+
     @DefaultApiResponses
     @DeleteMapping("/{segmentKey}")
     @Operation(summary = "Delete segment", description = "Delete a segment.")
@@ -82,6 +94,16 @@ public class SegmentController {
                                                     @PathVariable(name = "segmentKey") String segmentKey,
                                                     PaginationRequest paginationRequest) {
         return segmentService.usingToggles(projectKey, segmentKey, paginationRequest);
+    }
+
+
+    @GetMapping("/{segmentKey}/versions")
+    @GetApiResponse
+    @Operation(summary = "List of version by segment", description = "List of version by segment")
+    public Page<SegmentVersionResponse> versions(@PathVariable(name = "projectKey") String projectKey,
+                                                 @PathVariable(name = "segmentKey") String segmentKey,
+                                                 SegmentVersionRequest versionRequest) {
+        return segmentService.versions(projectKey, segmentKey, versionRequest);
     }
 
     @GetApiResponse
@@ -101,4 +123,6 @@ public class SegmentController {
         segmentService.validateExists(projectKey, type, value);
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
+
+
 }

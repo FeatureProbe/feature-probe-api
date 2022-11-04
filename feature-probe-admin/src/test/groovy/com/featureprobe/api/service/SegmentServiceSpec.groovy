@@ -2,8 +2,14 @@ package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.model.PaginationRequest
+import com.featureprobe.api.base.util.JsonMapper
+import com.featureprobe.api.dao.entity.SegmentVersion
 import com.featureprobe.api.dao.exception.ResourceConflictException
+import com.featureprobe.api.dao.repository.SegmentVersionRepository
+import com.featureprobe.api.dao.utils.PageRequestUtil
 import com.featureprobe.api.dto.SegmentCreateRequest
+import com.featureprobe.api.dto.SegmentPublishRequest
+import com.featureprobe.api.dto.SegmentResponse
 import com.featureprobe.api.dto.SegmentSearchRequest
 import com.featureprobe.api.dto.SegmentUpdateRequest
 import com.featureprobe.api.dao.entity.Environment
@@ -22,8 +28,12 @@ import com.featureprobe.api.dao.repository.SegmentRepository
 import com.featureprobe.api.dao.repository.TargetingRepository
 import com.featureprobe.api.dao.repository.TargetingSegmentRepository
 import com.featureprobe.api.dao.repository.ToggleRepository
+import com.featureprobe.api.dto.SegmentVersionRequest
+import com.featureprobe.api.dto.SegmentVersionResponse
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import spock.lang.Specification
 import spock.lang.Title
 
@@ -46,9 +56,11 @@ class SegmentServiceSpec extends Specification {
 
     ProjectRepository projectRepository
 
-    private PublishMessageRepository changeLogRepository;
+    PublishMessageRepository changeLogRepository
 
-    private DictionaryRepository dictionaryRepository;
+    DictionaryRepository dictionaryRepository
+
+    SegmentVersionRepository segmentVersionRepository
 
     ChangeLogService changeLogService
 
@@ -68,9 +80,10 @@ class SegmentServiceSpec extends Specification {
         projectRepository = Mock(ProjectRepository)
         changeLogRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
+        segmentVersionRepository = Mock(SegmentVersionRepository)
         ChangeLogService changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
         segmentService = new SegmentService(segmentRepository, targetingSegmentRepository, targetingRepository,
-                toggleRepository, environmentRepository, projectRepository, changeLogService, entityManager)
+                toggleRepository, environmentRepository, projectRepository, segmentVersionRepository, changeLogService, entityManager)
 
         projectKey = "feature_probe"
         segmentKey = "test_segment_key"
@@ -80,14 +93,12 @@ class SegmentServiceSpec extends Specification {
 
     def "create a segment"() {
         when:
-        def created = segmentService.create(projectKey, new SegmentCreateRequest(name: segmentName,
-                key: segmentKey, rules: [new SegmentRuleModel(name: "rule1",
-                conditions: [new ConditionValue(type: "string", subject: "userId", predicate: "withs end",
-                        objects: ["test"])])]))
+        def created = segmentService.create(projectKey, new SegmentCreateRequest(name: segmentName, key: segmentKey))
         then:
         1 * projectRepository.findByKey(projectKey) >> Optional.of(new Project(environments: [new Environment(clientSdkKey: "client-123", serverSdkKey: "server-123", version: 1)]))
         1 * environmentRepository.save(_)
         1 * changeLogRepository.save(_)
+        1 * segmentVersionRepository.save(_)
         1 * segmentRepository.save(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules)
         with(created) {
             segmentName == created.name
@@ -101,12 +112,11 @@ class SegmentServiceSpec extends Specification {
     def "update a segment"() {
         when:
         def updated = segmentService.update(projectKey, segmentKey,
-                new SegmentUpdateRequest(name: "segment_test_update", rules: [new SegmentRuleModel(name: "rule1",
-                        conditions: [new ConditionValue(type: "string", subject: "userId", predicate: "withs end",
-                                objects: ["test"])])]))
+                new SegmentUpdateRequest(name: "segment_test_update"))
         then:
+        1 * projectRepository.findByKey(projectKey) >> Optional.of(new Project(environments: [new Environment(clientSdkKey: "client-123", serverSdkKey: "server-123", version: 1)]))
         1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >>
-                new Segment(name: segmentName, key: segmentKey, rules: rules)
+                Optional.of(new Segment(name: segmentName, key: segmentKey, rules: rules))
         1 * segmentRepository.existsByProjectKeyAndName(projectKey, "segment_test_update") >> false
         1 * segmentRepository.save(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules)
         with(updated) {
@@ -122,13 +132,34 @@ class SegmentServiceSpec extends Specification {
         def segment = segmentService.queryByKey(projectKey, segmentKey)
         then:
         1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >>
-                new Segment(name: segmentName, key: segmentKey, rules: rules)
+                Optional.of(new Segment(name: segmentName, key: segmentKey, rules: rules))
         with(segment) {
             segmentName == segment.name
             segmentKey == segment.key
             projectKey == segment.projectKey
             0 < segment.rules.size()
         }
+    }
+
+    def "publish a segment rules"() {
+        given:
+        def updateRules = JsonMapper.toListObject(rules, SegmentRuleModel.class)
+        when:
+        def published = segmentService.publish(projectKey, segmentKey, new SegmentPublishRequest(rules: updateRules, comment: "publish segment"))
+        then:
+        1 * projectRepository.findByKey(projectKey) >> Optional.of(new Project(environments: [new Environment(clientSdkKey: "client-123", serverSdkKey: "server-123", version: 1)]))
+        1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >> Optional.of(new Segment(name: segmentName, key: segmentKey, rules: rules, version: 1))
+        1 * segmentRepository.saveAndFlush(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules, version: 2)
+        1 * segmentVersionRepository.save(_)
+        1 == published.getRules().size()
+    }
+
+    def "query segment history version"() {
+        when:
+        def versions = segmentService.versions(projectKey, segmentKey, new SegmentVersionRequest())
+        then:
+        1 * segmentVersionRepository.findAll(_, _) >> new PageImpl<>([new SegmentVersion(rules: rules, key: segmentKey, projectKey: projectKey, version: 1)], Pageable.ofSize(1), 1)
+        1 == versions.getContent().size()
     }
 
 
@@ -158,8 +189,8 @@ class SegmentServiceSpec extends Specification {
         1 * environmentRepository.save(_)
         1 * changeLogRepository.save(_)
         1 * targetingSegmentRepository.countByProjectKeyAndSegmentKey(projectKey, segmentKey) >> 0
-        1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >> new Segment(name: segmentName,
-                key: segmentKey, rules: rules)
+        1 * segmentRepository.findByProjectKeyAndKey(projectKey, segmentKey) >> Optional.of(new Segment(name: segmentName,
+                key: segmentKey, rules: rules))
         1 * segmentRepository.save(_) >> new Segment(name: segmentName, key: segmentKey, rules: rules)
         with(deleted) {
             segmentName == deleted.name

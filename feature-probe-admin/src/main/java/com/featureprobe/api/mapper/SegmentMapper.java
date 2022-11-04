@@ -1,6 +1,7 @@
 package com.featureprobe.api.mapper;
 
 import com.featureprobe.api.dto.SegmentCreateRequest;
+import com.featureprobe.api.dto.SegmentPublishRequest;
 import com.featureprobe.api.dto.SegmentResponse;
 import com.featureprobe.api.dto.SegmentUpdateRequest;
 import com.featureprobe.api.dto.ToggleSegmentResponse;
@@ -25,7 +26,6 @@ public interface SegmentMapper extends BaseMapper {
 
     SegmentMapper INSTANCE = Mappers.getMapper(SegmentMapper.class);
 
-    @Mapping(target = "rules", expression = "java(toSegmentRulesString(createRequest.getRules()))")
     Segment requestToEntity(SegmentCreateRequest createRequest);
 
     @Mapping(target = "rules", expression = "java(toSegmentRules(segment.getRules()))")
@@ -34,9 +34,12 @@ public interface SegmentMapper extends BaseMapper {
 
     ToggleSegmentResponse toggleToToggleSegment(Toggle toggle);
 
-    @Mapping(target = "rules", expression = "java(toSegmentRulesString(updateRequest.getRules()))")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void mapEntity(SegmentUpdateRequest updateRequest, @MappingTarget Segment segment);
+
+    @Mapping(target = "rules", expression = "java(toSegmentRulesString(publishRequest.getRules()))")
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void mapEntity(SegmentPublishRequest publishRequest, @MappingTarget Segment segment);
 
     default String toSegmentRulesString(List<SegmentRuleModel> rules) {
         if (!CollectionUtils.isEmpty(rules)) {

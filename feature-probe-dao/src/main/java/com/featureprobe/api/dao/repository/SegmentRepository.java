@@ -6,11 +6,12 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SegmentRepository extends JpaRepository<Segment, Long>, JpaSpecificationExecutor<Segment> {
 
-    Segment findByProjectKeyAndKey(String projectKey, String key);
+    Optional<Segment> findByProjectKeyAndKey(String projectKey, String key);
 
     List<Segment> findAllByProjectKeyAndOrganizationIdAndDeleted(String projectKey, Long organizationId,
                                                                  boolean deleted);
