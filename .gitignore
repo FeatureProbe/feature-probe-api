@@ -1,5 +1,5 @@
 output
-/target/
+**/target/
 /logs/
 *.iml
 .arcconfig
@@ -7,8 +7,8 @@ output
 .settings
 .classpath
 .project
-*.iml
 pom.xml.versionsBackup
 .java-version
 .DS_Store
 *.tar.gz
+*.log
