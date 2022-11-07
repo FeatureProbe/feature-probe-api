@@ -1,2 +1,1 @@
-ALTER TABLE segment_version
-MODIFY id bigint;
+ALTER TABLE segment_version MODIFY id bigint auto_increment;
