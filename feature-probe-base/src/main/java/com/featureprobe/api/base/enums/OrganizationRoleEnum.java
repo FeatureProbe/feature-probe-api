@@ -2,5 +2,10 @@ package com.featureprobe.api.base.enums;
 
 public enum OrganizationRoleEnum {
 
-    OWNER, WRITER
+    OWNER, WRITER;
+
+    public boolean isOwner() {
+        return this == OWNER;
+    }
+
 }

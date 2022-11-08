@@ -32,8 +32,7 @@ class UserPasswordAuthenticationSpec extends Specification {
         def authenticate = userPasswordAuthenticationProvider.authenticate(token)
         then:
         1 * memberService.findByAccount("admin") >> Optional.of(new Member(account: "Admin",
-                password: "\$2a\$10\$jeJ25nROU8APkG2ixK6zyecwzIJ8oHz0ZNqBDiwMXcy9lo9S3YGma",
-                role: RoleEnum.ADMIN))
+                password: "\$2a\$10\$jeJ25nROU8APkG2ixK6zyecwzIJ8oHz0ZNqBDiwMXcy9lo9S3YGma"))
         1 * memberService.updateVisitedTime("admin")
         1 * operationLogRepository.save(_)
         with(authenticate) {

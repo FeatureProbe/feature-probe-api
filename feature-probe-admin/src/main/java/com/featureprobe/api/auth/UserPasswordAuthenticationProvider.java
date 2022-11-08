@@ -13,6 +13,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -26,6 +27,7 @@ public class UserPasswordAuthenticationProvider implements AuthenticationProvide
     private OperationLogService operationLogService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         UserPasswordAuthenticationToken token = (UserPasswordAuthenticationToken) authentication;
         if (StringUtils.isNotBlank(token.getAccount()) && StringUtils.isNotBlank(token.getPassword())) {
@@ -36,8 +38,7 @@ public class UserPasswordAuthenticationProvider implements AuthenticationProvide
                     && new BCryptPasswordEncoder().matches(token.getPassword(), member.get().getPassword())) {
                 memberService.updateVisitedTime(token.getAccount());
                 operationLogService.save(log);
-                return new UserPasswordAuthenticationToken(AuthenticatedMember.create(member.get()),
-                        Arrays.asList(new SimpleGrantedAuthority(member.get().getRole().name())));
+                return new UserPasswordAuthenticationToken(AuthenticatedMember.create(member.get()), Arrays.asList());
             }
         }
         return null;

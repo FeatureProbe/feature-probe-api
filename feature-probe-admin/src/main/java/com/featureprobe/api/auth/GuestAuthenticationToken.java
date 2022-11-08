@@ -1,6 +1,5 @@
 package com.featureprobe.api.auth;
 
-import com.featureprobe.api.base.enums.RoleEnum;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -31,9 +30,6 @@ public class GuestAuthenticationToken extends AbstractAuthenticationToken {
         super.setAuthenticated(true);
     }
 
-    public boolean isAdmin() {
-        return RoleEnum.ADMIN.name().equals(getRole());
-    }
 
     @Override
     public Object getCredentials() {
@@ -57,11 +53,5 @@ public class GuestAuthenticationToken extends AbstractAuthenticationToken {
         return password;
     }
 
-    public String getRole() {
-        if (principal == null) {
-            return null;
-        }
-        return principal.getRole();
-    }
 
 }

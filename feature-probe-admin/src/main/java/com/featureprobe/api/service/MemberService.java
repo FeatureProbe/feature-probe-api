@@ -2,25 +2,25 @@ package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
 import com.featureprobe.api.base.constants.MessageKey;
-import com.featureprobe.api.base.exception.ForbiddenException;
-import com.featureprobe.api.dao.exception.ResourceNotFoundException;
-import com.featureprobe.api.dao.utils.PageRequestUtil;
 import com.featureprobe.api.base.db.ExcludeTenant;
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
+import com.featureprobe.api.base.enums.ResourceType;
+import com.featureprobe.api.base.exception.ForbiddenException;
+import com.featureprobe.api.base.tenant.TenantContext;
+import com.featureprobe.api.dao.entity.Member;
+import com.featureprobe.api.dao.entity.Organization;
+import com.featureprobe.api.dao.entity.OrganizationMember;
+import com.featureprobe.api.dao.exception.ResourceNotFoundException;
+import com.featureprobe.api.dao.repository.MemberRepository;
+import com.featureprobe.api.dao.repository.OrganizationMemberRepository;
+import com.featureprobe.api.dao.repository.OrganizationRepository;
+import com.featureprobe.api.dao.utils.PageRequestUtil;
 import com.featureprobe.api.dto.MemberCreateRequest;
 import com.featureprobe.api.dto.MemberModifyPasswordRequest;
 import com.featureprobe.api.dto.MemberResponse;
 import com.featureprobe.api.dto.MemberSearchRequest;
 import com.featureprobe.api.dto.MemberUpdateRequest;
-import com.featureprobe.api.dao.entity.Member;
-import com.featureprobe.api.dao.entity.Organization;
-import com.featureprobe.api.dao.entity.OrganizationMember;
-import com.featureprobe.api.base.enums.ResourceType;
-import com.featureprobe.api.base.enums.RoleEnum;
 import com.featureprobe.api.mapper.MemberMapper;
-import com.featureprobe.api.dao.repository.MemberRepository;
-import com.featureprobe.api.dao.repository.OrganizationMemberRepository;
-import com.featureprobe.api.dao.repository.OrganizationRepository;
-import com.featureprobe.api.base.tenant.TenantContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +59,6 @@ public class MemberService {
     @PersistenceContext
     public EntityManager entityManager;
 
-    private static final String API_CREATE_MEMBER_SOURCE = "INTERNAL";
-
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Transactional(rollbackFor = Exception.class)
@@ -76,6 +73,14 @@ public class MemberService {
         verifyAdminPrivileges();
         Member member = findMemberByAccount(updateRequest.getAccount());
         MemberMapper.INSTANCE.mapEntity(updateRequest, member);
+        OrganizationMember organizationMember = member.getOrganizationMembers()
+                .stream()
+                .filter(it -> it.getOrganization().getId().equals(TenantContext.getCurrentOrganization()
+                        .getOrganizationId())).findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ORGANIZATION_MEMBER,
+                        member.getAccount()));
+        organizationMember.setRole(updateRequest.getRole());
+
         return MemberMapper.INSTANCE.entityToResponse(memberRepository.save(member));
     }
 
@@ -111,19 +116,20 @@ public class MemberService {
         return createRequest.getAccounts()
                 .stream()
                 .filter(account -> memberIncludeDeletedService.validateAccountIncludeDeleted(account))
-                .map(account -> newMember(account, createRequest.getSource(), createRequest.getPassword()))
+                .map(account -> newMember(account, createRequest))
                 .collect(Collectors.toList());
     }
 
-    private Member newMember(String account, String source, String password) {
+    private Member newMember(String account, MemberCreateRequest createRequest) {
         Member member = new Member();
         member.setAccount(account);
-        member.setSource(source);
-        member.setRole(RoleEnum.MEMBER);
-        member.setPassword(new BCryptPasswordEncoder().encode(password));
+        member.setSource(createRequest.getSource());
+        member.setPassword(new BCryptPasswordEncoder().encode(createRequest.getPassword()));
+
         Organization organization = organizationRepository.findById(TenantContext.getCurrentOrganization()
                 .getOrganizationId()).get();
-        member.setOrganizations(Arrays.asList(organization));
+        member.addOrganization(organization, createRequest.getRole());
+
         return member;
     }
 
@@ -138,7 +144,7 @@ public class MemberService {
     }
 
     private void verifyAdminPrivileges() {
-        if (!TokenHelper.isAdmin()) {
+        if (!TokenHelper.isOwner()) {
             throw new ForbiddenException();
         }
     }
@@ -146,17 +152,53 @@ public class MemberService {
     public Page<MemberResponse> list(MemberSearchRequest searchRequest) {
         Pageable pageable = PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "createdTime");
         Specification<OrganizationMember> spec = (root, query, cb) -> {
-            Predicate p1 = cb.equal(root.get("organizationId"), TenantContext.getCurrentOrganization()
+            Predicate p1 = cb.equal(root.get("organization").get("id"), TenantContext.getCurrentOrganization()
                     .getOrganizationId());
             return query.where(cb.and(p1)).getRestriction();
         };
         Page<OrganizationMember> organizationMembers = organizationMemberRepository.findAll(spec, pageable);
-        List<Long> memberIds = organizationMembers.getContent().stream().map(OrganizationMember::getMemberId)
+        List<Long> memberIds = organizationMembers.getContent()
+                .stream()
+                .map(organizationMember -> organizationMember.getMember().getId())
                 .collect(Collectors.toList());
-        Map<Long, Member> memberMap = memberRepository.findAllById(memberIds).stream()
+        Map<Long, Member> idToMember = memberRepository.findAllById(memberIds).stream()
                 .collect(Collectors.toMap(Member::getId, Function.identity()));
-        return organizationMembers.map(item ->
-                MemberMapper.INSTANCE.entityToResponse(memberMap.get(item.getMemberId())));
+
+        return convertToResponse(getOwnerTotalCount(),
+                TokenHelper.isOwner(),
+                organizationMembers, idToMember);
+    }
+
+    private long getOwnerTotalCount() {
+        Specification<OrganizationMember> spec = (root, query, cb) -> {
+            Predicate p1 = cb.equal(root.get("organization").get("id"), TenantContext.getCurrentOrganization()
+                    .getOrganizationId());
+            Predicate p2 = cb.equal(root.get("role"), OrganizationRoleEnum.OWNER);
+            return query.where(cb.and(p1, p2)).getRestriction();
+        };
+        return organizationMemberRepository.count(spec);
+
+    }
+
+    private Page<MemberResponse> convertToResponse(long ownerCount,
+                                                   boolean currentIsOwner,
+                                                   Page<OrganizationMember> organizationMembers,
+                                                   Map<Long, Member> idToMember) {
+        return organizationMembers.map(item -> {
+            MemberResponse response = MemberMapper.INSTANCE.entityToResponse(idToMember.get(item.getMember().getId()));
+            if (item.getRole() == null) {
+                response.setAllowEdit(false);
+                return response;
+            }
+            response.setRole(item.getRole().name());
+            boolean allowEdit = currentIsOwner;
+
+            if (allowEdit && item.getRole().isOwner() && ownerCount == 1) {
+                allowEdit = false;
+            }
+            response.setAllowEdit(allowEdit);
+            return response;
+        });
     }
 
     public MemberResponse queryByAccount(String account) {

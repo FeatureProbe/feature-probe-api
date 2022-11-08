@@ -1,5 +1,6 @@
 package com.featureprobe.api.auth;
 
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import com.featureprobe.api.base.enums.RoleEnum;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -28,9 +29,9 @@ public class TokenHelper {
         return (String) authentication.getTokenAttributes().get(ROLE_KEY);
     }
 
-    public static final boolean isAdmin() {
+    public static final boolean isOwner() {
         JwtAuthenticationToken authentication = (JwtAuthenticationToken) SecurityContextHolder.
                 getContext().getAuthentication();
-        return RoleEnum.ADMIN.name().equals((String) authentication.getTokenAttributes().get(ROLE_KEY));
+        return OrganizationRoleEnum.OWNER.name().equals(authentication.getTokenAttributes().get(ROLE_KEY));
     }
 }

@@ -13,7 +13,6 @@ public class AuthenticatedMember implements AuthenticatedPrincipal {
     private Long id;
 
     private String name;
-
     private String role;
 
     private List<Organization> organizations;
@@ -22,7 +21,6 @@ public class AuthenticatedMember implements AuthenticatedPrincipal {
         AuthenticatedMember authenticatedMember = new AuthenticatedMember();
         authenticatedMember.setId(member.getId());
         authenticatedMember.setName(member.getAccount());
-        authenticatedMember.setRole(member.getRole().name());
         authenticatedMember.setOrganizations(member.getOrganizations());
         return authenticatedMember;
     }

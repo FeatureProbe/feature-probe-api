@@ -1,6 +1,7 @@
 package com.featureprobe.api.service
 
 import com.featureprobe.api.base.enums.OrganizationRoleEnum
+import com.featureprobe.api.dao.entity.Member
 import com.featureprobe.api.dao.entity.Organization
 import com.featureprobe.api.dao.entity.OrganizationMember
 import com.featureprobe.api.dao.repository.OrganizationMemberRepository
@@ -24,7 +25,7 @@ class OrganizationServiceSpec extends Specification {
         def organizationMember = organizationService.queryOrganizationMember(1, 1)
         then:
         1 * organizationMemberRepository.findByOrganizationIdAndMemberId(1, 1) >>
-                Optional.of(new OrganizationMember(1, 1, OrganizationRoleEnum.OWNER))
+                Optional.of(new OrganizationMember(new Organization(id: 1), new Member(id: 1), OrganizationRoleEnum.OWNER))
         1 * organizationRepository.getById(1) >> new Organization(name: "Admin")
         "Admin" == organizationMember.organizationName
     }

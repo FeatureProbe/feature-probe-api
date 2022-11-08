@@ -1,12 +1,13 @@
 package com.featureprobe.api.service;
 
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import com.featureprobe.api.config.JWTConfig;
 import com.featureprobe.api.base.db.ExcludeTenant;
+import com.featureprobe.api.dao.repository.OrganizationRepository;
 import com.featureprobe.api.dto.ProjectCreateRequest;
 import com.featureprobe.api.dao.entity.Member;
 import com.featureprobe.api.dao.entity.Organization;
 import com.featureprobe.api.dao.repository.MemberRepository;
-import com.featureprobe.api.base.enums.RoleEnum;
 import com.featureprobe.api.base.tenant.TenantContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +28,6 @@ import javax.persistence.Query;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @AllArgsConstructor
@@ -39,6 +38,8 @@ public class GuestService {
     JWTConfig JWTConfig;
 
     private MemberRepository memberRepository;
+
+    private OrganizationRepository organizationRepository;
 
     @PersistenceContext
     public EntityManager entityManager;
@@ -53,24 +54,30 @@ public class GuestService {
 
     @Transactional(rollbackFor = Exception.class)
     public Member initGuest(String account, String source) {
-        Member createdMember = new Member();
-        createdMember.setAccount(account);
-        createdMember.setPassword(passwordEncoder.encode(JWTConfig.getGuestDefaultPassword()));
-        createdMember.setRole(RoleEnum.ADMIN);
-        List<Organization> organizations = new ArrayList<>(1);
-        organizations.add(new Organization(account));
-        createdMember.setOrganizations(organizations);
-        createdMember.setSource(source);
-        Member savedMember = memberRepository.save(createdMember);
+        Organization organization = organizationRepository.save(new Organization(account));
+        Member guestMember = createGuestMember(account, source, organization);
+
+        loginGuestUser(guestMember);
+        initProjectEnvironment(String.valueOf(organization.getId()), GUEST_INIT_PROJECT_KEY);
+        initToggles(organization.getId(), guestMember.getId());
+        return guestMember;
+    }
+
+    private Member createGuestMember(String account, String source, Organization organization) {
+        Member member = new Member();
+        member.setAccount(account);
+        member.setPassword(passwordEncoder.encode(JWTConfig.getGuestDefaultPassword()));
+        member.setSource(source);
+        member.addOrganization(organization, OrganizationRoleEnum.OWNER);
+        return memberRepository.save(member);
+    }
+
+    private void loginGuestUser(Member member) {
         SecurityContextHolder.setContext(new SecurityContextImpl(new JwtAuthenticationToken(Jwt.withTokenValue("_")
-                .claim("userId", savedMember.getId()).claim("account", savedMember.getAccount())
-                .claim("role", savedMember.getRole().name())
+                .claim("userId", member.getId()).claim("account", member.getAccount())
+                .claim("role", member.getOrganizationMembers().get(0).getRole())
                 .header("iss", "")
                 .build())));
-        Organization organization = savedMember.getOrganizations().get(0);
-        initProjectEnvironment(String.valueOf(organization.getId()), GUEST_INIT_PROJECT_KEY);
-        initToggles(organization.getId(), savedMember.getId());
-        return savedMember;
     }
 
     private void initProjectEnvironment(String tenantId, String projectName) {

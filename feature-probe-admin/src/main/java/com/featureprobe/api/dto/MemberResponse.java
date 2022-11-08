@@ -15,6 +15,8 @@ public class MemberResponse {
 
     private String role;
 
+    private boolean allowEdit;
+
     private String createdBy;
 
     private Date visitedTime;

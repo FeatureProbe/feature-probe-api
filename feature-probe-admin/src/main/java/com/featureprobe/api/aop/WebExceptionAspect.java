@@ -74,6 +74,7 @@ public class WebExceptionAspect {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.getWriter().write(toErrorResponse(ResponseCode.INVALID_REQUEST,
                 i18nConverter.get(e.getMessage())));
+        log.error("invalidArgumentHandler", e);
     }
 
     private String toErrorResponse(ResponseCode resourceCode) {

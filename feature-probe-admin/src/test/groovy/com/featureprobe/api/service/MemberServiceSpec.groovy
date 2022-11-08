@@ -58,7 +58,7 @@ class MemberServiceSpec extends Specification {
         then:
         1 * memberRepository.existsByAccount("root") >> false
         1 * organizationRepository.findById(_) >> Optional.of(new Organization(id: 1, name: "organization name"))
-        1 * memberRepository.saveAll(_) >> [new Member(account: "root", password: "password", role: RoleEnum.MEMBER)]
+        1 * memberRepository.saveAll(_) >> [new Member(account: "root", password: "password")]
         with(savedMember) {
             1 == savedMember.size()
         }
@@ -77,25 +77,25 @@ class MemberServiceSpec extends Specification {
 
     def "update a member"() {
         given:
-        setAuthContext("Admin", "ADMIN")
+        setAuthContext("Admin", "OWNER")
 
         when:
         def response = memberService.update(new MemberUpdateRequest(account: "root", password: "root"))
 
         then:
         1 * memberRepository.findByAccount("root") >>
-                Optional.of(new Member(account: "root", password: "root", role: "MEMBER"))
-        1 * memberRepository.save(_) >> new Member(account: "root", password: "root", role: "MEMBER")
+                Optional.of(new Member(account: "root", password: "root",
+                        organizationMembers: [new OrganizationMember(organization: new Organization(id: 1))]))
+        1 * memberRepository.save(_) >> new Member(account: "root", password: "root")
         with(response) {
             "root" == account
-            "MEMBER" == role
         }
 
     }
 
     def "modify member password success"() {
         given:
-        setAuthContext("test", "MEMBER")
+        setAuthContext("test", "WRITER")
 
         when:
         def modify = memberService.modifyPassword(new MemberModifyPasswordRequest(newPassword: "root",
@@ -104,19 +104,18 @@ class MemberServiceSpec extends Specification {
         then:
         1 * memberRepository.findByAccount("test") >>
                 Optional.of(new Member(account: "test",
-                        password: "\$2a\$10\$WO5tC7A/nsPe5qmVmjTIPeKD0R/Tm2YsNiVP0geCerT0hIRLBCxZ6", role: "MEMBER"))
-        1 * memberRepository.save(_) >> new Member(account: "root", password: "323232", role: "MEMBER")
+                        password: "\$2a\$10\$WO5tC7A/nsPe5qmVmjTIPeKD0R/Tm2YsNiVP0geCerT0hIRLBCxZ6"))
+        1 * memberRepository.save(_) >> new Member(account: "root", password: "323232")
         with(modify) {
             "root" == account
-            "MEMBER" == role
         }
     }
 
     def "modify member password failed when old password error"() {
         given:
-        setAuthContext("test", "MEMBER")
+        setAuthContext("test", "WRITER")
         memberRepository.findByAccount("test") >> Optional.of(
-                new Member(account: "test", password: "abcdefg", role: "MEMBER"))
+                new Member(account: "test", password: "abcdefg"))
 
         when:
         memberService.modifyPassword(new MemberModifyPasswordRequest(newPassword: "root", oldPassword: "Pass1234"))
@@ -127,27 +126,26 @@ class MemberServiceSpec extends Specification {
 
     def "delete a member"() {
         given:
-        setAuthContext("Admin", "ADMIN")
+        setAuthContext("Admin", "OWNER")
         TenantContext.setCurrentTenant("1")
         when:
         def response = memberService.delete("root")
 
         then:
         1 * memberRepository.findByAccount("root") >>
-                Optional.of(new Member(id: 1, account: "root", password: "root", role: "MEMBER"))
+                Optional.of(new Member(id: 1, account: "root", password: "root"))
         1 * organizationMemberRepository.findByOrganizationIdAndMemberId(1, 1) >>
                 Optional.of(new OrganizationMember())
         1 * organizationMemberRepository.delete(_)
-        1 * memberRepository.save(_) >> new Member(account: "root", password: "root", role: "MEMBER")
+        1 * memberRepository.save(_) >> new Member(account: "root", password: "root")
         with(response) {
             "root" == account
-            "MEMBER" == role
         }
     }
 
     def "delete member failed when logged user is not admin"() {
         given:
-        setAuthContext("user", "MEMBER")
+        setAuthContext("user", "WRITER")
 
         when:
         memberService.delete("s1")
@@ -162,19 +160,22 @@ class MemberServiceSpec extends Specification {
 
         then:
         1 * memberRepository.findByAccount("test") >>
-                Optional.of(new Member(account: "test", password: "test", role: "MEMBER"))
+                Optional.of(new Member(account: "test", password: "test"))
         1 * memberRepository.save(_)
     }
 
     def "query member list"() {
+        given:
+        setAuthContext("user", "WRITER")
+
         when:
         def list = memberService.list(new MemberSearchRequest(keyword: "root",
                 pageIndex: 0, pageSize: 10))
 
         then:
-        1 * organizationMemberRepository.findAll(_, _) >> new PageImpl<>([new OrganizationMember(memberId: 1)],
+        1 * organizationMemberRepository.findAll(_, _) >> new PageImpl<>([new OrganizationMember(member: new Member(id: 1), role: OrganizationRoleEnum.OWNER)],
                 PageRequest.of(1, 10), 1)
-        1 * memberRepository.findAllById([1]) >> [new Member()]
+        1 * memberRepository.findAllById([1]) >> [new Member(id: 1)]
         with(list) {
             1 == size()
         }
@@ -185,7 +186,7 @@ class MemberServiceSpec extends Specification {
         def response = memberService.queryByAccount("root")
 
         then:
-        1 * memberRepository.findByAccount("root") >> Optional.of(new Member(account: "root", role: RoleEnum.ADMIN))
+        1 * memberRepository.findByAccount("root") >> Optional.of(new Member(account: "root"))
         with(response) {
             "root" == account
         }

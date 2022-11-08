@@ -1,6 +1,6 @@
 package com.featureprobe.api.dao.entity;
 
-import com.featureprobe.api.base.enums.RoleEnum;
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -16,16 +16,13 @@ import org.hibernate.annotations.ParamDef;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -46,22 +43,26 @@ public class Member extends AbstractAuditEntity {
     @Column(name = "visited_time")
     private Date visitedTime;
 
-    @Enumerated(EnumType.STRING)
-    private RoleEnum role;
-
     @Column(columnDefinition = "TINYINT")
     private Boolean deleted;
 
     private String source;
 
-    @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
-    @JoinTable(name = "organization_member", joinColumns = @JoinColumn(name = "member_id"),
-            inverseJoinColumns = @JoinColumn(name = "organization_id"))
-    @Fetch(FetchMode.JOIN)
-    private List<Organization> organizations = new ArrayList<>();
+    @OneToMany(mappedBy = "member", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+    private List<OrganizationMember> organizationMembers = new ArrayList<>();
 
     public Member(Long id, String account) {
         super.setId(id);
         this.account = account;
+    }
+
+    public List<Organization> getOrganizations() {
+        return organizationMembers.stream()
+                .map(OrganizationMember::getOrganization)
+                .collect(Collectors.toList());
+    }
+
+    public void addOrganization(Organization organization, OrganizationRoleEnum role) {
+        this.organizationMembers.add(new OrganizationMember(organization, this, role));
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -27,6 +28,7 @@ public class GuestAuthenticationProvider implements AuthenticationProvider {
     private OperationLogService operationLogService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         GuestAuthenticationToken token = (GuestAuthenticationToken) authentication;
         Optional<Member> member = memberService.findByAccount(token.getAccount());
@@ -36,12 +38,12 @@ public class GuestAuthenticationProvider implements AuthenticationProvider {
             memberService.updateVisitedTime(token.getAccount());
             operationLogService.save(log);
             return new UserPasswordAuthenticationToken(AuthenticatedMember.create(member.get()),
-                    Arrays.asList(new SimpleGrantedAuthority(member.get().getRole().name())));
+                    Arrays.asList());
         } else {
             Member newMember = guestService.initGuest(token.getAccount(), token.getSource());
             operationLogService.save(log);
             return new UserPasswordAuthenticationToken(AuthenticatedMember.create(newMember),
-                    Arrays.asList(new SimpleGrantedAuthority(newMember.getRole().name())));
+                    Arrays.asList());
         }
     }
 

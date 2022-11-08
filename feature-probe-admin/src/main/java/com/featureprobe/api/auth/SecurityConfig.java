@@ -22,7 +22,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 
 @Slf4j
@@ -32,12 +35,11 @@ import java.util.Arrays;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-
     private LoginFailureHandler loginFailureHandler;
 
     private LoginSuccessHandler loginSuccessHandler;
 
-    private JWTConfig JWTConfig;
+    private JWTConfig jwtConfig;
 
     private UserPasswordAuthenticationProvider userPasswordAuthenticationProvider;
 
@@ -99,7 +101,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticationEntryPoint(authenticationEntryPoint());
         http.addFilterBefore(userPasswordAuthenticationProcessingFilter(authenticationManager()),
                 UsernamePasswordAuthenticationFilter.class);
-        if (!JWTConfig.isGuestDisabled()) {
+        if (!jwtConfig.isGuestDisabled()) {
             http.addFilterBefore(guestAuthenticationProcessingFilter(authenticationManager()),
                     UserPasswordAuthenticationProcessingFilter.class);
         }

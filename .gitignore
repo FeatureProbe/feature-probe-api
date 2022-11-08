@@ -1,5 +1,6 @@
 output
 **/target/
+/target/
 /logs/
 *.iml
 .arcconfig
@@ -12,3 +13,4 @@ pom.xml.versionsBackup
 .DS_Store
 *.tar.gz
 *.log
+.fleet

@@ -14,10 +14,7 @@ import org.hibernate.annotations.ParamDef;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.ManyToMany;
 import javax.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,9 +33,6 @@ public class Organization extends AbstractAuditEntity {
 
     @Column(columnDefinition = "TINYINT")
     private boolean deleted;
-
-    @ManyToMany(mappedBy = "organizations")
-    private List<Member> members = new ArrayList<>();
 
     public Organization(String name) {
         this.name = name;
