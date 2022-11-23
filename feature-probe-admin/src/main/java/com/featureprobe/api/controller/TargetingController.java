@@ -7,6 +7,9 @@ import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
+import com.featureprobe.api.base.hook.Action;
+import com.featureprobe.api.base.hook.Hook;
+import com.featureprobe.api.base.hook.Resource;
 import com.featureprobe.api.dto.AfterTargetingVersionResponse;
 import com.featureprobe.api.dto.CancelSketchRequest;
 import com.featureprobe.api.dto.TargetingDiffResponse;
@@ -49,6 +52,7 @@ public class TargetingController {
     @PatchApiResponse
     @PatchMapping
     @Operation(summary = "Update targeting", description = "Update targeting.")
+    @Hook(resource = Resource.TOGGLE, action = Action.PUBLISH)
     public TargetingResponse update(
             @PathVariable("projectKey") String projectKey,
             @PathVariable("environmentKey") String environmentKey,
@@ -60,6 +64,7 @@ public class TargetingController {
     @PatchMapping("/sketch/publish")
     @CreateApiResponse
     @Operation(summary = "Publish targeting sketch", description = "Publish targeting sketch.")
+    @Hook(resource = Resource.TOGGLE, action = Action.CREATE_APPROVAL)
     public TargetingResponse publishSketch(@PathVariable("projectKey") String projectKey,
                                            @PathVariable("environmentKey") String environmentKey,
                                            @PathVariable("toggleKey") String toggleKey) {
@@ -69,6 +74,7 @@ public class TargetingController {
     @PatchMapping("/sketch/cancel")
     @CreateApiResponse
     @Operation(summary = "Cancel targeting sketch", description = "Cancel targeting sketch.")
+    @Hook(resource = Resource.TOGGLE, action = Action.REVOKE_APPROVAL)
     public BaseResponse cancelSketch(@PathVariable("projectKey") String projectKey,
                                      @PathVariable("environmentKey") String environmentKey,
                                      @PathVariable("toggleKey") String toggleKey,
@@ -81,6 +87,7 @@ public class TargetingController {
     @PatchApiResponse
     @PatchMapping("/approvalStatus")
     @Operation(summary = "Update targeting approval status", description = "Update targeting approval status.")
+    @Hook(resource = Resource.TOGGLE, action = Action.UPDATE_APPROVAL)
     public BaseResponse updateApprovalStatus(@PathVariable("projectKey") String projectKey,
                                              @PathVariable("environmentKey") String environmentKey,
                                              @PathVariable("toggleKey") String toggleKey,

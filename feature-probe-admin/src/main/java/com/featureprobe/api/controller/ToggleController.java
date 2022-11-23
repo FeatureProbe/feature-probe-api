@@ -6,6 +6,10 @@ import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
+import com.featureprobe.api.base.hook.Action;
+import com.featureprobe.api.base.hook.Hook;
+import com.featureprobe.api.base.hook.Resource;
+import com.featureprobe.api.dto.EnvironmentResponse;
 import com.featureprobe.api.dto.ToggleCreateRequest;
 import com.featureprobe.api.dto.ToggleItemResponse;
 import com.featureprobe.api.dto.ToggleResponse;
@@ -59,6 +63,7 @@ public class ToggleController {
     @CreateApiResponse
     @PostMapping
     @Operation(summary = "Create toggle", description = "Create a new toggle.")
+    @Hook(resource = Resource.TOGGLE, action = Action.CREATE)
     public ToggleResponse create(
             @PathVariable(name = "projectKey") String projectKey,
             @RequestBody @Validated ToggleCreateRequest toggleCreateRequest) {
@@ -70,10 +75,30 @@ public class ToggleController {
     @PatchApiResponse
     @PatchMapping("/{toggleKey}")
     @Operation(summary = "Update toggle", description = "Update a toggle.")
+    @Hook(resource = Resource.TOGGLE, action = Action.UPDATE)
     public ToggleResponse update(@PathVariable(name = "projectKey") String projectKey,
                                  @PathVariable(name = "toggleKey") String toggleKey,
                                  @RequestBody @Validated ToggleUpdateRequest toggleUpdateRequest) {
         return toggleService.update(projectKey, toggleKey, toggleUpdateRequest);
+    }
+
+
+    @PatchMapping("/{toggleKey}/offline")
+    @PatchApiResponse
+    @Operation(summary = "Offline toggle", description = "Offline a toggle.")
+    @Hook(resource = Resource.TOGGLE, action = Action.OFFLINE)
+    public ToggleResponse offline(@PathVariable(name = "projectKey") String projectKey,
+                                  @PathVariable(name = "toggleKey") String toggleKey) {
+        return toggleService.offline(projectKey, toggleKey);
+    }
+
+    @PatchMapping("/{toggleKey}/restore")
+    @PatchApiResponse
+    @Operation(summary = "Restore toggle", description = "Restore a offline toggle.")
+    @Hook(resource = Resource.TOGGLE, action = Action.RESTORE)
+    public ToggleResponse restore(@PathVariable(name = "projectKey") String projectKey,
+                                  @PathVariable(name = "toggleKey") String toggleKey) {
+        return toggleService.restore(projectKey, toggleKey);
     }
 
     @GetApiResponse

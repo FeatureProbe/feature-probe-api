@@ -71,7 +71,7 @@ class ProjectServiceSpec extends Specification {
         projectService = new ProjectService(projectRepository, environmentRepository, targetingSketchRepository, changeLogService, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
-        projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey, archived: true)
+        projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)
         setAuthContext("Admin", "ADMIN")
         applicationContext = Mock(ApplicationContext)
         SpringBeanManager.applicationContext = applicationContext
@@ -113,12 +113,8 @@ class ProjectServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey, environments: [new Environment()]))
-        1 * environmentRepository.saveAll(_)
         1 * projectRepository.existsByName(projectUpdateRequest.name) >> false
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey)
-        1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
-        1 * dictionaryRepository.save(_)
-        1 * changeLogRepository.save(_)
         with(ret) {
             projectName == it.name
             projectKey == it.key
@@ -170,9 +166,9 @@ class ProjectServiceSpec extends Specification {
 
     def "create preference"() {
         when:
-        projectService.createPreference(projectKey, new PreferenceCreateRequest(approvalSettings: [new ApprovalSettings(environmentKey: "dev", enable: true, reviewers: ["Admin"])]))
+        projectService.updateApprovalSettings(projectKey, new PreferenceCreateRequest(approvalSettings: [new ApprovalSettings(environmentKey: "dev", enable: true, reviewers: ["Admin"])]))
         then:
-        1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "dev")]
+        2 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "dev")]
         1 * environmentRepository.saveAll(_)
     }
 

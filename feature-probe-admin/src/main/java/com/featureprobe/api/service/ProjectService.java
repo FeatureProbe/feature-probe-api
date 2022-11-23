@@ -29,10 +29,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.ArrayList;
@@ -69,9 +67,6 @@ public class ProjectService {
     public ProjectResponse update(String projectKey, ProjectUpdateRequest updateRequest) {
         Project project = projectRepository.findByKey(projectKey)
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
-        if (updateRequest.getArchived() != null && updateRequest.getArchived()) {
-            archiveAllEnvironments(project.getEnvironments());
-        }
         if (!StringUtils.equals(project.getName(), updateRequest.getName())) {
             validateName(updateRequest.getName());
         }
@@ -80,7 +75,17 @@ public class ProjectService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void createPreference(String projectKey, PreferenceCreateRequest createRequest) {
+    public ProjectResponse delete(String projectKey) {
+        Project project = projectRepository.findByKey(projectKey)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
+        project.setArchived(true);
+        archiveAllEnvironments(project.getEnvironments());
+        return ProjectMapper.INSTANCE.entityToResponse(projectRepository.save(project));
+    }
+
+
+    @Transactional(rollbackFor = Exception.class)
+    public List<ApprovalSettings> updateApprovalSettings(String projectKey, PreferenceCreateRequest createRequest) {
         Map<String, ApprovalSettings> approvalSettingsMap = createRequest.getApprovalSettings().stream()
                 .collect(Collectors.toMap(ApprovalSettings::getEnvironmentKey, Function.identity()));
         if (CollectionUtils.isNotEmpty(createRequest.getApprovalSettings())) {
@@ -89,6 +94,7 @@ public class ProjectService {
                     .mapEntity(approvalSettingsMap.get(environment.getKey()), environment));
             environmentRepository.saveAll(environments);
         }
+        return approvalSettingsList(projectKey);
     }
 
     public List<ApprovalSettings> approvalSettingsList(String projectKey) {

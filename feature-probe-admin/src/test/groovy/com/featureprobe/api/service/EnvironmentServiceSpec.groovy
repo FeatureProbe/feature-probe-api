@@ -88,7 +88,7 @@ class EnvironmentServiceSpec extends Specification {
                 toggleRepository, targetingRepository, changeLogService, includeArchivedToggleService, entityManager)
         includeArchivedEnvironmentService = new IncludeArchivedEnvironmentService(environmentRepository, entityManager)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
-        updateRequest = new EnvironmentUpdateRequest(name: "env_test_update", resetServerSdk: true, resetClientSdk: true, archived: true)
+        updateRequest = new EnvironmentUpdateRequest(name: "env_test_update", resetServerSdk: true, resetClientSdk: true)
         setAuthContext("Admin", "ADMIN")
         applicationContext = Mock(ApplicationContext)
         SpringBeanManager.applicationContext = applicationContext
@@ -122,14 +122,11 @@ class EnvironmentServiceSpec extends Specification {
         when:
         def ret = environmentService.update(projectKey, environmentKey, updateRequest)
         then:
-        1 * environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey, environmentKey, false) >>
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
                 Optional.of(new Environment(name: environmentName, key: environmentKey, version: 1))
         1 * environmentRepository.existsByProjectKeyAndName(projectKey, updateRequest.name) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
-        1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
-        1 * dictionaryRepository.save(_)
-        1 * changeLogRepository.save(_)
         with(ret) {
             environmentName == it.name
             environmentKey == it.key

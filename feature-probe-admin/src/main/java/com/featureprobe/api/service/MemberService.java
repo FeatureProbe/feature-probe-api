@@ -17,6 +17,7 @@ import com.featureprobe.api.dao.repository.OrganizationRepository;
 import com.featureprobe.api.dao.utils.PageRequestUtil;
 import com.featureprobe.api.dto.MemberCreateRequest;
 import com.featureprobe.api.dto.MemberModifyPasswordRequest;
+import com.featureprobe.api.dto.MemberItemResponse;
 import com.featureprobe.api.dto.MemberResponse;
 import com.featureprobe.api.dto.MemberSearchRequest;
 import com.featureprobe.api.dto.MemberUpdateRequest;
@@ -64,8 +65,7 @@ public class MemberService {
     @Transactional(rollbackFor = Exception.class)
     public List<MemberResponse> create(MemberCreateRequest createRequest) {
         List<Member> savedMembers = memberRepository.saveAll(newNumbers(createRequest));
-        return savedMembers.stream().map(item ->
-                MemberMapper.INSTANCE.entityToResponse(item)).collect(Collectors.toList());
+        return savedMembers.stream().map(item -> translateResponse(item)).collect(Collectors.toList());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -80,16 +80,15 @@ public class MemberService {
                 .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ORGANIZATION_MEMBER,
                         member.getAccount()));
         organizationMember.setRole(updateRequest.getRole());
-
-        return MemberMapper.INSTANCE.entityToResponse(memberRepository.save(member));
+        return translateResponse(memberRepository.save(member));
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public MemberResponse modifyPassword(MemberModifyPasswordRequest modifyPasswordRequest) {
+    public MemberItemResponse modifyPassword(MemberModifyPasswordRequest modifyPasswordRequest) {
         Member member = findLoggedInMember();
         verifyPassword(modifyPasswordRequest.getOldPassword(), member.getPassword());
         member.setPassword(passwordEncoder.encode(modifyPasswordRequest.getNewPassword()));
-        return MemberMapper.INSTANCE.entityToResponse(memberRepository.save(member));
+        return MemberMapper.INSTANCE.entityToItemResponse(memberRepository.save(member));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -109,7 +108,17 @@ public class MemberService {
                         account + "_" + TenantContext.getCurrentTenant()));
         organizationMemberRepository.delete(organizationMember);
         member.setDeleted(true);
-        return MemberMapper.INSTANCE.entityToResponse(memberRepository.save(member));
+        return translateResponse(memberRepository.save(member));
+    }
+
+    private MemberResponse translateResponse(Member member) {
+        MemberResponse memberResponse = MemberMapper.INSTANCE.entityToResponse(member);
+        OrganizationMember organizationMember = organizationMemberRepository.findByOrganizationIdAndMemberId(
+                TenantContext.getCurrentOrganization().getOrganizationId(), member.getId()).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.ORGANIZATION_MEMBER,
+                        TenantContext.getCurrentOrganization().getOrganizationId() + "-" + member.getId()));
+        memberResponse.setRole(organizationMember.getRole().name());
+        return memberResponse;
     }
 
     private List<Member> newNumbers(MemberCreateRequest createRequest) {
@@ -149,7 +158,7 @@ public class MemberService {
         }
     }
 
-    public Page<MemberResponse> list(MemberSearchRequest searchRequest) {
+    public Page<MemberItemResponse> list(MemberSearchRequest searchRequest) {
         Pageable pageable = PageRequestUtil.toPageable(searchRequest, Sort.Direction.DESC, "createdTime");
         Specification<OrganizationMember> spec = (root, query, cb) -> {
             Predicate p1 = cb.equal(root.get("organization").get("id"), TenantContext.getCurrentOrganization()
@@ -180,12 +189,13 @@ public class MemberService {
 
     }
 
-    private Page<MemberResponse> convertToResponse(long ownerCount,
-                                                   boolean currentIsOwner,
-                                                   Page<OrganizationMember> organizationMembers,
-                                                   Map<Long, Member> idToMember) {
+    private Page<MemberItemResponse> convertToResponse(long ownerCount,
+                                                       boolean currentIsOwner,
+                                                       Page<OrganizationMember> organizationMembers,
+                                                       Map<Long, Member> idToMember) {
         return organizationMembers.map(item -> {
-            MemberResponse response = MemberMapper.INSTANCE.entityToResponse(idToMember.get(item.getMember().getId()));
+            MemberItemResponse response = MemberMapper.INSTANCE
+                    .entityToItemResponse(idToMember.get(item.getMember().getId()));
             if (item.getRole() == null) {
                 response.setAllowEdit(false);
                 return response;
@@ -201,9 +211,9 @@ public class MemberService {
         });
     }
 
-    public MemberResponse queryByAccount(String account) {
+    public MemberItemResponse queryByAccount(String account) {
         Member member = findMemberByAccount(account, true);
-        return MemberMapper.INSTANCE.entityToResponse(member);
+        return MemberMapper.INSTANCE.entityToItemResponse(member);
     }
 
     private Member findLoggedInMember() {

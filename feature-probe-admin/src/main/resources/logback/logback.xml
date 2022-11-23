@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration debug="true" scan="true" scanPeriod="30 seconds">
+<configuration debug="true">
     <property name="encoding" value="UTF-8"/>
     <springProperty name="LOG_PATH" source="logging.path"/>
     <property name="normal-pattern" value="[%-5level][%d{yyyy-MM-dd'T'HH:mm:ss.SSS+0800}][%thread][%F:%line] %msg%n"/>

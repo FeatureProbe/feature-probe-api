@@ -11,6 +11,4 @@ public class EnvironmentUpdateRequest {
 
     private boolean resetClientSdk;
 
-    private Boolean archived;
-
 }
