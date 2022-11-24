@@ -43,7 +43,7 @@ class ProjectServiceSpec extends Specification {
 
     ProjectUpdateRequest projectUpdateRequest
 
-    PublishMessageRepository changeLogRepository;
+    PublishMessageRepository publishMessageRepository;
 
     DictionaryRepository dictionaryRepository;
 
@@ -64,9 +64,9 @@ class ProjectServiceSpec extends Specification {
         projectRepository = Mock(ProjectRepository)
         environmentRepository = Mock(EnvironmentRepository)
         targetingSketchRepository = Mock(TargetingSketchRepository)
-        changeLogRepository = Mock(PublishMessageRepository)
+        publishMessageRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
-        changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
+        changeLogService = new ChangeLogService(publishMessageRepository, environmentRepository, dictionaryRepository)
         entityManager = Mock(SessionImpl)
         projectService = new ProjectService(projectRepository, environmentRepository, targetingSketchRepository, changeLogService, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
@@ -99,7 +99,7 @@ class ProjectServiceSpec extends Specification {
                 environments: [new Environment(version: 1)])
         1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
         1 * dictionaryRepository.save(_)
-        1 * changeLogRepository.save(_)
+        1 * publishMessageRepository.save(_)
         with(ret) {
             projectName == ret.name
             projectKey == ret.key
@@ -137,6 +137,19 @@ class ProjectServiceSpec extends Specification {
         1 * projectRepository.existsByName(projectName) >> true
         then:
         thrown ResourceConflictException
+    }
+
+    def "delete a project"() {
+        when:
+        def delete = projectService.delete(projectKey)
+        then:
+        1 * projectRepository.findByKey(projectKey) >>
+                Optional.of(new Project(key: projectKey, environments: [new Environment(version: 1)]))
+        1 * dictionaryRepository.findByKey("all_sdk_key_map") >> Optional.of(new Dictionary(value: "1"))
+        1 * dictionaryRepository.save(_)
+        1 * publishMessageRepository.save(_)
+        1 * environmentRepository.saveAll(_)
+        1 * projectRepository.save(_) >> new Project(key: projectKey)
     }
 
     def "validate projecte by name&key not exists"() {

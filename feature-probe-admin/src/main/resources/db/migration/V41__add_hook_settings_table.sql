@@ -8,6 +8,7 @@ create table webhook_settings
     `type`           varchar(64) NOT NULL,
     `description`    varchar(1024) NOT NULL,
     `lasted_status`  varchar(64),
+    `lasted_status_code`  int,
     `lasted_time`    datetime,
     `modified_by`    bigint(20)   NOT NULL DEFAULT 0,
     `created_by`     bigint(20)   NOT NULL DEFAULT 0,

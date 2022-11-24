@@ -1,11 +1,15 @@
 package com.featureprobe.api.dao.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.featureprobe.api.dao.listener.TenantEntityListener;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Filter;
@@ -23,7 +27,9 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Builder
 @Entity
 @Table(name = "tag")
@@ -46,8 +52,5 @@ public class Tag extends AbstractAuditEntity implements TenantSupport {
 
     @Column(name = "organization_id")
     private Long organizationId;
-
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "tags")
-    private Set<Toggle> toggles;
 
 }

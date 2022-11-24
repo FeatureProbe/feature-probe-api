@@ -59,6 +59,7 @@ public class WebHookService {
         if (!webHookSettings.getName().equals(updateRequest.getName())) {
             checkName(updateRequest.getName());
         }
+        checkUrl(updateRequest.getUrl());
         WebHookMapper.INSTANCE.mapEntity(updateRequest, webHookSettings);
         return WebHookMapper.INSTANCE.entityToResponse(webHookSettingsRepository.save(webHookSettings));
     }

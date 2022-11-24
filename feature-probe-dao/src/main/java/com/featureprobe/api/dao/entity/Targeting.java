@@ -57,7 +57,7 @@ public class Targeting extends AbstractAuditEntity implements TenantSupport {
     private String content;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "publish_time", nullable = false)
+    @Column(name = "publish_time")
     private Date publishTime;
 
     @Column(columnDefinition = "BIT", length = 1)

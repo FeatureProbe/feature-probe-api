@@ -4,12 +4,12 @@ import com.featureprobe.api.base.hook.HookSettingsStatus;
 import com.featureprobe.api.base.hook.ICallback;
 import com.featureprobe.api.base.hook.IHookQueue;
 import com.featureprobe.api.base.hook.IHookRuleBuilder;
-import com.featureprobe.api.base.model.WebHook;
 import com.featureprobe.api.base.model.HookContext;
 import com.featureprobe.api.dao.entity.WebHookSettings;
 import com.featureprobe.api.dao.repository.WebHookSettingsRepository;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 public class HookProcessor {
 
     private final WebHookSettingsRepository webHookSettingsRepository;
+
+    private ApplicationEventPublisher eventPublisher;
 
     private final IHookQueue hookQueue;
 
@@ -40,9 +42,10 @@ public class HookProcessor {
 
 
     public HookProcessor(IHookQueue hookQueue, WebHookSettingsRepository webHookSettingsRepository,
-                         IHookRuleBuilder hookRuleBuilder) {
+                         ApplicationEventPublisher eventPublisher, IHookRuleBuilder hookRuleBuilder) {
         this.hookQueue = hookQueue;
         this.webHookSettingsRepository = webHookSettingsRepository;
+        this.eventPublisher = eventPublisher;
         this.hookRuleBuilder = hookRuleBuilder;
         hookProcessorThread =  threadFactory.newThread(() -> {
             handleHook(hookQueue);
@@ -61,7 +64,7 @@ public class HookProcessor {
                         .map(webHookSettings -> translateHookConfig(webHookSettings)).filter(x -> x!=null)
                         .collect(Collectors.toList());
                 for(WebHook webHook : webHooks) {
-                    webHook.callback(hookContext);
+                    webHook.callback(hookContext, eventPublisher);
                 }
             } catch (Exception e) {
                 log.error("FeatureProbe hook process error", e);

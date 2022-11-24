@@ -15,6 +15,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.springframework.stereotype.Component;
 import java.time.Duration;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -44,7 +45,7 @@ public class CommonCallback implements ICallback {
                     .post(requestBody)
                     .build();
             Response response = httpClient.newCall(request).execute();
-            log.info("Common Callback response： {}", response);
+            log.debug("Common Callback response： {}", response);
             result.setSuccess(response.isSuccessful());
             result.setRequestBody(requestBodyStr);
             result.setStatusCode(response.code());
@@ -53,8 +54,10 @@ public class CommonCallback implements ICallback {
             log.error("Common Callback error", e);
             result.setSuccess(false);
             result.setErrorMessage(e.getMessage());
+            result.setTime(new Date());
             return result;
         }
+        result.setTime(new Date());
         return result;
     }
 

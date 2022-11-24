@@ -2,6 +2,7 @@ package com.featureprobe.api.mapper;
 
 import com.featureprobe.api.dto.ApprovalRecordResponse;
 import com.featureprobe.api.dao.entity.ApprovalRecord;
+import com.featureprobe.api.dto.ApprovalResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
@@ -13,4 +14,7 @@ public interface ApprovalRecordMapper extends BaseMapper {
 
     @Mapping(target = "reviewers", ignore = true)
     ApprovalRecordResponse entityToResponse(ApprovalRecord approvalRecord);
+
+    @Mapping(target = "approvalDate", source = "modifiedTime")
+    ApprovalResponse entityToApprovalResponse(ApprovalRecord approvalRecord);
 }

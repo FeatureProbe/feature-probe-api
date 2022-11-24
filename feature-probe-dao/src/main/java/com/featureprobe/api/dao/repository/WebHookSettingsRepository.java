@@ -17,5 +17,7 @@ public interface WebHookSettingsRepository extends JpaRepository<WebHookSettings
 
     Optional<WebHookSettings> findByName(String name);
 
+    Optional<WebHookSettings> findByOrganizationIdAndName(Long organizationId, String name);
+
 
 }

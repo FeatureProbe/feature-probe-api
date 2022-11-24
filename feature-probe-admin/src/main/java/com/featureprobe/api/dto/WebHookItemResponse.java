@@ -19,6 +19,8 @@ public class WebHookItemResponse {
 
     private String lastedStatus;
 
+    private Integer lastedStatusCode;
+
     private Date lastedTime;
 
     private Date createdTime;

@@ -52,6 +52,9 @@ public class WebHookSettings extends AbstractAuditEntity implements TenantSuppor
     @Column(name = "lasted_status")
     private String lastedStatus;
 
+    @Column(name = "lasted_status_code")
+    private Integer lastedStatusCode;
+
     @Column(name = "lasted_time")
     private Date lastedTime;
 

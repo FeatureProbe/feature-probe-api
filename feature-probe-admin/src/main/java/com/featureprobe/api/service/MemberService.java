@@ -102,22 +102,16 @@ public class MemberService {
     public MemberResponse delete(String account) {
         verifyAdminPrivileges();
         Member member = findMemberByAccount(account);
-        OrganizationMember organizationMember = organizationMemberRepository
-                .findByOrganizationIdAndMemberId(Long.parseLong(TenantContext.getCurrentTenant()), member.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ORGANIZATION_MEMBER,
-                        account + "_" + TenantContext.getCurrentTenant()));
-        organizationMemberRepository.delete(organizationMember);
         member.setDeleted(true);
-        return translateResponse(memberRepository.save(member));
+        member.deleteOrganization(Long.parseLong(TenantContext.getCurrentTenant()));
+        memberRepository.save(member);
+        return translateResponse(member);
     }
 
     private MemberResponse translateResponse(Member member) {
         MemberResponse memberResponse = MemberMapper.INSTANCE.entityToResponse(member);
-        OrganizationMember organizationMember = organizationMemberRepository.findByOrganizationIdAndMemberId(
-                TenantContext.getCurrentOrganization().getOrganizationId(), member.getId()).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.ORGANIZATION_MEMBER,
-                        TenantContext.getCurrentOrganization().getOrganizationId() + "-" + member.getId()));
-        memberResponse.setRole(organizationMember.getRole().name());
+        OrganizationRoleEnum role = member.getRole(Long.parseLong(TenantContext.getCurrentTenant()));
+        memberResponse.setRole(role == null ? null : role.name());
         return memberResponse;
     }
 
