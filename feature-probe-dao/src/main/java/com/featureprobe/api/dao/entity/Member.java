@@ -69,7 +69,7 @@ public class Member extends AbstractAuditEntity {
     public void deleteOrganization(Long organizationId) {
         OrganizationMember deleteOrganizationMember = null;
         for (OrganizationMember organizationMember : organizationMembers) {
-            if (organizationMember.getOrganization().getId() == organizationId) {
+            if (organizationMember.getOrganization().getId().equals(organizationId)) {
                 deleteOrganizationMember = organizationMember;
             }
         }

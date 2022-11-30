@@ -7,6 +7,8 @@ import java.util.Date;
 @Data
 public class ApprovalResponse {
 
+    private String title;
+
     private String projectKey;
 
     private String environmentKey;
@@ -16,6 +18,8 @@ public class ApprovalResponse {
     private ApprovalStatusEnum status;
 
     private String viewers;
+
+    private String comment;
 
     private String approvalBy;
 
