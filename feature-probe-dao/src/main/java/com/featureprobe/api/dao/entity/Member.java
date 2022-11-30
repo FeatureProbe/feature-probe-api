@@ -78,7 +78,7 @@ public class Member extends AbstractAuditEntity {
 
     public OrganizationRoleEnum getRole(Long organizationId) {
         for (OrganizationMember organizationMember : organizationMembers) {
-            if (organizationMember.getOrganization().getId() == organizationId) {
+            if (organizationMember.getOrganization().getId().equals(organizationId)) {
                 return organizationMember.getRole();
             }
         }
