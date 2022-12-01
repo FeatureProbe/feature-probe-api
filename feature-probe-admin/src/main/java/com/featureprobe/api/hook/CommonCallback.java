@@ -1,10 +1,8 @@
 package com.featureprobe.api.hook;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.featureprobe.api.base.hook.ICallback;
 import com.featureprobe.api.base.model.CallbackResult;
 import com.featureprobe.api.base.model.HookContext;
@@ -17,16 +15,11 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.springframework.stereotype.Component;
-import sun.misc.BASE64Encoder;
-
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -37,7 +30,6 @@ public class CommonCallback implements ICallback {
     private static final String USER_AGENT_VALUE = "FeatureProbe-Webhook/1.0";
 
     private static final String SIGN_KEY = "X-FeatureProbe-Sign";
-
 
 
     private final OkHttpClient httpClient = new OkHttpClient.Builder()
@@ -89,7 +81,7 @@ public class CommonCallback implements ICallback {
             Mac mac = Mac.getInstance("HmacSHA1");
             mac.init(signinKey);
             byte[] rawHmac = mac.doFinal(content.getBytes("UTF8"));
-            return new BASE64Encoder().encode(rawHmac);
+            return Base64.getEncoder().encodeToString(rawHmac);
         } catch (Exception e) {
             log.error("WebHook Callback failed sign for key:{} and content:{}", secretKey, content, e);
             throw new RuntimeException(e);
