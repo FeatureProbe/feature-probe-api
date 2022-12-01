@@ -16,6 +16,8 @@ public class WebHookResponse {
 
     private String url;
 
+    private String secretKey;
+
     private String description;
 
     private Date createdTime;

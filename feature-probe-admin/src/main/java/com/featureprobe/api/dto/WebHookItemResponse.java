@@ -15,6 +15,8 @@ public class WebHookItemResponse {
 
     private String url;
 
+    private String secretKey;
+
     private String description;
 
     private String lastedStatus;

@@ -15,6 +15,7 @@ import com.featureprobe.api.dto.WebHookUpdateRequest;
 import com.featureprobe.api.mapper.WebHookMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,16 +23,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -49,6 +51,8 @@ public class WebHookService {
         checkUrl(createRequest.getUrl());
         WebHookSettings webHookSettings = WebHookMapper.INSTANCE.requestToEntity(createRequest);
         webHookSettings.setType(CallbackType.COMMON);
+        webHookSettings.setSecretKey(DigestUtils.sha1Hex(UUID.randomUUID().toString()
+                .getBytes(StandardCharsets.UTF_8)));
         return WebHookMapper.INSTANCE.entityToResponse(webHookSettingsRepository.save(webHookSettings));
     }
 
@@ -97,7 +101,6 @@ public class WebHookService {
         Page<WebHookSettings> all = webHookSettingsRepository.findAll(resultSpec, pageable);
         return all.map(entity -> WebHookMapper.INSTANCE.entityToItemResponse(entity));
     }
-
 
     private void checkName(String name) {
         Optional<WebHookSettings> webHookSettings = webHookSettingsRepository.findByName(name);

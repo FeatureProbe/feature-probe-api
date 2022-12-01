@@ -1,8 +1,10 @@
 package com.featureprobe.api.hook;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
 @Data
+@JsonPropertyOrder(alphabetic = true)
 public class CallbackRequestBody {
 
     private String resource;

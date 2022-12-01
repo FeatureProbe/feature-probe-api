@@ -47,6 +47,9 @@ public class WebHookSettings extends AbstractAuditEntity implements TenantSuppor
     @Enumerated(EnumType.STRING)
     private CallbackType type;
 
+    @Column(name = "secret_key")
+    private String secretKey;
+
     private String description;
 
     @Column(name = "lasted_status")

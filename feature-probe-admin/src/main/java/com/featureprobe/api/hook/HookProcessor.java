@@ -79,6 +79,7 @@ public class HookProcessor {
         webHook.setUrl(webHookSettings.getUrl());
         webHook.setOrganizationId(webHookSettings.getOrganizationId());
         webHook.setRule(hookRuleBuilder.build(webHookSettings.getId()));
+        webHook.setSecretKey(webHookSettings.getSecretKey());
         ICallback callback = CallbackAbilityContainer.get(webHookSettings.getType());
         if (Objects.isNull(callback)) {
             return null;

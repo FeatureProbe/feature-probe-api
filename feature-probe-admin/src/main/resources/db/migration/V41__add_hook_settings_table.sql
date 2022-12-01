@@ -6,6 +6,7 @@ create table webhook_settings
     `status`         varchar(64) default 0,
     `url`            varchar(2048) NOT NULL,
     `type`           varchar(64) NOT NULL,
+    `secret_key`     varchar(1024) NOT NULL,
     `description`    varchar(1024) NOT NULL,
     `lasted_status`  varchar(64),
     `lasted_status_code`  int,

@@ -21,9 +21,11 @@ public class WebHook {
 
     private String url;
 
+    private String secretKey;
+
     public void callback(HookContext hookContext, ApplicationEventPublisher eventPublisher) {
         if (rule.isHid(hookContext)) {
-            CallbackResult result = hook.callback(hookContext, url);
+            CallbackResult result = hook.callback(hookContext, url, secretKey);
             WebHookPostEvent postEvent = new WebHookPostEvent(organizationId, name, result, this);
             eventPublisher.publishEvent(postEvent);
         }
