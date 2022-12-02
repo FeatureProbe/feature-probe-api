@@ -43,9 +43,9 @@ class ProjectServiceSpec extends Specification {
 
     ProjectUpdateRequest projectUpdateRequest
 
-    PublishMessageRepository publishMessageRepository;
+    PublishMessageRepository publishMessageRepository
 
-    DictionaryRepository dictionaryRepository;
+    DictionaryRepository dictionaryRepository
 
     ChangeLogService changeLogService
 
@@ -141,7 +141,7 @@ class ProjectServiceSpec extends Specification {
 
     def "delete a project"() {
         when:
-        def delete = projectService.delete(projectKey)
+        projectService.delete(projectKey)
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(key: projectKey, environments: [new Environment(version: 1)]))

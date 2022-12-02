@@ -124,8 +124,6 @@ public class ToggleService {
 
     @Transactional(rollbackFor = Exception.class)
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
-        Project project = projectRepository.findByKey(projectKey).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
         Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).orElseThrow(() ->
                 new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
         if (StringUtils.isNotBlank(updateRequest.getName()) &&

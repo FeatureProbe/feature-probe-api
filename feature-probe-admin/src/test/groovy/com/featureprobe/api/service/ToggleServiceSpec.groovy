@@ -5,7 +5,6 @@ import com.featureprobe.api.config.AppConfig
 import com.featureprobe.api.base.enums.SketchStatusEnum
 import com.featureprobe.api.base.enums.ValidateTypeEnum
 import com.featureprobe.api.base.enums.VisitFilter
-import com.featureprobe.api.dao.entity.Dictionary
 import com.featureprobe.api.dao.exception.ResourceConflictException
 import com.featureprobe.api.dto.ToggleCreateRequest
 import com.featureprobe.api.dto.ToggleSearchRequest
@@ -346,7 +345,6 @@ class ToggleServiceSpec extends Specification {
 
         then:
         response
-        1 * projectRepository.findByKey(projectKey) >> Optional.of(new Project(environments: [new Environment(serverSdkKey: "server-123", clientSdkKey: "client-123", version: 1)]))
         1 * toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey) >> Optional.of(new Toggle(projectKey: projectKey,
                 key: toggleKey, name: "toggle1", desc: "init", createdTime: new Date()))
         1 * toggleRepository.existsByProjectKeyAndName(projectKey, "toggle2") >> false

@@ -43,13 +43,13 @@ public class HookAspect {
         context.setOperator(TokenHelper.getAccount());
         context.setOrganizationId(Long.parseLong(TenantContext.getCurrentTenant()));
         Object ret = jp.proceed();
-        composeParam(jp, context, action);
+        composeParam(jp, context);
         context.setResponse(ret);
         hookQueue.push(context);
         return ret;
     }
 
-    private void composeParam(ProceedingJoinPoint jp, HookContext context, Action action) {
+    private void composeParam(ProceedingJoinPoint jp, HookContext context) {
         Object requestBody = getRequestBody(jp);
         if (Objects.nonNull(requestBody)) {
             context.setRequest(requestBody);
@@ -140,7 +140,6 @@ public class HookAspect {
     private Object getPathArg(ProceedingJoinPoint jp, String name) {
         MethodSignature signature = (MethodSignature) jp.getSignature();
         Method method = signature.getMethod();
-        LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
         Object[] args = jp.getArgs();
         for (int i = 0 ; i < parameterAnnotations.length; i++) {

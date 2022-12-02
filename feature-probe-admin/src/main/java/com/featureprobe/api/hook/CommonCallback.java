@@ -3,6 +3,7 @@ package com.featureprobe.api.hook;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.featureprobe.api.base.exception.SignatureException;
 import com.featureprobe.api.base.hook.ICallback;
 import com.featureprobe.api.base.model.CallbackResult;
 import com.featureprobe.api.base.model.HookContext;
@@ -84,9 +85,8 @@ public class CommonCallback implements ICallback {
             return Base64.getEncoder().encodeToString(rawHmac);
         } catch (Exception e) {
             log.error("WebHook Callback failed sign for key:{} and content:{}", secretKey, content, e);
-            throw new RuntimeException(e);
+            throw new SignatureException(e.getMessage());
         }
-
     }
 
 }

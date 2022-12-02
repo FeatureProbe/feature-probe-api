@@ -5,7 +5,6 @@ import com.featureprobe.api.component.SpringBeanManager
 import com.featureprobe.api.dao.exception.ResourceConflictException
 import com.featureprobe.api.dto.EnvironmentCreateRequest
 import com.featureprobe.api.dto.EnvironmentQueryRequest
-import com.featureprobe.api.dto.EnvironmentResponse
 import com.featureprobe.api.dto.EnvironmentUpdateRequest
 import com.featureprobe.api.dao.entity.Dictionary
 import com.featureprobe.api.dao.entity.Environment

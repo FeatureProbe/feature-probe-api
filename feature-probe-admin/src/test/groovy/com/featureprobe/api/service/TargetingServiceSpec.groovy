@@ -12,7 +12,6 @@ import com.featureprobe.api.dao.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.CancelSketchRequest
 import com.featureprobe.api.dto.TargetingApprovalRequest
 import com.featureprobe.api.dto.TargetingPublishRequest
-import com.featureprobe.api.dto.TargetingResponse
 import com.featureprobe.api.dto.TargetingVersionRequest
 import com.featureprobe.api.dto.UpdateApprovalStatusRequest
 import com.featureprobe.api.dao.entity.ApprovalRecord

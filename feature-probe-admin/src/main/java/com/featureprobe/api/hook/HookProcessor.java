@@ -25,11 +25,7 @@ public class HookProcessor {
 
     private ApplicationEventPublisher eventPublisher;
 
-    private final IHookQueue hookQueue;
-
     private final IHookRuleBuilder hookRuleBuilder;
-
-    private final Thread hookProcessorThread;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -43,11 +39,10 @@ public class HookProcessor {
 
     public HookProcessor(IHookQueue hookQueue, WebHookSettingsRepository webHookSettingsRepository,
                          ApplicationEventPublisher eventPublisher, IHookRuleBuilder hookRuleBuilder) {
-        this.hookQueue = hookQueue;
         this.webHookSettingsRepository = webHookSettingsRepository;
         this.eventPublisher = eventPublisher;
         this.hookRuleBuilder = hookRuleBuilder;
-        hookProcessorThread =  threadFactory.newThread(() -> {
+        Thread hookProcessorThread =  threadFactory.newThread(() -> {
             handleHook(hookQueue);
         });
         hookProcessorThread.setDaemon(true);
