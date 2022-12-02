@@ -39,7 +39,7 @@ class EnvironmentServiceSpec extends Specification {
 
     EnvironmentService environmentService
 
-    PublishMessageRepository changeLogRepository
+    PublishMessageRepository publishMessageRepository
 
     DictionaryRepository dictionaryRepository
 
@@ -80,15 +80,15 @@ class EnvironmentServiceSpec extends Specification {
         toggleRepository = Mock(ToggleRepository)
         targetingRepository = Mock(TargetingRepository)
         entityManager = Mock(SessionImpl)
-        changeLogRepository = Mock(PublishMessageRepository)
+        publishMessageRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
         includeArchivedToggleService = new IncludeArchivedToggleService(toggleRepository, entityManager)
-        changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
+        changeLogService = new ChangeLogService(publishMessageRepository, environmentRepository, dictionaryRepository)
         environmentService = new EnvironmentService(environmentRepository, projectRepository,
                 toggleRepository, targetingRepository, changeLogService, includeArchivedToggleService, entityManager)
         includeArchivedEnvironmentService = new IncludeArchivedEnvironmentService(environmentRepository, entityManager)
         createRequest = new EnvironmentCreateRequest(name: environmentName, key: environmentKey)
-        updateRequest = new EnvironmentUpdateRequest(name: "env_test_update", resetServerSdk: true, resetClientSdk: true, archived: true)
+        updateRequest = new EnvironmentUpdateRequest(name: "env_test_update", resetServerSdk: true, resetClientSdk: true)
         setAuthContext("Admin", "ADMIN")
         applicationContext = Mock(ApplicationContext)
         SpringBeanManager.applicationContext = applicationContext
@@ -108,7 +108,7 @@ class EnvironmentServiceSpec extends Specification {
         1 * targetingRepository.saveAll(_)
         1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
         1 * dictionaryRepository.save(_)
-        1 * changeLogRepository.save(_)
+        1 * publishMessageRepository.save(_)
         with(ret) {
             environmentName == it.name
             environmentKey == it.key
@@ -122,20 +122,41 @@ class EnvironmentServiceSpec extends Specification {
         when:
         def ret = environmentService.update(projectKey, environmentKey, updateRequest)
         then:
-        1 * environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey, environmentKey, false) >>
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >>
                 Optional.of(new Environment(name: environmentName, key: environmentKey, version: 1))
         1 * environmentRepository.existsByProjectKeyAndName(projectKey, updateRequest.name) >> false
         1 * environmentRepository.save(_) >> new Environment(name: environmentName, key: environmentKey,
                 serverSdkKey: serverSdkKey, clientSdkKey: clientSdkKey)
-        1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
-        1 * dictionaryRepository.save(_)
-        1 * changeLogRepository.save(_)
         with(ret) {
             environmentName == it.name
             environmentKey == it.key
             serverSdkKey == it.serverSdkKey
             clientSdkKey == it.clientSdkKey
         }
+    }
+
+    def "offline a environment"(){
+        when:
+        def offline = environmentService.offline(projectKey, environmentKey)
+        then:
+        1 * environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey,
+                environmentKey, false) >> Optional.of(new Environment(key: environmentKey))
+        1 * dictionaryRepository.findByKey("all_sdk_key_map") >> Optional.of(new Dictionary(value: "1"))
+        1 * dictionaryRepository.save(_)
+        1 * publishMessageRepository.save(_)
+        1 * environmentRepository.save(_)
+    }
+
+    def "restore a environment"(){
+        when:
+        environmentService.restore(projectKey, environmentKey)
+        then:
+        1 * environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey,
+                environmentKey, true) >> Optional.of(new Environment(key: environmentKey))
+        1 * dictionaryRepository.findByKey("all_sdk_key_map") >> Optional.of(new Dictionary(value: "1"))
+        1 * dictionaryRepository.save(_)
+        1 * publishMessageRepository.save(_)
+        1 * environmentRepository.save(_)
     }
 
     def "query a environment"() {

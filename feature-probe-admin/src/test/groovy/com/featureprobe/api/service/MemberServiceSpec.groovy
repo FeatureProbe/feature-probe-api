@@ -2,7 +2,6 @@ package com.featureprobe.api.service
 
 
 import com.featureprobe.api.base.enums.OrganizationRoleEnum
-import com.featureprobe.api.base.enums.RoleEnum
 import com.featureprobe.api.base.exception.ForbiddenException
 import com.featureprobe.api.base.model.OrganizationMemberModel
 import com.featureprobe.api.base.tenant.TenantContext
@@ -48,17 +47,19 @@ class MemberServiceSpec extends Specification {
         memberService = new MemberService(memberRepository, memberIncludeDeletedService, organizationRepository,
                 organizationMemberRepository, entityManager)
         TenantContext.setCurrentOrganization(new OrganizationMemberModel(1, "organization", OrganizationRoleEnum.OWNER))
+        TenantContext.setCurrentOrganization(new OrganizationMemberModel(1, "test", OrganizationRoleEnum.OWNER))
     }
 
     def "create a member success"() {
+        given:
+        TenantContext.setCurrentTenant("1")
         when:
         def savedMember = memberService.create(
                 new MemberCreateRequest(accounts: ["root"], password: "root"))
-
         then:
         1 * memberRepository.existsByAccount("root") >> false
         1 * organizationRepository.findById(_) >> Optional.of(new Organization(id: 1, name: "organization name"))
-        1 * memberRepository.saveAll(_) >> [new Member(account: "root", password: "password")]
+        1 * memberRepository.saveAll(_) >> [new Member(id: 1,  account: "root", password: "password")]
         with(savedMember) {
             1 == savedMember.size()
         }
@@ -78,7 +79,7 @@ class MemberServiceSpec extends Specification {
     def "update a member"() {
         given:
         setAuthContext("Admin", "OWNER")
-
+        TenantContext.setCurrentTenant("1")
         when:
         def response = memberService.update(new MemberUpdateRequest(account: "root", password: "root"))
 
@@ -86,7 +87,7 @@ class MemberServiceSpec extends Specification {
         1 * memberRepository.findByAccount("root") >>
                 Optional.of(new Member(account: "root", password: "root",
                         organizationMembers: [new OrganizationMember(organization: new Organization(id: 1))]))
-        1 * memberRepository.save(_) >> new Member(account: "root", password: "root")
+        1 * memberRepository.save(_) >> new Member(id: 1,  account: "root", password: "root")
         with(response) {
             "root" == account
         }
@@ -134,10 +135,7 @@ class MemberServiceSpec extends Specification {
         then:
         1 * memberRepository.findByAccount("root") >>
                 Optional.of(new Member(id: 1, account: "root", password: "root"))
-        1 * organizationMemberRepository.findByOrganizationIdAndMemberId(1, 1) >>
-                Optional.of(new OrganizationMember())
-        1 * organizationMemberRepository.delete(_)
-        1 * memberRepository.save(_) >> new Member(account: "root", password: "root")
+        1 * memberRepository.save(_) >> new Member(id: 1,  account: "root", password: "root")
         with(response) {
             "root" == account
         }

@@ -43,9 +43,9 @@ class ProjectServiceSpec extends Specification {
 
     ProjectUpdateRequest projectUpdateRequest
 
-    PublishMessageRepository changeLogRepository;
+    PublishMessageRepository publishMessageRepository
 
-    DictionaryRepository dictionaryRepository;
+    DictionaryRepository dictionaryRepository
 
     ChangeLogService changeLogService
 
@@ -64,14 +64,14 @@ class ProjectServiceSpec extends Specification {
         projectRepository = Mock(ProjectRepository)
         environmentRepository = Mock(EnvironmentRepository)
         targetingSketchRepository = Mock(TargetingSketchRepository)
-        changeLogRepository = Mock(PublishMessageRepository)
+        publishMessageRepository = Mock(PublishMessageRepository)
         dictionaryRepository = Mock(DictionaryRepository)
-        changeLogService = new ChangeLogService(changeLogRepository, environmentRepository, dictionaryRepository)
+        changeLogService = new ChangeLogService(publishMessageRepository, environmentRepository, dictionaryRepository)
         entityManager = Mock(SessionImpl)
         projectService = new ProjectService(projectRepository, environmentRepository, targetingSketchRepository, changeLogService, entityManager)
         queryRequest = new ProjectQueryRequest(keyword: keyword)
         createRequest = new ProjectCreateRequest(name: projectName, key: projectKey)
-        projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey, archived: true)
+        projectUpdateRequest = new ProjectUpdateRequest(name: "project_test_update", description: projectKey)
         setAuthContext("Admin", "ADMIN")
         applicationContext = Mock(ApplicationContext)
         SpringBeanManager.applicationContext = applicationContext
@@ -99,7 +99,7 @@ class ProjectServiceSpec extends Specification {
                 environments: [new Environment(version: 1)])
         1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
         1 * dictionaryRepository.save(_)
-        1 * changeLogRepository.save(_)
+        1 * publishMessageRepository.save(_)
         with(ret) {
             projectName == ret.name
             projectKey == ret.key
@@ -113,12 +113,8 @@ class ProjectServiceSpec extends Specification {
         then:
         1 * projectRepository.findByKey(projectKey) >>
                 Optional.of(new Project(name: projectName, key: projectKey, environments: [new Environment()]))
-        1 * environmentRepository.saveAll(_)
         1 * projectRepository.existsByName(projectUpdateRequest.name) >> false
         1 * projectRepository.save(_) >> new Project(name: projectName, key: projectKey)
-        1 * dictionaryRepository.findByKey(_) >> Optional.of(new Dictionary(value: "1"))
-        1 * dictionaryRepository.save(_)
-        1 * changeLogRepository.save(_)
         with(ret) {
             projectName == it.name
             projectKey == it.key
@@ -141,6 +137,19 @@ class ProjectServiceSpec extends Specification {
         1 * projectRepository.existsByName(projectName) >> true
         then:
         thrown ResourceConflictException
+    }
+
+    def "delete a project"() {
+        when:
+        projectService.delete(projectKey)
+        then:
+        1 * projectRepository.findByKey(projectKey) >>
+                Optional.of(new Project(key: projectKey, environments: [new Environment(version: 1)]))
+        1 * dictionaryRepository.findByKey("all_sdk_key_map") >> Optional.of(new Dictionary(value: "1"))
+        1 * dictionaryRepository.save(_)
+        1 * publishMessageRepository.save(_)
+        1 * environmentRepository.saveAll(_)
+        1 * projectRepository.save(_) >> new Project(key: projectKey)
     }
 
     def "validate projecte by name&key not exists"() {
@@ -170,9 +179,9 @@ class ProjectServiceSpec extends Specification {
 
     def "create preference"() {
         when:
-        projectService.createPreference(projectKey, new PreferenceCreateRequest(approvalSettings: [new ApprovalSettings(environmentKey: "dev", enable: true, reviewers: ["Admin"])]))
+        projectService.updateApprovalSettings(projectKey, new PreferenceCreateRequest(approvalSettings: [new ApprovalSettings(environmentKey: "dev", enable: true, reviewers: ["Admin"])]))
         then:
-        1 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "dev")]
+        2 * environmentRepository.findAllByProjectKey(projectKey) >> [new Environment(key: "dev")]
         1 * environmentRepository.saveAll(_)
     }
 

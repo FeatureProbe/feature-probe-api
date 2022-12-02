@@ -4,6 +4,9 @@ import com.featureprobe.api.base.doc.CreateApiResponse;
 import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
+import com.featureprobe.api.base.hook.Action;
+import com.featureprobe.api.base.hook.Hook;
+import com.featureprobe.api.base.hook.Resource;
 import com.featureprobe.api.dto.EnvironmentCreateRequest;
 import com.featureprobe.api.dto.EnvironmentQueryRequest;
 import com.featureprobe.api.dto.EnvironmentResponse;
@@ -44,6 +47,7 @@ public class EnvironmentController {
     @PostMapping
     @CreateApiResponse
     @Operation(summary = "Create environment", description = "Create a new environment.")
+    @Hook(resource = Resource.ENVIRONMENT, action = Action.CREATE)
     public EnvironmentResponse create(@PathVariable("projectKey") String projectKey,
                                       @RequestBody @Validated EnvironmentCreateRequest createRequest) {
         includeArchivedEnvironmentService.validateIncludeArchivedEnvironmentByKey(projectKey, createRequest.getKey());
@@ -54,10 +58,29 @@ public class EnvironmentController {
     @PatchMapping("/{environmentKey}")
     @PatchApiResponse
     @Operation(summary = "Update environment", description = "Update a environment.")
+    @Hook(resource = Resource.ENVIRONMENT, action = Action.UPDATE)
     public EnvironmentResponse update(@PathVariable("projectKey") String projectKey,
                                       @PathVariable("environmentKey") String environmentKey,
                                       @RequestBody @Validated EnvironmentUpdateRequest updateRequest) {
         return environmentService.update(projectKey, environmentKey, updateRequest);
+    }
+
+    @PatchMapping("/{environmentKey}/offline")
+    @PatchApiResponse
+    @Operation(summary = "Offline environment", description = "Offline a environment.")
+    @Hook(resource = Resource.ENVIRONMENT, action = Action.OFFLINE)
+    public EnvironmentResponse offline(@PathVariable("projectKey") String projectKey,
+                                       @PathVariable("environmentKey") String environmentKey) {
+        return environmentService.offline(projectKey, environmentKey);
+    }
+
+    @PatchMapping("/{environmentKey}/restore")
+    @PatchApiResponse
+    @Operation(summary = "Restore environment", description = "Restore a offline environment.")
+    @Hook(resource = Resource.ENVIRONMENT, action = Action.RESTORE)
+    public EnvironmentResponse restore(@PathVariable("projectKey") String projectKey,
+                                       @PathVariable("environmentKey") String environmentKey) {
+        return environmentService.restore(projectKey, environmentKey);
     }
 
     @GetMapping

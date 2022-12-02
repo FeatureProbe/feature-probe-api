@@ -2,9 +2,13 @@ package com.featureprobe.api.controller;
 
 import com.featureprobe.api.base.doc.CreateApiResponse;
 import com.featureprobe.api.base.doc.DefaultApiResponses;
+import com.featureprobe.api.base.doc.DeleteApiResponse;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
+import com.featureprobe.api.base.hook.Action;
+import com.featureprobe.api.base.hook.Resource;
+import com.featureprobe.api.base.hook.Hook;
 import com.featureprobe.api.dto.ApprovalSettings;
 import com.featureprobe.api.dto.PreferenceCreateRequest;
 import com.featureprobe.api.dto.ProjectCreateRequest;
@@ -21,6 +25,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,6 +52,7 @@ public class ProjectController {
     @PostMapping
     @CreateApiResponse
     @Operation(summary = "Create project", description = "Create a new project.")
+    @Hook(resource = Resource.PROJECT, action = Action.CREATE)
     public ProjectResponse create(@RequestBody @Validated ProjectCreateRequest createRequest) {
         return projectService.create(createRequest);
     }
@@ -54,9 +60,18 @@ public class ProjectController {
     @PatchMapping("/{projectKey}")
     @PatchApiResponse
     @Operation(summary = "Update project", description = "Update a project.")
+    @Hook(resource = Resource.PROJECT, action = Action.UPDATE)
     public ProjectResponse update(@PathVariable("projectKey") String projectKey,
                                   @RequestBody @Validated ProjectUpdateRequest updateRequest) {
         return projectService.update(projectKey, updateRequest);
+    }
+
+    @DeleteMapping("/{projectKey}")
+    @DeleteApiResponse
+    @Operation(summary = "Delete project", description = "Delete a project.")
+    @Hook(resource = Resource.PROJECT, action = Action.DELETE)
+    public ProjectResponse delete(@PathVariable("projectKey") String projectKey) {
+        return projectService.delete(projectKey);
     }
 
     @GetMapping
@@ -84,19 +99,20 @@ public class ProjectController {
         return new BaseResponse(ResponseCodeEnum.SUCCESS);
     }
 
-    @PostMapping("/{projectKey}")
-    @CreateApiResponse
-    @Operation(summary = "Save project setting", description = "Update a project settings.")
-    public BaseResponse preference(@PathVariable("projectKey") String projectKey,
+    @PatchMapping("/{projectKey}/approvalSettings")
+    @PatchApiResponse
+    @Operation(summary = "Update project approval settings", description = "Update a project approval settings.")
+    @Hook(resource = Resource.PROJECT, action = Action.UPDATE_APPROVAL_SETTINGS)
+    public List<ApprovalSettings> updateApprovalSettings(@PathVariable("projectKey") String projectKey,
                                    @RequestBody @Validated PreferenceCreateRequest createRequest) {
-        projectService.createPreference(projectKey, createRequest);
-        return new BaseResponse(ResponseCodeEnum.SUCCESS);
+        return projectService.updateApprovalSettings(projectKey, createRequest);
     }
 
     @GetMapping("/{projectKey}/approvalSettings")
-    @CreateApiResponse
+    @GetApiResponse
     @Operation(summary = "Query project settings", description = "Query a project settings.")
     public List<ApprovalSettings> approvalSettingsList(@PathVariable("projectKey") String projectKey) {
         return projectService.approvalSettingsList(projectKey);
     }
+
 }

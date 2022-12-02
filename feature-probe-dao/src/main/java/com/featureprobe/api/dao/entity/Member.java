@@ -48,7 +48,7 @@ public class Member extends AbstractAuditEntity {
 
     private String source;
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private List<OrganizationMember> organizationMembers = new ArrayList<>();
 
     public Member(Long id, String account) {
@@ -65,4 +65,24 @@ public class Member extends AbstractAuditEntity {
     public void addOrganization(Organization organization, OrganizationRoleEnum role) {
         this.organizationMembers.add(new OrganizationMember(organization, this, role));
     }
+
+    public void deleteOrganization(Long organizationId) {
+        OrganizationMember deleteOrganizationMember = null;
+        for (OrganizationMember organizationMember : organizationMembers) {
+            if (organizationMember.getOrganization().getId().equals(organizationId)) {
+                deleteOrganizationMember = organizationMember;
+            }
+        }
+        organizationMembers.remove(deleteOrganizationMember);
+    }
+
+    public OrganizationRoleEnum getRole(Long organizationId) {
+        for (OrganizationMember organizationMember : organizationMembers) {
+            if (organizationMember.getOrganization().getId().equals(organizationId)) {
+                return organizationMember.getRole();
+            }
+        }
+        return null;
+    }
+
 }

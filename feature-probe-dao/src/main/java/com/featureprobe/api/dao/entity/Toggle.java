@@ -1,11 +1,16 @@
 package com.featureprobe.api.dao.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.featureprobe.api.dao.listener.TenantEntityListener;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.JoinColumnOrFormula;
+import org.hibernate.annotations.JoinColumnsOrFormulas;
 import org.hibernate.annotations.ParamDef;
 
 import javax.persistence.Column;
@@ -19,9 +24,10 @@ import javax.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
 
-
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Entity
 @Table(name = "toggle")
 @DynamicInsert
@@ -69,7 +75,7 @@ public class Toggle extends AbstractAuditEntity implements TenantSupport {
     @Column(name = "organization_id")
     private Long organizationId;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "toggle_tag", joinColumns = {@JoinColumn(name = "toggle_key", referencedColumnName = "key")},
             inverseJoinColumns = {@JoinColumn(name = "tag_id", referencedColumnName = "id"),
             @JoinColumn(name = "organization_id", referencedColumnName = "organization_id")})

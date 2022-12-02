@@ -4,6 +4,9 @@ import com.featureprobe.api.base.doc.CreateApiResponse;
 import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
+import com.featureprobe.api.base.hook.Action;
+import com.featureprobe.api.base.hook.Hook;
+import com.featureprobe.api.base.hook.Resource;
 import com.featureprobe.api.dto.SegmentCreateRequest;
 import com.featureprobe.api.dto.SegmentPublishRequest;
 import com.featureprobe.api.dto.SegmentResponse;
@@ -55,6 +58,7 @@ public class SegmentController {
     @CreateApiResponse
     @PostMapping
     @Operation(summary = "Create segment", description = "Create a new segment.")
+    @Hook(resource = Resource.SEGMENT, action = Action.CREATE)
     public SegmentResponse create(@PathVariable(name = "projectKey") String projectKey,
                                   @RequestBody @Validated SegmentCreateRequest createRequest) {
         return segmentService.create(projectKey, createRequest);
@@ -63,6 +67,7 @@ public class SegmentController {
     @PatchApiResponse
     @PatchMapping("/{segmentKey}")
     @Operation(summary = "Update segment", description = "Update a segment.")
+    @Hook(resource = Resource.SEGMENT, action = Action.UPDATE)
     public SegmentResponse update(@PathVariable(name = "projectKey") String projectKey,
                                   @PathVariable(name = "segmentKey") String segmentKey,
                                   @RequestBody @Validated SegmentUpdateRequest segmentUpdateRequest) {
@@ -72,6 +77,7 @@ public class SegmentController {
     @PatchApiResponse
     @PatchMapping("/{segmentKey}/publish")
     @Operation(summary = "publish segment", description = "publish a segment.")
+    @Hook(resource = Resource.SEGMENT, action = Action.PUBLISH)
     public SegmentResponse publish(@PathVariable(name = "projectKey") String projectKey,
                                   @PathVariable(name = "segmentKey") String segmentKey,
                                   @RequestBody @Validated SegmentPublishRequest publishRequest) {
@@ -81,6 +87,7 @@ public class SegmentController {
     @DefaultApiResponses
     @DeleteMapping("/{segmentKey}")
     @Operation(summary = "Delete segment", description = "Delete a segment.")
+    @Hook(resource = Resource.SEGMENT, action = Action.DELETE)
     public SegmentResponse delete(@PathVariable(name = "projectKey") String projectKey,
                                   @PathVariable(name = "segmentKey") String segmentKey) {
         return segmentService.delete(projectKey, segmentKey);

@@ -73,13 +73,10 @@ public class EnvironmentService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    @Archived
     public EnvironmentResponse update(String projectKey, String environmentKey,
                                       EnvironmentUpdateRequest updateRequest) {
-        boolean archived = updateRequest.getArchived() == null ? false : !updateRequest.getArchived();
-        Environment environment = environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey,
-                environmentKey, archived).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.ENVIRONMENT, environmentKey));
+        Environment environment = environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.ENVIRONMENT, environmentKey));
         if (!StringUtils.equals(environment.getName(), updateRequest.getName())) {
             validateEnvironmentByName(projectKey, updateRequest.getName());
         }
@@ -90,10 +87,29 @@ public class EnvironmentService {
         if (updateRequest.isResetClientSdk()) {
             environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
         }
-        if (Objects.nonNull(updateRequest.getArchived())) {
-            changeLogService.create(environment,
-                    updateRequest.getArchived() ? ChangeLogType.DELETE : ChangeLogType.ADD);
-        }
+        return EnvironmentMapper.INSTANCE.entityToResponse(environmentRepository.save(environment));
+    }
+
+
+    @Transactional(rollbackFor = Exception.class)
+    @Archived
+    public EnvironmentResponse offline(String projectKey, String environmentKey) {
+        Environment environment = environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey,
+                environmentKey, false).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.ENVIRONMENT, environmentKey));
+        changeLogService.create(environment, ChangeLogType.DELETE);
+        environment.setArchived(true);
+        return EnvironmentMapper.INSTANCE.entityToResponse(environmentRepository.save(environment));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Archived
+    public EnvironmentResponse restore(String projectKey, String environmentKey) {
+        Environment environment = environmentRepository.findByProjectKeyAndKeyAndArchived(projectKey,
+                environmentKey, true).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.ENVIRONMENT, environmentKey));
+        changeLogService.create(environment, ChangeLogType.ADD);
+        environment.setArchived(false);
         return EnvironmentMapper.INSTANCE.entityToResponse(environmentRepository.save(environment));
     }
 

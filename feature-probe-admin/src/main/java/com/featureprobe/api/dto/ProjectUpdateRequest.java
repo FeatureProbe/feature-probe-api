@@ -9,5 +9,4 @@ public class ProjectUpdateRequest {
 
     private String description;
 
-    private Boolean archived;
 }

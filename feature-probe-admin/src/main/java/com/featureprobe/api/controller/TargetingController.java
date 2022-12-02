@@ -7,16 +7,19 @@ import com.featureprobe.api.base.doc.GetApiResponse;
 import com.featureprobe.api.base.doc.PatchApiResponse;
 import com.featureprobe.api.base.doc.ProjectKeyParameter;
 import com.featureprobe.api.base.doc.ToggleKeyParameter;
+import com.featureprobe.api.base.hook.Action;
+import com.featureprobe.api.base.hook.Hook;
+import com.featureprobe.api.base.hook.Resource;
 import com.featureprobe.api.dto.AfterTargetingVersionResponse;
+import com.featureprobe.api.dto.ApprovalResponse;
 import com.featureprobe.api.dto.CancelSketchRequest;
+import com.featureprobe.api.dto.TargetingApprovalRequest;
 import com.featureprobe.api.dto.TargetingDiffResponse;
-import com.featureprobe.api.dto.TargetingRequest;
+import com.featureprobe.api.dto.TargetingPublishRequest;
 import com.featureprobe.api.dto.TargetingResponse;
 import com.featureprobe.api.dto.TargetingVersionRequest;
 import com.featureprobe.api.dto.TargetingVersionResponse;
 import com.featureprobe.api.dto.UpdateApprovalStatusRequest;
-import com.featureprobe.api.base.enums.ResponseCodeEnum;
-import com.featureprobe.api.base.model.BaseResponse;
 import com.featureprobe.api.service.TargetingService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +31,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -49,17 +53,32 @@ public class TargetingController {
     @PatchApiResponse
     @PatchMapping
     @Operation(summary = "Update targeting", description = "Update targeting.")
-    public TargetingResponse update(
+    @Hook(resource = Resource.TOGGLE, action = Action.PUBLISH)
+    public TargetingResponse publish(
             @PathVariable("projectKey") String projectKey,
             @PathVariable("environmentKey") String environmentKey,
             @PathVariable("toggleKey") String toggleKey,
-            @RequestBody @Validated TargetingRequest targetingRequest) {
-        return targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest);
+            @RequestBody @Validated TargetingPublishRequest targetingPublishRequest) {
+        return targetingService.publish(projectKey, environmentKey, toggleKey, targetingPublishRequest);
     }
+
+    @CreateApiResponse
+    @PostMapping("/approval")
+    @Operation(summary = "submit targeting approval", description = "submit targeting approval.")
+    @Hook(resource = Resource.TOGGLE, action = Action.CREATE_APPROVAL)
+    public ApprovalResponse approval(
+            @PathVariable("projectKey") String projectKey,
+            @PathVariable("environmentKey") String environmentKey,
+            @PathVariable("toggleKey") String toggleKey,
+            @RequestBody @Validated TargetingApprovalRequest approvalRequest) {
+        return targetingService.approval(projectKey, environmentKey, toggleKey, approvalRequest);
+    }
+
 
     @PatchMapping("/sketch/publish")
     @CreateApiResponse
     @Operation(summary = "Publish targeting sketch", description = "Publish targeting sketch.")
+    @Hook(resource = Resource.TOGGLE, action = Action.PUBLISH)
     public TargetingResponse publishSketch(@PathVariable("projectKey") String projectKey,
                                            @PathVariable("environmentKey") String environmentKey,
                                            @PathVariable("toggleKey") String toggleKey) {
@@ -69,24 +88,24 @@ public class TargetingController {
     @PatchMapping("/sketch/cancel")
     @CreateApiResponse
     @Operation(summary = "Cancel targeting sketch", description = "Cancel targeting sketch.")
-    public BaseResponse cancelSketch(@PathVariable("projectKey") String projectKey,
+    @Hook(resource = Resource.TOGGLE, action = Action.REVOKE_APPROVAL)
+    public TargetingResponse cancelSketch(@PathVariable("projectKey") String projectKey,
                                      @PathVariable("environmentKey") String environmentKey,
                                      @PathVariable("toggleKey") String toggleKey,
                                      @RequestBody @Validated CancelSketchRequest cancelSketchRequest) {
-        targetingService.cancelSketch(projectKey, environmentKey, toggleKey, cancelSketchRequest);
-        return new BaseResponse(ResponseCodeEnum.SUCCESS);
+        return targetingService.cancelSketch(projectKey, environmentKey, toggleKey, cancelSketchRequest);
     }
 
 
     @PatchApiResponse
     @PatchMapping("/approvalStatus")
     @Operation(summary = "Update targeting approval status", description = "Update targeting approval status.")
-    public BaseResponse updateApprovalStatus(@PathVariable("projectKey") String projectKey,
+    @Hook(resource = Resource.TOGGLE, action = Action.UPDATE_APPROVAL)
+    public ApprovalResponse updateApprovalStatus(@PathVariable("projectKey") String projectKey,
                                              @PathVariable("environmentKey") String environmentKey,
                                              @PathVariable("toggleKey") String toggleKey,
                                              @RequestBody @Validated UpdateApprovalStatusRequest updateRequest) {
-        targetingService.updateApprovalStatus(projectKey, environmentKey, toggleKey, updateRequest);
-        return new BaseResponse(ResponseCodeEnum.SUCCESS);
+        return targetingService.updateApprovalStatus(projectKey, environmentKey, toggleKey, updateRequest);
     }
 
     @GetApiResponse

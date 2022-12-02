@@ -1,7 +1,7 @@
 package com.featureprobe.api.mapper;
 
 import com.featureprobe.api.base.model.TargetingContent;
-import com.featureprobe.api.dto.TargetingRequest;
+import com.featureprobe.api.dto.TargetingPublishRequest;
 import com.featureprobe.api.dto.TargetingResponse;
 import com.featureprobe.api.dao.entity.Targeting;
 import com.featureprobe.api.base.util.JsonMapper;
@@ -28,8 +28,8 @@ public interface TargetingMapper extends BaseMapper {
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "content",
-            expression = "java(toTargetingContentString(targetingRequest.getContent(), targeting))")
-    void mapEntity(TargetingRequest targetingRequest, @MappingTarget Targeting targeting);
+            expression = "java(toTargetingContentString(publishRequest.getContent(), targeting))")
+    void mapEntity(TargetingPublishRequest publishRequest, @MappingTarget Targeting targeting);
 
     default String toTargetingContentString(TargetingContent content, Targeting targeting) {
         if (Objects.nonNull(content)) {

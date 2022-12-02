@@ -8,7 +8,8 @@ public enum ResourceType {
     PROJECT("projectKey"), TOGGLE("toggleKey"), ENVIRONMENT("environmentKey"),
     TARGETING("projectKey_environmentKey_toggleKey"), MEMBER("account"),
     SEGMENT("segment"), DICTIONARY("dictionary"),
-    ORGANIZATION_MEMBER("organization_member");
+    ORGANIZATION_MEMBER("organization_member"),
+    WEBHOOK("name");
 
     private String paramName;
 

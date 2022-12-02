@@ -121,100 +121,11 @@ public class ToggleService {
         return ToggleMapper.INSTANCE.entityToResponse(toggle, appConfig.getToggleDeadline());
     }
 
-    private void validateLimit(String projectKey) {
-        long total = toggleRepository.countByProjectKey(projectKey);
-        FPUser user = new FPUser(String.valueOf(TokenHelper.getUserId()));
-        user.with("account", TokenHelper.getAccount());
-        double limitNum = SpringBeanManager.getBeanByType(FeatureProbe.class)
-                .numberValue(LIMITER_TOGGLE_KEY, user, -1);
-        if (limitNum > 0 && total >= limitNum) {
-            throw new ResourceOverflowException(ResourceType.TOGGLE);
-        }
-    }
-
-    protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
-        Toggle toggle = ToggleMapper.INSTANCE.requestToEntity(createRequest);
-        toggle.setProjectKey(projectKey);
-        setToggleTagRefs(toggle, createRequest.getTags());
-        return toggleRepository.save(toggle);
-    }
-
-    private void createDefaultTargetingEntities(String projectKey, Toggle toggle) {
-        List<Environment> environments = environmentRepository.findAllByProjectKey(projectKey);
-        if (CollectionUtils.isEmpty(environments)) {
-            log.info("{} environment is empty, ignore create targeting", projectKey);
-            return;
-        }
-        List<Targeting> targetingList = environments.stream().map(environment ->
-                createDefaultTargeting(toggle, environment)).collect(Collectors.toList());
-        List<Targeting> savedTargetingList = targetingRepository.saveAll(targetingList);
-        for (Targeting targeting : savedTargetingList) {
-            saveTargetingVersion(buildTargetingVersion(targeting, ""));
-            saveVariationHistory(targeting);
-        }
-    }
-
-    private void saveTargetingVersion(TargetingVersion targetingVersion) {
-        targetingVersionRepository.save(targetingVersion);
-    }
-
-    private void saveVariationHistory(Targeting targeting) {
-        List<Variation> variations = JsonMapper.toObject(targeting.getContent(), TargetingContent.class)
-                .getVariations();
-
-        List<VariationHistory> variationHistories = IntStream.range(0, variations.size())
-                .mapToObj(index -> convertVariationToEntity(targeting, index,
-                        variations.get(index)))
-                .collect(Collectors.toList());
-        variationHistoryRepository.saveAll(variationHistories);
-    }
-
-    private VariationHistory convertVariationToEntity(Targeting targeting, int index, Variation variation) {
-        VariationHistory variationHistory = new VariationHistory();
-        variationHistory.setEnvironmentKey(targeting.getEnvironmentKey());
-        variationHistory.setProjectKey(targeting.getProjectKey());
-        variationHistory.setToggleKey(targeting.getToggleKey());
-        variationHistory.setValue(variation.getValue());
-        variationHistory.setName(variation.getName());
-        variationHistory.setToggleVersion(targeting.getVersion());
-        variationHistory.setValueIndex(index);
-        return variationHistory;
-    }
-
-    private TargetingVersion buildTargetingVersion(Targeting targeting, String comment) {
-        TargetingVersion targetingVersion = new TargetingVersion();
-        targetingVersion.setProjectKey(targeting.getProjectKey());
-        targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
-        targetingVersion.setToggleKey(targeting.getToggleKey());
-        targetingVersion.setContent(targeting.getContent());
-        targetingVersion.setDisabled(targeting.isDisabled());
-        targetingVersion.setVersion(targeting.getVersion());
-        targetingVersion.setComment(comment);
-        return targetingVersion;
-    }
-
-    private Targeting createDefaultTargeting(Toggle toggle, Environment environment) {
-        Targeting targeting = new Targeting();
-        targeting.setDeleted(false);
-        targeting.setVersion(1L);
-        targeting.setProjectKey(toggle.getProjectKey());
-        targeting.setDisabled(true);
-        targeting.setContent(TargetingContent.newDefault(toggle.getVariations(),
-                toggle.getDisabledServe()).toJson());
-        targeting.setToggleKey(toggle.getKey());
-        targeting.setEnvironmentKey(environment.getKey());
-        targeting.setPublishTime(new Date());
-        return targeting;
-    }
 
     @Transactional(rollbackFor = Exception.class)
-    @Archived
     public ToggleResponse update(String projectKey, String toggleKey, ToggleUpdateRequest updateRequest) {
-        Project project = projectRepository.findByKey(projectKey).orElseThrow(() ->
-                new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
-        boolean archived = updateRequest.getArchived() == null ? false : !updateRequest.getArchived();
-        Toggle toggle = toggleRepository.findByProjectKeyAndKeyAndArchived(projectKey, toggleKey, archived)
-                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
+        Toggle toggle = toggleRepository.findByProjectKeyAndKey(projectKey, toggleKey).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
         if (StringUtils.isNotBlank(updateRequest.getName()) &&
                 !StringUtils.equals(toggle.getName(), updateRequest.getName())) {
             validateName(projectKey, updateRequest.getName());
@@ -223,24 +134,36 @@ public class ToggleService {
         if (CollectionUtils.isNotEmpty(updateRequest.getTags())) {
             setToggleTagRefs(toggle, updateRequest.getTags());
         }
-        if (Objects.nonNull(updateRequest.getArchived())) {
-            for (Environment environment : project.getEnvironments()) {
-                changeLogService.create(environment, ChangeLogType.CHANGE);
-            }
-        }
         toggleRepository.save(toggle);
         return ToggleMapper.INSTANCE.entityToResponse(toggle, appConfig.getToggleDeadline());
     }
 
-    private void validateName(String projectKey, String name) {
-        if (toggleRepository.existsByProjectKeyAndName(projectKey, name)) {
-            throw new ResourceConflictException(ResourceType.TOGGLE);
+    @Transactional(rollbackFor = Exception.class)
+    @Archived
+    public ToggleResponse offline(String projectKey, String toggleKey) {
+        Project project = projectRepository.findByKey(projectKey).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
+        Toggle toggle = toggleRepository.findByProjectKeyAndKeyAndArchived(projectKey, toggleKey, false)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
+        for (Environment environment : project.getEnvironments()) {
+            changeLogService.create(environment, ChangeLogType.CHANGE);
         }
+        toggle.setArchived(true);
+        return ToggleMapper.INSTANCE.entityToResponse(toggleRepository.save(toggle), appConfig.getToggleDeadline());
     }
 
-    private void setToggleTagRefs(Toggle toggle, List<String> tagNames) {
-        Set<Tag> tags = tagRepository.findByProjectKeyAndNameIn(toggle.getProjectKey(), tagNames);
-        toggle.setTags(tags);
+    @Transactional(rollbackFor = Exception.class)
+    @Archived
+    public ToggleResponse restore(String projectKey, String toggleKey) {
+        Project project = projectRepository.findByKey(projectKey).orElseThrow(() ->
+                new ResourceNotFoundException(ResourceType.PROJECT, projectKey));
+        Toggle toggle = toggleRepository.findByProjectKeyAndKeyAndArchived(projectKey, toggleKey, true)
+                .orElseThrow(() -> new ResourceNotFoundException(ResourceType.TOGGLE, toggleKey));
+        for (Environment environment : project.getEnvironments()) {
+            changeLogService.create(environment, ChangeLogType.CHANGE);
+        }
+        toggle.setArchived(false);
+        return ToggleMapper.INSTANCE.entityToResponse(toggleRepository.save(toggle), appConfig.getToggleDeadline());
     }
 
     @Archived
@@ -293,6 +216,104 @@ public class ToggleService {
             return togglePage.map(item -> ToggleMapper.INSTANCE.entityToItemResponse(item,
                     appConfig.getToggleDeadline()));
         }
+    }
+
+
+    private void validateLimit(String projectKey) {
+        long total = toggleRepository.countByProjectKey(projectKey);
+        FPUser user = new FPUser(String.valueOf(TokenHelper.getUserId()));
+        user.with("account", TokenHelper.getAccount());
+        double limitNum = SpringBeanManager.getBeanByType(FeatureProbe.class)
+                .numberValue(LIMITER_TOGGLE_KEY, user, -1);
+        if (limitNum > 0 && total >= limitNum) {
+            throw new ResourceOverflowException(ResourceType.TOGGLE);
+        }
+    }
+
+    protected Toggle createToggle(String projectKey, ToggleCreateRequest createRequest) {
+        Toggle toggle = ToggleMapper.INSTANCE.requestToEntity(createRequest);
+        toggle.setProjectKey(projectKey);
+        setToggleTagRefs(toggle, createRequest.getTags());
+        return toggleRepository.save(toggle);
+    }
+
+    private void createDefaultTargetingEntities(String projectKey, Toggle toggle) {
+        List<Environment> environments = environmentRepository.findAllByProjectKey(projectKey);
+        if (CollectionUtils.isEmpty(environments)) {
+            log.info("{} environment is empty, ignore create targeting", projectKey);
+            return;
+        }
+        List<Targeting> targetingList = environments.stream().map(environment ->
+                createDefaultTargeting(toggle, environment)).collect(Collectors.toList());
+        List<Targeting> savedTargetingList = targetingRepository.saveAll(targetingList);
+        for (Targeting targeting : savedTargetingList) {
+            saveTargetingVersion(buildTargetingVersion(targeting, ""));
+            saveVariationHistory(targeting);
+        }
+    }
+
+    private void saveTargetingVersion(TargetingVersion targetingVersion) {
+        targetingVersionRepository.save(targetingVersion);
+    }
+
+    private void saveVariationHistory(Targeting targeting) {
+        List<Variation> variations = JsonMapper.toObject(targeting.getContent(), TargetingContent.class)
+                .getVariations();
+
+        List<VariationHistory> variationHistories = IntStream.range(0, variations.size())
+                .mapToObj(index -> convertVariationToEntity(targeting, index,
+                        variations.get(index)))
+                .collect(Collectors.toList());
+        variationHistoryRepository.saveAll(variationHistories);
+    }
+
+    private void validateName(String projectKey, String name) {
+        if (toggleRepository.existsByProjectKeyAndName(projectKey, name)) {
+            throw new ResourceConflictException(ResourceType.TOGGLE);
+        }
+    }
+
+    private void setToggleTagRefs(Toggle toggle, List<String> tagNames) {
+        Set<Tag> tags = tagRepository.findByProjectKeyAndNameIn(toggle.getProjectKey(), tagNames);
+        toggle.setTags(tags);
+    }
+
+    private VariationHistory convertVariationToEntity(Targeting targeting, int index, Variation variation) {
+        VariationHistory variationHistory = new VariationHistory();
+        variationHistory.setEnvironmentKey(targeting.getEnvironmentKey());
+        variationHistory.setProjectKey(targeting.getProjectKey());
+        variationHistory.setToggleKey(targeting.getToggleKey());
+        variationHistory.setValue(variation.getValue());
+        variationHistory.setName(variation.getName());
+        variationHistory.setToggleVersion(targeting.getVersion());
+        variationHistory.setValueIndex(index);
+        return variationHistory;
+    }
+
+    private TargetingVersion buildTargetingVersion(Targeting targeting, String comment) {
+        TargetingVersion targetingVersion = new TargetingVersion();
+        targetingVersion.setProjectKey(targeting.getProjectKey());
+        targetingVersion.setEnvironmentKey(targeting.getEnvironmentKey());
+        targetingVersion.setToggleKey(targeting.getToggleKey());
+        targetingVersion.setContent(targeting.getContent());
+        targetingVersion.setDisabled(targeting.isDisabled());
+        targetingVersion.setVersion(targeting.getVersion());
+        targetingVersion.setComment(comment);
+        return targetingVersion;
+    }
+
+    private Targeting createDefaultTargeting(Toggle toggle, Environment environment) {
+        Targeting targeting = new Targeting();
+        targeting.setDeleted(false);
+        targeting.setVersion(1L);
+        targeting.setProjectKey(toggle.getProjectKey());
+        targeting.setDisabled(true);
+        targeting.setContent(TargetingContent.newDefault(toggle.getVariations(),
+                toggle.getDisabledServe()).toJson());
+        targeting.setToggleKey(toggle.getKey());
+        targeting.setEnvironmentKey(environment.getKey());
+        targeting.setPublishTime(new Date());
+        return targeting;
     }
 
     private Map<String, Set<String>> queryTagMap(List<String> toggleKeys) {

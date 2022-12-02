@@ -1,16 +1,20 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.enums.OrganizationRoleEnum;
 import com.featureprobe.api.base.model.BaseRule;
 import com.featureprobe.api.base.model.TargetingContent;
 import com.featureprobe.api.base.model.ToggleRule;
 import com.featureprobe.api.base.model.Variation;
+import com.featureprobe.api.base.tenant.TenantContext;
 import com.featureprobe.api.dao.exception.ResourceNotFoundException;
 import com.featureprobe.api.dao.utils.PageRequestUtil;
 import com.featureprobe.api.dto.AfterTargetingVersionResponse;
+import com.featureprobe.api.dto.ApprovalResponse;
 import com.featureprobe.api.dto.CancelSketchRequest;
+import com.featureprobe.api.dto.TargetingApprovalRequest;
 import com.featureprobe.api.dto.TargetingDiffResponse;
-import com.featureprobe.api.dto.TargetingRequest;
+import com.featureprobe.api.dto.TargetingPublishRequest;
 import com.featureprobe.api.dto.TargetingResponse;
 import com.featureprobe.api.dto.TargetingVersionRequest;
 import com.featureprobe.api.dto.TargetingVersionResponse;
@@ -27,6 +31,7 @@ import com.featureprobe.api.base.enums.ChangeLogType;
 import com.featureprobe.api.base.enums.ResourceType;
 import com.featureprobe.api.base.enums.SketchStatusEnum;
 import com.featureprobe.api.base.enums.ToggleReleaseStatusEnum;
+import com.featureprobe.api.mapper.ApprovalRecordMapper;
 import com.featureprobe.api.mapper.TargetingMapper;
 import com.featureprobe.api.mapper.TargetingVersionMapper;
 import com.featureprobe.api.base.model.ConditionValue;
@@ -55,7 +60,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -98,20 +105,47 @@ public class TargetingService {
     public EntityManager entityManager;
 
     @Transactional(rollbackFor = Exception.class)
-    public TargetingResponse update(String projectKey, String environmentKey, String toggleKey,
-                                    TargetingRequest targetingRequest) {
-        validateTargetingContent(projectKey, targetingRequest.getContent());
+    public TargetingResponse publish(String projectKey, String environmentKey, String toggleKey,
+                                    TargetingPublishRequest targetingPublishRequest) {
+        validateTargetingContent(projectKey, targetingPublishRequest.getContent());
+        Environment environment = selectEnvironment(projectKey, environmentKey);
+        changeLogService.create(environment, ChangeLogType.CHANGE);
+        return publishTargeting(projectKey, environmentKey, toggleKey, targetingPublishRequest, null);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ApprovalResponse approval(String projectKey, String environmentKey, String toggleKey,
+                                      TargetingApprovalRequest approvalRequest) {
+        validateTargetingContent(projectKey, approvalRequest.getContent());
         Environment environment = selectEnvironment(projectKey, environmentKey);
         if (environment.isEnableApproval()) {
             List<String> reviews = JsonMapper.toListObject(environment.getReviewers(), String.class);
-            targetingRequest.setReviewers(reviews);
+            approvalRequest.setReviewers(reviews);
             Targeting targeting = selectTargeting(projectKey, environmentKey, toggleKey);
             targeting.setStatus(ToggleReleaseStatusEnum.PENDING_APPROVAL);
             targetingRepository.save(targeting);
-            return submitApproval(projectKey, environmentKey, toggleKey, targetingRequest);
+            ApprovalRecord approvalRecord = submitApproval(projectKey, environmentKey,
+                    toggleKey, approvalRequest);
+            Targeting approval = new Targeting();
+            approval.setDisabled(approvalRequest.getDisabled());
+            approval.setContent(JsonMapper.toJSONString(approvalRequest.getContent()));
+            return buildApprovalResponse(approvalRecord, targeting, approval);
         }
-        changeLogService.create(environment, ChangeLogType.CHANGE);
-        return publishTargeting(projectKey, environmentKey, toggleKey, targetingRequest, null);
+        throw new IllegalArgumentException("approval is disable");
+    }
+
+    private ApprovalResponse buildApprovalResponse(ApprovalRecord approvalRecord, Targeting currentData,
+                                                   Targeting approvalData) {
+        ApprovalResponse approvalResponse = ApprovalRecordMapper.INSTANCE.entityToApprovalResponse(approvalRecord);
+        Map<String, Object> current = new HashMap<>();
+        current.put("disabled", currentData.isDisabled());
+        current.put("content", currentData.getContent());
+        approvalResponse.setCurrentData(current);
+        Map<String, Object> approval = new HashMap<>();
+        approval.put("disabled", approvalData.isDisabled());
+        approval.put("content", approvalData.getContent());
+        approvalResponse.setApprovalData(approval);
+        return approvalResponse;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -126,17 +160,18 @@ public class TargetingService {
             TargetingSketch sketch = targetingSketchOptional.get();
             sketch.setStatus(SketchStatusEnum.RELEASE);
             targetingSketchRepository.save(sketch);
-            TargetingRequest targetingRequest = new TargetingRequest(JsonMapper.toObject(sketch.getContent(),
-                    TargetingContent.class), sketch.getComment(), sketch.getDisabled(), null);
+            TargetingPublishRequest targetingPublishRequest = new TargetingPublishRequest(
+                    JsonMapper.toObject(sketch.getContent(), TargetingContent.class),
+                    sketch.getComment(), sketch.getDisabled());
             changeLogService.create(environment, ChangeLogType.CHANGE);
-            return publishTargeting(projectKey, environmentKey, toggleKey, targetingRequest,
+            return publishTargeting(projectKey, environmentKey, toggleKey, targetingPublishRequest,
                     approvalRecordOptional.get().getId());
         }
         return null;
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void cancelSketch(String projectKey, String environmentKey, String toggleKey,
+    public TargetingResponse cancelSketch(String projectKey, String environmentKey, String toggleKey,
                              CancelSketchRequest cancelSketchRequest) {
         Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
                 environmentKey, toggleKey);
@@ -149,12 +184,14 @@ public class TargetingService {
             sketch.setComment(cancelSketchRequest.getComment());
             targeting.setStatus(ToggleReleaseStatusEnum.RELEASE);
             targetingSketchRepository.save(sketch);
-            targetingRepository.save(targeting);
+            Targeting save = targetingRepository.save(targeting);
+            return TargetingMapper.INSTANCE.entityToResponse(save);
         }
+        return null;
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void updateApprovalStatus(String projectKey, String environmentKey, String toggleKey,
+    public ApprovalResponse updateApprovalStatus(String projectKey, String environmentKey, String toggleKey,
                                      UpdateApprovalStatusRequest updateRequest) {
         Optional<ApprovalRecord> approvalRecordOptional = queryNewestApprovalRecord(projectKey,
                 environmentKey, toggleKey);
@@ -163,6 +200,7 @@ public class TargetingService {
         Targeting targeting = selectTargeting(projectKey, environmentKey, toggleKey);
         if (approvalRecordOptional.isPresent() && targetingSketchOptional.isPresent() &&
                 checkStateMachine(approvalRecordOptional.get(), updateRequest.getStatus())) {
+
             if (updateRequest.getStatus() == ApprovalStatusEnum.REVOKE) {
                 TargetingSketch sketch = targetingSketchOptional.get();
                 sketch.setStatus(SketchStatusEnum.REVOKE);
@@ -183,8 +221,11 @@ public class TargetingService {
             } else {
                 targeting.setStatus(ToggleReleaseStatusEnum.RELEASE);
             }
-            targetingRepository.save(targeting);
-            return;
+            Targeting current = targetingRepository.save(targeting);
+            Targeting approval = new Targeting();
+            approval.setDisabled(targetingSketchOptional.get().getDisabled());
+            approval.setContent(targetingSketchOptional.get().getContent());
+            return buildApprovalResponse(approvalRecord, current, approval);
         }
         throw new IllegalArgumentException();
     }
@@ -199,7 +240,7 @@ public class TargetingService {
             case REVOKE:
             case JUMP:
                 return approvalRecord.getStatus() == ApprovalStatusEnum.PENDING &&
-                        StringUtils.equals(approvalRecord.getSubmitBy(), TokenHelper.getAccount());
+                        TenantContext.getCurrentOrganization().getRole() == OrganizationRoleEnum.OWNER;
             default:
                 return false;
         }
@@ -303,61 +344,63 @@ public class TargetingService {
                 approvalRecord.getStatus() == ApprovalStatusEnum.PASS;
     }
 
-    private TargetingResponse submitApproval(String projectKey, String environmentKey, String toggleKey,
-                                             TargetingRequest targetingRequest) {
+    private ApprovalRecord submitApproval(String projectKey, String environmentKey, String toggleKey,
+                                             TargetingApprovalRequest approvalRequest) {
         Targeting targeting = selectTargeting(projectKey, environmentKey, toggleKey);
         ApprovalRecord approvalRecord = approvalRecordRepository.save(buildApprovalRecord(projectKey, environmentKey,
-                toggleKey, targetingRequest));
+                toggleKey, approvalRequest));
         targetingSketchRepository.save(buildTargetingSketch(projectKey, environmentKey, toggleKey,
-                approvalRecord.getId(), targeting.getVersion(), targetingRequest));
-        return TargetingMapper.INSTANCE.entityToResponse(targeting);
+                approvalRecord.getId(), targeting.getVersion(), approvalRequest));
+        return approvalRecord;
     }
 
     private TargetingResponse publishTargeting(String projectKey, String environmentKey, String toggleKey,
-                                               TargetingRequest targetingRequest, Long approvalId) {
+                                               TargetingPublishRequest targetingPublishRequest, Long approvalId) {
         Targeting existedTargeting = selectTargeting(projectKey, environmentKey, toggleKey);
         long oldVersion = existedTargeting.getVersion();
-        Targeting updatedTargeting = updateTargeting(existedTargeting, targetingRequest);
+        Targeting updatedTargeting = updateTargeting(existedTargeting, targetingPublishRequest);
         if (updatedTargeting.getVersion() > oldVersion) {
-            saveTargetingSegmentRefs(projectKey, updatedTargeting, targetingRequest.getContent());
-            saveTargetingVersion(buildTargetingVersion(updatedTargeting, targetingRequest.getComment(), approvalId));
-            saveVariationHistory(updatedTargeting, targetingRequest.getContent());
+            saveTargetingSegmentRefs(projectKey, updatedTargeting, targetingPublishRequest.getContent());
+            saveTargetingVersion(buildTargetingVersion(updatedTargeting,
+                    targetingPublishRequest.getComment(), approvalId));
+            saveVariationHistory(updatedTargeting, targetingPublishRequest.getContent());
         }
         updatedTargeting.setStatus(ToggleReleaseStatusEnum.RELEASE);
         return TargetingMapper.INSTANCE.entityToResponse(updatedTargeting);
     }
 
     private ApprovalRecord buildApprovalRecord(String projectKey, String environmentKey, String toggleKey,
-                                               TargetingRequest targetingRequest) {
+                                               TargetingApprovalRequest approvalRequest) {
         ApprovalRecord approvalRecord = new ApprovalRecord();
         approvalRecord.setProjectKey(projectKey);
         approvalRecord.setEnvironmentKey(environmentKey);
         approvalRecord.setToggleKey(toggleKey);
-        approvalRecord.setTitle(targetingRequest.getComment());
+        approvalRecord.setTitle(approvalRequest.getComment());
         approvalRecord.setSubmitBy(TokenHelper.getAccount());
-        approvalRecord.setReviewers(JsonMapper.toJSONString(targetingRequest.getReviewers()));
+        approvalRecord.setReviewers(JsonMapper.toJSONString(approvalRequest.getReviewers()));
         approvalRecord.setStatus(ApprovalStatusEnum.PENDING);
         return approvalRecord;
     }
 
     private TargetingSketch buildTargetingSketch(String projectKey, String environmentKey, String toggleKey,
                                                  Long approvalId, Long oldVersion,
-                                                 TargetingRequest targetingRequest) {
+                                                 TargetingApprovalRequest approvalRequest) {
         TargetingSketch sketch = new TargetingSketch();
         sketch.setApprovalId(approvalId);
         sketch.setProjectKey(projectKey);
         sketch.setEnvironmentKey(environmentKey);
         sketch.setToggleKey(toggleKey);
         sketch.setOldVersion(oldVersion);
-        sketch.setContent(JsonMapper.toJSONString(targetingRequest.getContent()));
-        sketch.setComment(targetingRequest.getComment());
-        sketch.setDisabled(targetingRequest.getDisabled());
+        sketch.setContent(JsonMapper.toJSONString(approvalRequest.getContent()));
+        sketch.setComment(approvalRequest.getComment());
+        sketch.setDisabled(approvalRequest.getDisabled());
         sketch.setStatus(SketchStatusEnum.PENDING);
         return sketch;
     }
 
-    private Targeting updateTargeting(Targeting currentTargeting, TargetingRequest updateTargetingRequest) {
-        TargetingMapper.INSTANCE.mapEntity(updateTargetingRequest, currentTargeting);
+    private Targeting updateTargeting(Targeting currentTargeting,
+                                      TargetingPublishRequest updateTargetingPublishRequest) {
+        TargetingMapper.INSTANCE.mapEntity(updateTargetingPublishRequest, currentTargeting);
         currentTargeting.setVersion(currentTargeting.getVersion() + 1);
         currentTargeting.setPublishTime(new Date());
         return targetingRepository.saveAndFlush(currentTargeting);
@@ -520,4 +563,5 @@ public class TargetingService {
                 toggleKey).orElseThrow(() -> new ResourceNotFoundException(ResourceType.TARGETING,
                 projectKey + "-" + environmentKey + "-" + toggleKey));
     }
+
 }

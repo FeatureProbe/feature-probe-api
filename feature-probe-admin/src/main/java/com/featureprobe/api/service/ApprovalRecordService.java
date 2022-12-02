@@ -1,6 +1,7 @@
 package com.featureprobe.api.service;
 
 import com.featureprobe.api.auth.TokenHelper;
+import com.featureprobe.api.base.db.Archived;
 import com.featureprobe.api.dao.utils.PageRequestUtil;
 import com.featureprobe.api.dto.ApprovalRecordQueryRequest;
 import com.featureprobe.api.dto.ApprovalRecordResponse;
@@ -52,6 +53,7 @@ public class ApprovalRecordService {
     @PersistenceContext
     public EntityManager entityManager;
 
+    @Archived
     public Page<ApprovalRecordResponse> list(ApprovalRecordQueryRequest queryRequest) {
         Specification<ApprovalRecord> spec = buildListSpec(queryRequest);
         Pageable pageable = PageRequestUtil.toPageable(queryRequest, Sort.Direction.DESC, "createdTime");

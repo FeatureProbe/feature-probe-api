@@ -10,7 +10,8 @@ import com.featureprobe.api.base.tenant.TenantContext
 import com.featureprobe.api.base.util.JsonMapper
 import com.featureprobe.api.dao.exception.ResourceNotFoundException
 import com.featureprobe.api.dto.CancelSketchRequest
-import com.featureprobe.api.dto.TargetingRequest
+import com.featureprobe.api.dto.TargetingApprovalRequest
+import com.featureprobe.api.dto.TargetingPublishRequest
 import com.featureprobe.api.dto.TargetingVersionRequest
 import com.featureprobe.api.dto.UpdateApprovalStatusRequest
 import com.featureprobe.api.dao.entity.ApprovalRecord
@@ -18,8 +19,6 @@ import com.featureprobe.api.dao.entity.Environment
 import com.featureprobe.api.dao.entity.Targeting
 import com.featureprobe.api.dao.entity.TargetingSketch
 import com.featureprobe.api.dao.entity.TargetingVersion
-
-
 import com.featureprobe.api.dao.repository.ApprovalRecordRepository
 import com.featureprobe.api.dao.repository.PublishMessageRepository
 import com.featureprobe.api.dao.repository.DictionaryRepository
@@ -136,16 +135,16 @@ class TargetingServiceSpec extends Specification {
         TenantContext.setCurrentOrganization(new OrganizationMemberModel(1, "organization", OrganizationRoleEnum.OWNER))
     }
 
-    def "update targeting"() {
+    def "publish targeting"() {
         given:
-        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingPublishRequest targetingRequest = new TargetingPublishRequest()
         TargetingContent targetingContent = JsonMapper.toObject(content, TargetingContent.class);
         targetingRequest.setContent(targetingContent)
         targetingRequest.setDisabled(false)
 
 
         when:
-        def ret = targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        def ret = targetingService.publish(projectKey, environmentKey, toggleKey, targetingRequest)
 
         then:
         segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
@@ -168,72 +167,64 @@ class TargetingServiceSpec extends Specification {
         }
     }
 
-    def "update targeting & enable approval"() {
+    def "submit targeting approval"() {
         given:
-        TargetingRequest targetingRequest = new TargetingRequest()
-        TargetingContent targetingContent = JsonMapper.toObject(content, TargetingContent.class);
-        targetingRequest.setContent(targetingContent)
-        targetingRequest.setDisabled(false)
+        TargetingContent targetingContent = JsonMapper.toObject(content, TargetingContent.class)
+        TargetingApprovalRequest approvalRequest = new TargetingApprovalRequest(content: targetingContent, comment: "Test", disabled: false, reviewers: ["test@test.com"])
         setAuthContext("Admin", "ADMIN")
-
         when:
-        def ret = targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
-
+        def approval = targetingService.approval(projectKey, environmentKey, toggleKey, approvalRequest)
         then:
         segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
-        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >> Optional.of(new Environment(enableApproval: true, reviewers: "[\"Admin\"]"))
-        targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey,
+        1 * environmentRepository.findByProjectKeyAndKey(projectKey, environmentKey) >> Optional.of(new Environment(enableApproval: true, version: 1))
+        2 * targetingRepository.findByProjectKeyAndEnvironmentKeyAndToggleKey(projectKey, environmentKey,
                 toggleKey) >> Optional.of(new Targeting(toggleKey: toggleKey, environmentKey: environmentKey,
                 content: content, disabled: false))
         1 * approvalRecordRepository.save(_) >> approvalRecord
         1 * targetingSketchRepository.save(_)
-        with(ret) {
-            content == it.content
-            false == it.disabled
-        }
     }
 
-    def "update targeting segment not found"() {
+    def "publish targeting segment not found"() {
         when:
-        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingPublishRequest targetingRequest = new TargetingPublishRequest()
         TargetingContent targetingContent = JsonMapper.toObject(content, TargetingContent.class);
         targetingRequest.setContent(targetingContent)
         targetingRequest.setDisabled(false)
-        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        targetingService.publish(projectKey, environmentKey, toggleKey, targetingRequest)
         then:
         segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> false
         then:
         thrown(ResourceNotFoundException)
     }
 
-    def "update targeting number format error"() {
+    def "publish targeting number format error"() {
         when:
-        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingPublishRequest targetingRequest = new TargetingPublishRequest()
         TargetingContent targetingContent = JsonMapper.toObject(numberErrorContent, TargetingContent.class);
         targetingRequest.setContent(targetingContent)
-        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        targetingService.publish(projectKey, environmentKey, toggleKey, targetingRequest)
         then:
         1 * segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
         thrown(IllegalArgumentException)
     }
 
-    def "update targeting datetime format error"() {
+    def "publish targeting datetime format error"() {
         when:
-        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingPublishRequest targetingRequest = new TargetingPublishRequest()
         TargetingContent targetingContent = JsonMapper.toObject(datetimeErrorContent, TargetingContent.class);
         targetingRequest.setContent(targetingContent)
-        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        targetingService.publish(projectKey, environmentKey, toggleKey, targetingRequest)
         then:
         1 * segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
         thrown(IllegalArgumentException)
     }
 
-    def "update targeting semVer format error"() {
+    def "publish targeting semVer format error"() {
         when:
-        TargetingRequest targetingRequest = new TargetingRequest()
+        TargetingPublishRequest targetingRequest = new TargetingPublishRequest()
         TargetingContent targetingContent = JsonMapper.toObject(semVerErrorContent, TargetingContent.class);
         targetingRequest.setContent(targetingContent)
-        targetingService.update(projectKey, environmentKey, toggleKey, targetingRequest)
+        targetingService.publish(projectKey, environmentKey, toggleKey, targetingRequest)
         then:
         1 * segmentRepository.existsByProjectKeyAndKey(projectKey, _) >> true
         thrown(IllegalArgumentException)
@@ -323,7 +314,8 @@ class TargetingServiceSpec extends Specification {
                 Optional.of(new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
                         content: "", disabled: false, version: 2))
         1 * approvalRecordRepository.saveAndFlush(_)
-        1 * targetingRepository.save(_)
+        1 * targetingRepository.save(_) >> new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: false, version: 2)
     }
 
     def "update approval status to REVOKE"() {
@@ -339,7 +331,8 @@ class TargetingServiceSpec extends Specification {
                         content: "", disabled: false, version: 2))
         1 * targetingSketchRepository.save(_)
         1 * approvalRecordRepository.saveAndFlush(_)
-        1 * targetingRepository.save(_)
+        1 * targetingRepository.save(_) >> new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: false, version: 2)
     }
 
     def "update approval status to JUMP"() {
@@ -365,7 +358,8 @@ class TargetingServiceSpec extends Specification {
         1 * targetingVersionRepository.save(_)
         1 * variationHistoryRepository.saveAll(_)
         1 * approvalRecordRepository.saveAndFlush(_)
-        1 * targetingRepository.save(_)
+        1 * targetingRepository.save(_) >> new Targeting(id: 1, toggleKey: toggleKey, environmentKey: environmentKey,
+                content: "", disabled: false, version: 2)
     }
 
     def "cancel targeting sketch"() {

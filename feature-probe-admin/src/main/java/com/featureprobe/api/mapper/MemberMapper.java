@@ -1,5 +1,6 @@
 package com.featureprobe.api.mapper;
 
+import com.featureprobe.api.dto.MemberItemResponse;
 import com.featureprobe.api.dto.MemberResponse;
 import com.featureprobe.api.dto.MemberUpdateRequest;
 import com.featureprobe.api.dao.entity.Member;
@@ -19,7 +20,13 @@ public interface MemberMapper extends BaseMapper {
     @Mapping(target = "account", expression = "java(member.getAccount())")
     @Mapping(target = "createdBy", expression = "java(getAccount(member.getCreatedBy()))")
     @Mapping(target = "visitedTime", expression = "java(member.getVisitedTime())")
+    MemberItemResponse entityToItemResponse(Member member);
+
+    @Mapping(target = "account", expression = "java(member.getAccount())")
+    @Mapping(target = "createdBy", expression = "java(getAccount(member.getCreatedBy()))")
+    @Mapping(target = "modifiedBy", expression = "java(getAccount(member.getModifiedBy()))")
     MemberResponse entityToResponse(Member member);
+
 
     @Mapping(target = "password", expression = "java(toPasswordEncrypt(updateRequest.getPassword()))")
     @Mapping(target = "account", expression = "java(updateRequest.getAccount())")
