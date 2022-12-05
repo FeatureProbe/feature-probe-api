@@ -3,6 +3,7 @@ package com.featureprobe.api.controller;
 import com.featureprobe.api.base.doc.DefaultApiResponses;
 import com.featureprobe.api.dto.DictionaryResponse;
 import com.featureprobe.api.service.DictionaryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @DefaultApiResponses
 @AllArgsConstructor
+@Tag(name = "Dictionary", description = "The dictionary api ")
 public class DictionaryController {
 
     private DictionaryService dictionaryService;

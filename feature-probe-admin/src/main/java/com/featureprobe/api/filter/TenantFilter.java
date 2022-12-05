@@ -45,6 +45,9 @@ public class TenantFilter implements Filter {
         if (!JWTConfig.getExcludeTenantUri().contains(requestURI)) {
             String tenantHeader = request.getHeader(TENANT_HEADER);
             try {
+                if (StringUtils.isBlank(tenantHeader)) {
+                    tenantHeader = TenantContext.getCurrentTenant();
+                }
                 if (StringUtils.isNotBlank(tenantHeader)) {
                     OrganizationMemberModel organizationMemberModel = organizationService
                             .queryOrganizationMember(Long.parseLong(tenantHeader), TokenHelper.getUserId());
@@ -59,7 +62,11 @@ public class TenantFilter implements Filter {
                 organizationErrorResponse(response);
             }
         }
-        filterChain.doFilter(servletRequest, servletResponse);
+        try {
+            filterChain.doFilter(servletRequest, servletResponse);
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     private void tenantErrorResponse(HttpServletResponse response) throws IOException {

@@ -22,6 +22,7 @@ import com.featureprobe.api.base.model.PaginationRequest;
 import com.featureprobe.api.service.SegmentService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/projects/{projectKey}/segments")
 @DefaultApiResponses
 @ResourceExistsValidate
+@Tag(name = "Segment", description = "Using the segments API, you can create, delete, and manage segments")
 public class SegmentController {
 
     private SegmentService segmentService;

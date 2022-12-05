@@ -9,6 +9,7 @@ import com.featureprobe.api.dto.ServerResponse;
 import com.featureprobe.api.server.ServerDataSource;
 import com.featureprobe.api.service.EnvironmentService;
 import com.featureprobe.api.service.EventService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,8 +31,8 @@ import java.util.Objects;
 @Slf4j
 @RestController
 @RequestMapping("/server/")
-@Tag(name = "Server API", description = "Provided to the server api")
 @AllArgsConstructor
+@Hidden
 public class ServerController {
     private EventService eventService;
 
@@ -39,9 +40,7 @@ public class ServerController {
 
     private EnvironmentService environmentService;
 
-    @GetApiResponse
     @GetMapping("/sdk_keys")
-    @Operation(summary = "List sdk keys", description = "Get all sdk keys.")
     public SdkKeyResponse queryAllSdkKeys(@RequestParam(value = "version", required = false) Long version,
                                           HttpServletResponse response) throws Exception {
         SdkKeyResponse sdkKeyResponse = dataSource.queryAllSdkKeys();
@@ -54,9 +53,7 @@ public class ServerController {
         return sdkKeyResponse;
     }
 
-    @GetApiResponse
     @GetMapping("/toggles")
-    @Operation(summary = "Fetch toggles", description = "Fetch toggle & segments by server sdk key.")
     public ServerResponse fetchToggles(@Parameter(description = "sdk key")
                                        @RequestHeader(value = "Authorization") String sdkKey,
                                        @RequestParam(value = "version", required = false) Long version,
@@ -71,9 +68,7 @@ public class ServerController {
         return serverResponse;
     }
 
-    @CreateApiResponse
     @PostMapping("/events")
-    @Operation(summary = "Create event", description = "Create toggle event.")
     @ExcludeTenant
     public void createEvent(
             @RequestBody @Validated List<EventCreateRequest> batchRequest,

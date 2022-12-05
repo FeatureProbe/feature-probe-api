@@ -7,7 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Slf4j
-public class SdkKeyGenerateUtil {
+public class KeyGenerateUtil {
+
+    public static final String ACCESS_TOKEN_PREFIX = "api-";
 
     public static String getServerSdkKey() {
         return "server-" + DigestUtils.sha1Hex(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
@@ -15,6 +17,10 @@ public class SdkKeyGenerateUtil {
 
     public static String getClientSdkKey() {
         return "client-" + DigestUtils.sha1Hex(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String getAPIAccessToken() {
+        return ACCESS_TOKEN_PREFIX + DigestUtils.sha1Hex(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
     }
 
 }

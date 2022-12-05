@@ -223,4 +223,9 @@ public class MemberService {
                 .queryMemberByAccountIncludeDeleted(account) : memberRepository.findByAccount(account);
         return member.orElseThrow(() -> new ResourceNotFoundException(ResourceType.MEMBER, account));
     }
+
+    public Optional<Member> findById(Long memberId) {
+        return memberRepository.findById(memberId);
+    }
+
 }

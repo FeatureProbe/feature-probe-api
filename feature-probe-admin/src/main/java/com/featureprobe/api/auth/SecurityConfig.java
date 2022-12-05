@@ -45,6 +45,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private GuestAuthenticationProvider guestAuthenticationProvider;
 
+    private AccessTokenAuthenticationProvider accessTokenAuthenticationProvider;
+
     UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter(
             AuthenticationManager authenticationManager) {
         UserPasswordAuthenticationProcessingFilter userPasswordAuthenticationProcessingFilter =
@@ -63,6 +65,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         guestAuthenticationProcessingFilter.setAuthenticationFailureHandler(loginFailureHandler);
         guestAuthenticationProcessingFilter.setAuthenticationSuccessHandler(loginSuccessHandler);
         return guestAuthenticationProcessingFilter;
+    }
+
+    AccessTokenAuthenticationProcessingFilter accessTokenAuthenticationProcessingFilter(
+            AuthenticationManager authenticationManager) {
+        AccessTokenAuthenticationProcessingFilter accessTokenAuthenticationProcessingFilter = new
+                AccessTokenAuthenticationProcessingFilter();
+        accessTokenAuthenticationProcessingFilter.setAuthenticationManager(authenticationManager);
+        accessTokenAuthenticationProcessingFilter.setAuthenticationFailureHandler(loginFailureHandler);
+
+        return accessTokenAuthenticationProcessingFilter;
     }
 
     @Bean
@@ -91,8 +103,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/login", "/guestLogin", "/v3/api-docs.yaml", "/server/**", "/actuator/**")
                 .permitAll()
-                .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
-                        OrganizationRoleEnum.WRITER.name())
+//                .antMatchers("/projects/**").hasAnyAuthority(OrganizationRoleEnum.OWNER.name(),
+//                        OrganizationRoleEnum.WRITER.name())
                 .anyRequest().authenticated()
                 .and()
                 .exceptionHandling()
@@ -105,13 +117,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             http.addFilterBefore(guestAuthenticationProcessingFilter(authenticationManager()),
                     UserPasswordAuthenticationProcessingFilter.class);
         }
+        http.addFilterBefore(accessTokenAuthenticationProcessingFilter(authenticationManager()),
+                UserPasswordAuthenticationProcessingFilter.class);
+
         http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(authenticationConverter());
     }
 
     @Override
     protected AuthenticationManager authenticationManager() {
         ProviderManager authenticationManager = new ProviderManager(Arrays.asList(userPasswordAuthenticationProvider,
-                guestAuthenticationProvider));
+                guestAuthenticationProvider, accessTokenAuthenticationProvider));
         return authenticationManager;
     }
 

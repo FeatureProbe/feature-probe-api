@@ -12,8 +12,5 @@ import java.util.Optional;
 public interface ApprovalRecordRepository extends JpaRepository<ApprovalRecord, Long>,
         JpaSpecificationExecutor<ApprovalRecord> {
 
-    Optional<ApprovalRecord> findByProjectKeyAndEnvironmentKeyAndToggleKey(String projectKey, String environmentKey,
-                                                                           String toggleKey);
-
     long countByStatusAndReviewersIsContaining(ApprovalStatusEnum status, String account);
 }

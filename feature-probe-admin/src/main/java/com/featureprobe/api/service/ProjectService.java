@@ -22,7 +22,7 @@ import com.featureprobe.api.mapper.ProjectMapper;
 import com.featureprobe.api.dao.repository.EnvironmentRepository;
 import com.featureprobe.api.dao.repository.ProjectRepository;
 import com.featureprobe.api.dao.repository.TargetingSketchRepository;
-import com.featureprobe.api.base.util.SdkKeyGenerateUtil;
+import com.featureprobe.api.base.util.KeyGenerateUtil;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
@@ -170,8 +170,8 @@ public class ProjectService {
         onlineEnv.setName("online");
         onlineEnv.setKey("online");
         onlineEnv.setProject(project);
-        onlineEnv.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
-        onlineEnv.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
+        onlineEnv.setClientSdkKey(KeyGenerateUtil.getClientSdkKey());
+        onlineEnv.setServerSdkKey(KeyGenerateUtil.getServerSdkKey());
         return onlineEnv;
     }
 

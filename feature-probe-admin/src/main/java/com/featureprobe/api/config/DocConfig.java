@@ -21,8 +21,11 @@ public class DocConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .components(new Components().addSecuritySchemes("basicScheme",
-                        new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic")))
+                        new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("API Access Token")))
                 .info(new Info().title("Feature Probe API").version("1.0")
+                        .description("All REST API resources are authenticated with either personal or" +
+                                "application access tokens. Other authentication mechanisms are not supported." +
+                                "You can manage personal access tokens on your Account settings page.")
                         .license(new License().name("Apache 2.0").url("http://featureprobe.com")));
 
     }

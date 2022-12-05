@@ -56,7 +56,7 @@ public class ApprovalRecordService {
     @Archived
     public Page<ApprovalRecordResponse> list(ApprovalRecordQueryRequest queryRequest) {
         Specification<ApprovalRecord> spec = buildListSpec(queryRequest);
-        Pageable pageable = PageRequestUtil.toPageable(queryRequest, Sort.Direction.DESC, "createdTime");
+        Pageable pageable = PageRequestUtil.toCreatedTimeDescSortPageable(queryRequest);
         Page<ApprovalRecord> approvalRecords = approvalRecordRepository.findAll(spec, pageable);
         Set<Long> approvalIds = approvalRecords.getContent().stream().map(ApprovalRecord::getId)
                 .collect(Collectors.toSet());

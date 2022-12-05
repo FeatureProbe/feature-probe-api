@@ -23,7 +23,7 @@ import com.featureprobe.api.dao.repository.EnvironmentRepository;
 import com.featureprobe.api.dao.repository.ProjectRepository;
 import com.featureprobe.api.dao.repository.TargetingRepository;
 import com.featureprobe.api.dao.repository.ToggleRepository;
-import com.featureprobe.api.base.util.SdkKeyGenerateUtil;
+import com.featureprobe.api.base.util.KeyGenerateUtil;
 import com.featureprobe.sdk.server.FPUser;
 import com.featureprobe.sdk.server.FeatureProbe;
 import lombok.AllArgsConstructor;
@@ -64,8 +64,8 @@ public class EnvironmentService {
         validateLimit(projectKey);
         Project project = projectRepository.findByKey(projectKey).get();
         Environment environment = EnvironmentMapper.INSTANCE.requestToEntity(createRequest);
-        environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
-        environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
+        environment.setServerSdkKey(KeyGenerateUtil.getServerSdkKey());
+        environment.setClientSdkKey(KeyGenerateUtil.getClientSdkKey());
         environment.setProject(project);
         initEnvironmentTargeting(projectKey, createRequest.getKey());
         changeLogService.create(environment, ChangeLogType.ADD);
@@ -82,10 +82,10 @@ public class EnvironmentService {
         }
         EnvironmentMapper.INSTANCE.mapEntity(updateRequest, environment);
         if (updateRequest.isResetServerSdk()) {
-            environment.setServerSdkKey(SdkKeyGenerateUtil.getServerSdkKey());
+            environment.setServerSdkKey(KeyGenerateUtil.getServerSdkKey());
         }
         if (updateRequest.isResetClientSdk()) {
-            environment.setClientSdkKey(SdkKeyGenerateUtil.getClientSdkKey());
+            environment.setClientSdkKey(KeyGenerateUtil.getClientSdkKey());
         }
         return EnvironmentMapper.INSTANCE.entityToResponse(environmentRepository.save(environment));
     }

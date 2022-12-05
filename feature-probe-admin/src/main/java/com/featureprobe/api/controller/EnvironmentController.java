@@ -18,6 +18,7 @@ import com.featureprobe.api.service.EnvironmentService;
 import com.featureprobe.api.service.IncludeArchivedEnvironmentService;
 import com.featureprobe.api.validate.ResourceExistsValidate;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -38,6 +39,7 @@ import java.util.List;
 @RequestMapping("/projects/{projectKey}/environments")
 @DefaultApiResponses
 @ResourceExistsValidate
+@Tag(name = "Environment", description = "Using the environments API, you can create, update, and manage environments")
 public class EnvironmentController {
 
     private EnvironmentService environmentService;
