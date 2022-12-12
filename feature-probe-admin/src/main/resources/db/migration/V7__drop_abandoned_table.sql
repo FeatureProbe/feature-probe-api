@@ -1,1 +1,0 @@
-drop table IF EXISTS config,config_segment;

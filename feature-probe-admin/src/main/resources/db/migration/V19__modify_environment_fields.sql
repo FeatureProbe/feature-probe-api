@@ -1,1 +1,0 @@
-alter table environment modify column id BIGINT auto_increment;
